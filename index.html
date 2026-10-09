@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayosha ERP</title>
+    <!-- Poppins Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: { navy: '#1E3A5F', amber: '#FFBF00' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-50 h-screen font-sans antialiased text-gray-800">
+    
+    <!-- Top Navigation Bar -->
+    <nav class="bg-brand-navy text-white px-6 py-4 shadow-md flex justify-between items-center">
+        <div class="text-xl font-semibold flex items-center gap-2">
+            <span class="text-brand-amber">⬢</span> Prayosha ERP
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- Language Toggle Placeholder -->
+            <button class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded transition">ગુજરાતી (GU)</button>
+            <div id="user-profile" class="text-sm font-medium">Loading...</div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="p-6 max-w-7xl mx-auto mt-6">
+        <!-- Glassmorphism Card Base -->
+        <div class="bg-white/70 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl p-8">
+            <h1 class="text-2xl font-semibold mb-4 text-brand-navy">Connection Status</h1>
+            <p id="status-message" class="text-gray-600">Attempting to connect to Supabase...</p>
+        </div>
+    </main>
+
+    <!-- Load Scripts -->
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

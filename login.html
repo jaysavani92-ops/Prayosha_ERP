@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login | Prayosha ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: { brand: { navy: '#1E3A5F', amber: '#FFBF00' } }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] flex items-center justify-center">
+    
+    <div class="w-full max-w-md p-6">
+        <!-- Glassmorphism Login Card -->
+        <div class="bg-white/80 backdrop-blur-lg border border-white/50 shadow-2xl rounded-2xl p-8">
+            
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-brand-navy rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg">
+                    <span class="text-brand-amber text-3xl">⬢</span>
+                </div>
+                <h1 class="text-2xl font-bold text-brand-navy">Prayosha ERP</h1>
+                <p class="text-sm text-gray-500 mt-1">Construction Management Portal</p>
+            </div>
+
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Username</label>
+                    <input type="text" id="username" placeholder="Enter username" class="w-full p-3 rounded-lg border border-gray-300 bg-white/70 focus:ring-2 focus:ring-brand-amber outline-none text-gray-800 font-medium" required autocomplete="off">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">4-Digit PIN</label>
+                    <input type="password" id="pin" placeholder="••••" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" class="w-full p-3 rounded-lg border border-gray-300 bg-white/70 focus:ring-2 focus:ring-brand-amber outline-none text-gray-800 font-medium text-center tracking-[1em] text-xl" required autocomplete="off">
+                </div>
+
+                <button type="submit" class="w-full bg-brand-navy hover:bg-[#152a45] text-white font-bold py-3.5 rounded-lg shadow-lg transition duration-200 flex justify-center items-center gap-2">
+                    <svg class="w-5 h-5 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    Secure Login
+                </button>
+
+                <div id="login-feedback" class="hidden p-3 rounded-lg text-sm font-medium text-center"></div>
+            </form>
+
+        </div>
+        
+        <div class="text-center mt-6">
+            <button class="text-xs font-medium text-gray-500 hover:text-brand-navy transition">ગુજરાતી (GU) માં બદલો</button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="login.js"></script>
+</body>
+</html>

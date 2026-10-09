@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Report | Prayosha ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: { brand: { navy: '#1E3A5F', amber: '#FFBF00' } }
+                }
+            }
+        }
+    </script>
+    <!-- Supabase & PDF Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+    
+    <nav class="bg-brand-navy text-white px-6 py-4 shadow-md flex justify-between items-center">
+        <div class="text-xl font-semibold flex items-center gap-2">
+            <span class="text-brand-amber">⬢</span> Prayosha ERP | Task Manager
+        </div>
+        <div class="flex items-center gap-4">
+            <button class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded transition">ગુજરાતી (GU)</button>
+            <div class="text-sm font-medium flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-brand-amber text-brand-navy flex items-center justify-center font-bold">J</div>
+                Jay
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto mt-6 px-6">
+        <div class="flex space-x-1 border-b border-gray-300 overflow-x-auto">
+            <a href="zone-timeline.html" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-brand-navy whitespace-nowrap">Zone Timeline</a>
+            <a href="issue-logs.html" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-brand-navy whitespace-nowrap">Issue Logs</a>
+            <a href="raise-issue.html" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-brand-navy whitespace-nowrap">Raise Issue</a>
+            <a href="generate-report.html" class="px-6 py-3 text-sm font-semibold text-white bg-brand-navy rounded-t-lg shadow-sm whitespace-nowrap">Generate Report</a>
+        </div>
+    </div>
+
+    <main class="p-6 max-w-4xl mx-auto">
+        <div class="bg-white/90 backdrop-blur-md shadow-xl rounded-b-2xl p-8 border border-gray-200">
+            
+            <h2 class="text-2xl font-semibold mb-6 text-brand-navy flex items-center gap-2 border-b border-gray-200 pb-3">
+                <svg class="w-6 h-6 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                Analytics & Report Generation
+            </h2>
+            
+            <form id="reportForm" class="space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">1. Select Report Type</label>
+                            <select id="report_type" class="w-full p-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-brand-navy outline-none">
+                                <option value="All Tasks">All Master Tasks</option>
+                                <option value="Active Tasks">Active Tasks Only</option>
+                                <option value="Delayed Tasks">Delayed Tasks Only</option>
+                                <option value="Completed Tasks">Completed Tasks Archive</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">2. Export Format</label>
+                            <div class="flex gap-6 mt-3">
+                                <div class="flex items-center">
+                                    <input type="radio" id="format_csv" name="format" value="csv" class="w-4 h-4 text-brand-navy" checked>
+                                    <label for="format_csv" class="ml-2 text-sm font-bold text-gray-700 cursor-pointer">CSV / Excel</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="radio" id="format_pdf" name="format" value="pdf" class="w-4 h-4 text-red-600">
+                                    <label for="format_pdf" class="ml-2 text-sm font-bold text-gray-700 cursor-pointer">PDF Document</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">3. Filter By Project</label>
+                            <select id="filter_project" class="w-full p-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-brand-navy outline-none">
+                                <option value="All">All Projects</option>
+                                <option value="Prayosha Imperia">Prayosha Imperia</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">4. Filter By Agency (Optional)</label>
+                            <input type="text" id="filter_agency" placeholder="e.g. Mahavir Enterprise" class="w-full p-3 rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-brand-navy outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-4 border-t border-gray-200">
+                    <button type="submit" class="bg-brand-navy hover:bg-[#152a45] text-white font-bold py-3 px-8 rounded-lg shadow-lg transition duration-200 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Generate & Download
+                    </button>
+                </div>
+                
+                <div id="report-feedback" class="hidden p-4 rounded-lg text-sm font-medium mt-4 text-center"></div>
+            </form>
+
+        </div>
+    </main>
+
+    <script src="../config.js"></script>
+    <script src="generate-report.js"></script>
+</body>
+</html>

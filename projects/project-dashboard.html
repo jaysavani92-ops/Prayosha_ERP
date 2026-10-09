@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayosha ERP - Project Directory</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 10px 30px 0 rgba(30, 58, 95, 0.06);
+        }
+        .glass-modal {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 20px 45px 0 rgba(30, 58, 95, 0.18);
+        }
+        .prayosha-navy { color: #1E3A5F; }
+        .bg-prayosha-navy { background-color: #1E3A5F; }
+        .prayosha-amber { color: #FFBF00; }
+        .bg-prayosha-amber { background-color: #FFBF00; }
+        
+        .input-search {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.25s ease;
+        }
+        .input-search:focus {
+            outline: none;
+            border-color: #FFBF00;
+            box-shadow: 0 0 0 3px rgba(255, 191, 0, 0.2);
+        }
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="p-6">
+
+    <!-- Top Navigation & Control Header -->
+    <header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-prayosha-navy flex items-center justify-center text-white shadow-md">
+                    <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-3xl font-bold prayosha-navy leading-tight">Project Management</h1>
+                    <p class="text-gray-500 text-xs font-medium tracking-wide uppercase">Multi-Site Architecture Control</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Action Switches -->
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <span class="px-5 py-2.5 rounded-xl font-semibold bg-prayosha-navy text-white text-sm shadow-sm flex items-center gap-2">
+                <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                </svg>
+                Project Directory
+            </span>
+            <a href="create-project.html" id="createProjectBtn" class="px-5 py-2.5 rounded-xl font-semibold bg-white/90 text-gray-700 hover:text-prayosha-navy text-sm border border-gray-200 hover:border-amber-400 transition shadow-sm flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Create New Project
+            </a>
+        </div>
+    </header>
+
+    <!-- Toolbar: Search, Filters & Counters -->
+    <section class="max-w-7xl mx-auto mb-8">
+        <div class="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+            
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-96">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </span>
+                <input type="text" id="searchInput" class="input-search text-sm" placeholder="Search by Project Name, Code, or Location...">
+            </div>
+
+            <!-- Filters & Active Project Pill -->
+            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                <select id="statusFilter" class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white/90 text-xs font-semibold text-gray-700 focus:outline-none focus:border-amber-400">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Planning">Planning</option>
+                    <option value="Planning Completed, But Construction Not Started">Planning Completed, Not Started</option>
+                    <option value="On Going">On Going</option>
+                    <option value="Completed">Completed</option>
+                    <option value="On Hold">On Hold</option>
+                </select>
+
+                <button id="refreshBtn" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Dynamic Projects Grid -->
+    <main class="max-w-7xl mx-auto mb-12">
+        <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Loading Skeletons will appear here initially -->
+            <div class="glass-card rounded-2xl p-6 animate-pulse flex flex-col gap-4">
+                <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+                <div class="h-32 bg-gray-200 rounded-xl"></div>
+                <div class="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div class="h-10 bg-gray-200 rounded-xl mt-auto"></div>
+            </div>
+            <div class="glass-card rounded-2xl p-6 animate-pulse flex flex-col gap-4">
+                <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+                <div class="h-32 bg-gray-200 rounded-xl"></div>
+                <div class="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div class="h-10 bg-gray-200 rounded-xl mt-auto"></div>
+            </div>
+            <div class="glass-card rounded-2xl p-6 animate-pulse flex flex-col gap-4">
+                <div class="h-4 bg-gray-200 rounded w-1/3"></div>
+                <div class="h-32 bg-gray-200 rounded-xl"></div>
+                <div class="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div class="h-10 bg-gray-200 rounded-xl mt-auto"></div>
+            </div>
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="emptyState" class="hidden glass-card rounded-2xl p-12 text-center max-w-xl mx-auto my-12">
+            <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold prayosha-navy mb-2">No Projects Found</h3>
+            <p class="text-gray-500 text-sm mb-6">No project records match your current filter criteria or search query.</p>
+            <a href="create-project.html" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold bg-prayosha-navy text-white text-sm shadow hover:bg-opacity-90 transition">
+                Create First Project
+            </a>
+        </div>
+    </main>
+
+    <!-- Project Architecture Inspector Modal -->
+    <div id="architectureModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-4xl max-h-[90vh] rounded-3xl p-6 md:p-8 flex flex-col custom-scroll overflow-hidden">
+            
+            <!-- Modal Header -->
+            <div class="flex justify-between items-start pb-4 border-b border-gray-200 mb-6 shrink-0">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="modalProjectCode" class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">PRSG-001</span>
+                        <h2 id="modalProjectName" class="text-2xl font-bold prayosha-navy">Prayosha Imperia</h2>
+                    </div>
+                    <p id="modalProjectMeta" class="text-xs text-gray-500 mt-1">Architecture & Zone Breakdown</p>
+                </div>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-700 p-2 rounded-xl hover:bg-gray-100 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable Zone Tree) -->
+            <div id="modalZonesContent" class="space-y-6 overflow-y-auto pr-2 custom-scroll flex-1">
+                <!-- Zone groups will be dynamically injected here -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="pt-6 border-t border-gray-200 mt-6 flex justify-end gap-3 shrink-0">
+                <button id="modalCloseActionBtn" class="px-6 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition">
+                    Close
+                </button>
+                <button id="modalActivateProjectBtn" class="px-6 py-2.5 rounded-xl text-sm font-bold bg-prayosha-navy text-white hover:bg-opacity-90 shadow-md transition flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    Activate As Workspace Project
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+
+    <script type="module" src="project-dashboard.js"></script>
+</body>
+</html>

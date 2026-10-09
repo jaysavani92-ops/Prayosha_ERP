@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zone Timeline | Prayosha ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: { brand: { navy: '#1E3A5F', amber: '#FFBF00' } }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+    
+    <!-- Navigation -->
+    <nav class="bg-brand-navy text-white px-6 py-4 shadow-md flex justify-between items-center">
+        <div class="text-xl font-semibold flex items-center gap-2">
+            <span class="text-brand-amber">⬢</span> Prayosha ERP | Task Manager
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="w-8 h-8 rounded-full bg-brand-amber text-brand-navy flex items-center justify-center font-bold">J</div>
+        </div>
+    </nav>
+
+    <!-- Sub-Navigation (Tabs) -->
+    <div class="max-w-6xl mx-auto mt-6 px-6">
+        <div class="flex space-x-1 border-b border-gray-300 overflow-x-auto">
+            <a href="log-task.html" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-brand-navy whitespace-nowrap">Log New Task(s)</a>
+            <a href="active-tasks.html" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-brand-navy whitespace-nowrap">Active Tasks</a>
+            <a href="delayed-tasks.html" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-brand-navy whitespace-nowrap">Delayed Tasks</a>
+            <a href="pending-tasks.html" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-brand-navy whitespace-nowrap">Pending Tasks</a>
+            <a href="tasks-history.html" class="px-6 py-3 text-sm font-medium text-gray-500 hover:text-brand-navy whitespace-nowrap">Tasks History</a>
+            <a href="zone-timeline.html" class="px-6 py-3 text-sm font-semibold text-white bg-brand-navy rounded-t-lg shadow-sm whitespace-nowrap">Zone Timeline</a>
+            <span class="px-6 py-3 text-sm font-medium text-gray-400 cursor-not-allowed whitespace-nowrap">Issue Logs</span>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="p-6 max-w-6xl mx-auto">
+        <div class="bg-white/90 backdrop-blur-md shadow-xl rounded-b-2xl rounded-tr-2xl p-8 min-h-[500px]">
+            
+            <!-- Zone Search Bar -->
+            <div class="bg-blue-50/50 p-6 rounded-xl border border-blue-100 mb-8 flex flex-col md:flex-row gap-4 items-end">
+                <div class="w-full md:w-1/2">
+                    <label class="block text-xs font-semibold text-brand-navy uppercase tracking-wider mb-2">Search Zone ID</label>
+                    <input type="text" id="search_zone_id" placeholder="e.g. PRY-A-B-FL-101" class="w-full p-3 rounded-lg border border-blue-200 bg-white focus:ring-2 focus:ring-brand-amber outline-none font-medium text-gray-700">
+                </div>
+                <button onclick="fetchZoneTimeline()" class="bg-brand-navy hover:bg-[#152a45] text-white font-medium py-3 px-8 rounded-lg shadow-md transition duration-200 whitespace-nowrap">
+                    View Timeline
+                </button>
+            </div>
+
+            <!-- Zone Summary Header (Hidden initially) -->
+            <div id="zone-summary" class="hidden mb-8 p-4 bg-gray-50 border border-gray-200 rounded-xl flex justify-between items-center">
+                <div>
+                    <h2 id="summary-title" class="text-2xl font-bold text-brand-navy"></h2>
+                    <p id="summary-location" class="text-sm text-gray-500 mt-1"></p>
+                </div>
+                <div class="text-right">
+                    <div id="summary-days" class="text-xl font-bold text-brand-amber"></div>
+                    <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Days Active</div>
+                </div>
+            </div>
+
+            <!-- Timeline Container -->
+            <div id="timeline-container" class="relative border-l-2 border-gray-200 ml-4 space-y-8 pb-8">
+                <div class="pl-8 py-10 text-gray-400 text-sm">Enter a Zone ID above to view its chronological history.</div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="../config.js"></script>
+    <script src="zone-timeline.js"></script>
+</body>
+</html>
