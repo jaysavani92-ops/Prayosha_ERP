@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" class="h-full bg-slate-950">
 <head>
     <meta charset="UTF-8">
@@ -631,5 +631,10 @@
 
     <!-- LOAD CONFIG AND APPLICATION LOGIC -->
     <script type="module" src="./pre-development.js"></script>
+    <!-- Universal Navigation Shell -->
+    <script type="module">
+        import { initShell } from '../common/shell.js';
+        initShell();
+    </script>
 </body>
 </html>

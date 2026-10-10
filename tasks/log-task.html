@@ -1,10 +1,14 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log New Task | Prayosha ERP</title>
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -12,7 +16,14 @@
                 extend: {
                     fontFamily: { sans: ['Poppins', 'sans-serif'] },
                     colors: {
-                        brand: { navy: '#1E3A5F', amber: '#FFBF00' }
+                        brand: {
+                            navy: '#1E3A5F',
+                            navyDark: '#152A45',
+                            amber: '#FFBF00',
+                            emerald: '#10B981',
+                            indigo: '#4F46E5',
+                            canvas: '#F8FAFC'
+                        }
                     }
                 }
             }
@@ -21,107 +32,137 @@
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans antialiased text-gray-800 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
-    
-    <!-- Top Navigation Bar -->
-    <nav class="bg-brand-navy text-white px-6 py-4 shadow-md flex justify-between items-center">
-        <div class="text-xl font-semibold flex items-center gap-2">
-            <span class="text-brand-amber">⬢</span> Prayosha ERP | Task Manager
-        </div>
-        <div class="flex items-center gap-4">
-            <button class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded transition">ગુજરાતી (GU)</button>
-            <!-- User Profile Display -->
-            <div class="text-sm font-medium flex items-center gap-2">
-                <div class="w-8 h-8 rounded-full bg-brand-amber text-brand-navy flex items-center justify-center font-bold">J</div>
-                Jay
-            </div>
-        </div>
-    </nav>
+<body class="bg-[#F8FAFC] min-h-screen font-sans antialiased text-slate-800 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
 
     <!-- Main Content Area -->
-    <main class="p-6 max-w-5xl mx-auto mt-6">
+    <main class="max-w-4xl mx-auto px-4 py-6">
         
-        <!-- Glassmorphism Form Card -->
-        <div class="bg-white/80 backdrop-blur-md border border-white/40 shadow-2xl rounded-2xl p-8">
-            <h2 class="text-2xl font-semibold mb-6 text-brand-navy border-b pb-3">Log New Task(s)</h2>
+        <!-- Header Banner -->
+        <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-brand-amber font-bold text-lg">⬢</span>
+                    <h1 class="text-2xl font-bold text-brand-navy tracking-tight">Log New Task</h1>
+                </div>
+                <p class="text-xs text-slate-500 font-medium">Assign civil work packages and milestone dates to project zones</p>
+            </div>
             
+            <a href="active-tasks.html" class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-navy hover:text-brand-navyDark bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-sm hover:shadow transition self-start sm:self-auto">
+                <svg class="w-4 h-4 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                View Active Tasks
+            </a>
+        </div>
+
+        <!-- Glassmorphism Form Card -->
+        <div class="bg-white/90 backdrop-blur-md border border-slate-200/80 shadow-xl rounded-2xl p-6 sm:p-8">
             <form id="logTaskForm" class="space-y-6">
-                <!-- Dropdown Row 1 -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Dropdown Row 1: Structural Hierarchy -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Project</label>
-                        <select id="project_name" class="w-full p-3 rounded-lg border border-gray-200 bg-white/50 focus:ring-2 focus:ring-brand-navy outline-none" required>
-                            <option value="">-- Select --</option>
-                            <option value="Prayosha Imperia">Prayosha Imperia</option>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Project Context</label>
+                        <select id="project_name" class="w-full p-3 text-sm font-semibold rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition" required>
+                            <option value="">-- Loading Projects --</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Tower / Block</label>
-                        <select id="tower_block" class="w-full p-3 rounded-lg border border-gray-200 bg-white/50 focus:ring-2 focus:ring-brand-navy outline-none" required>
-                            <option value="">-- Select --</option>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tower / Block</label>
+                        <select id="tower_block" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition" required>
+                            <option value="">-- Select Tower --</option>
                             <option value="Tower A">Tower A</option>
                             <option value="Tower B">Tower B</option>
+                            <option value="Tower C">Tower C</option>
+                            <option value="Club House">Club House</option>
+                            <option value="Infrastructure / External">Infrastructure / External</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Floor</label>
-                        <select id="floor_level" class="w-full p-3 rounded-lg border border-gray-200 bg-white/50 focus:ring-2 focus:ring-brand-navy outline-none" required>
-                            <option value="">-- Select --</option>
-                            <option value="Basement">Basement</option>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Floor Level</label>
+                        <select id="floor_level" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition" required>
+                            <option value="">-- Select Floor --</option>
+                            <option value="Basement 2">Basement 2</option>
+                            <option value="Basement 1">Basement 1</option>
                             <option value="Ground Floor">Ground Floor</option>
-                            <option value="First Floor">First Floor</option>
+                            <option value="Podium">Podium</option>
+                            <option value="1st Floor">1st Floor</option>
+                            <option value="2nd Floor">2nd Floor</option>
+                            <option value="3rd Floor">3rd Floor</option>
+                            <option value="4th Floor">4th Floor</option>
+                            <option value="5th Floor">5th Floor</option>
+                            <option value="Terrace">Terrace</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Input Row 2 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <!-- Input Row 2: Work Scope & Zone -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 bg-brand-navy/[0.03] p-5 rounded-2xl border border-brand-navy/10">
                     <div>
-                        <label class="block text-xs font-semibold text-brand-navy uppercase tracking-wider mb-2">Category</label>
-                        <select id="category" class="w-full p-3 rounded-lg border border-blue-200 bg-white focus:ring-2 focus:ring-brand-amber outline-none" required>
-                            <option value="">-- Select Category --</option>
-                            <option value="Brick Work">Brick Work</option>
-                            <option value="RCC">RCC</option>
-                            <option value="Plumbing">Plumbing</option>
+                        <label class="block text-xs font-bold text-brand-navy uppercase tracking-wider mb-2">Work Category</label>
+                        <select id="category" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-amber focus:border-transparent outline-none font-medium transition" required>
+                            <option value="">-- Select Work Category --</option>
+                            <option value="Excavation">Excavation</option>
+                            <option value="Piling & Foundation">Piling & Foundation</option>
+                            <option value="RCC Structure">RCC Structure</option>
+                            <option value="Masonry / Brick Work">Masonry / Brick Work</option>
+                            <option value="Internal Plaster">Internal Plaster</option>
+                            <option value="External Plaster">External Plaster</option>
+                            <option value="Waterproofing">Waterproofing</option>
+                            <option value="Flooring & Tiling">Flooring & Tiling</option>
+                            <option value="Plumbing & Drainage">Plumbing & Drainage</option>
+                            <option value="Electrical Conduiting">Electrical Conduiting</option>
+                            <option value="Painting & Finishing">Painting & Finishing</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-brand-navy uppercase tracking-wider mb-2">Zone ID</label>
-                        <input type="text" id="zone_id" placeholder="e.g. GF-CLS-001" class="w-full p-3 rounded-lg border border-blue-200 bg-white focus:ring-2 focus:ring-brand-amber outline-none" required>
+                        <label class="block text-xs font-bold text-brand-navy uppercase tracking-wider mb-2">Zone ID / Target Area</label>
+                        <input type="text" id="zone_id" placeholder="e.g. GF-CLS-001 or T-A-FL01-Z1" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-amber focus:border-transparent outline-none font-medium transition" required>
                     </div>
                 </div>
 
-                <!-- Detail Row 3 -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Input Row 3: Contractor & Deadlines -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Assigned Agency</label>
-                        <select id="assigned_agency" class="w-full p-3 rounded-lg border border-gray-200 bg-white/50 focus:ring-2 focus:ring-brand-navy outline-none" required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Assigned Agency / Contractor</label>
+                        <select id="assigned_agency" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition" required>
                             <option value="">-- Select Agency --</option>
                             <option value="Mahavir Enterprise">Mahavir Enterprise</option>
                             <option value="Somnath Realtor">Somnath Realtor</option>
+                            <option value="Shree Ram Construction">Shree Ram Construction</option>
+                            <option value="In-House Site Team">In-House Site Team</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Expected Completion Date</label>
-                        <input type="date" id="expected_completion_date" class="w-full p-3 rounded-lg border border-gray-200 bg-white/50 focus:ring-2 focus:ring-brand-navy outline-none" required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Expected Completion Date</label>
+                        <input type="date" id="expected_completion_date" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition text-slate-700" required>
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <div class="flex justify-end pt-4">
-                    <button type="submit" class="bg-brand-navy hover:bg-[#152a45] text-white font-medium py-3 px-8 rounded-lg shadow-lg transition duration-200 flex items-center gap-2">
+                <!-- Action Toolbar -->
+                <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+                    <button type="reset" class="px-5 py-2.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition">
+                        Clear Fields
+                    </button>
+                    
+                    <button type="submit" class="bg-brand-navy hover:bg-brand-navyDark text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-brand-navy/20 transition duration-200 flex items-center gap-2">
+                        <span class="text-brand-amber">⬢</span>
                         <span>Assign Task to Zone</span>
                     </button>
                 </div>
                 
-                <!-- Feedback Message -->
-                <div id="form-feedback" class="hidden p-4 rounded-lg text-sm font-medium mt-4"></div>
+                <!-- Feedback Box -->
+                <div id="form-feedback" class="hidden p-4 rounded-xl text-sm font-medium mt-4 transition-all"></div>
             </form>
         </div>
     </main>
 
-    <!-- Load Global Config, then local logic -->
+    <!-- Global Config & Logic Scripts -->
     <script src="../config.js"></script>
     <script src="log-task.js"></script>
+    
+    <!-- Universal Navigation Shell -->
+    <script type="module">
+        import { initShell } from '../common/shell.js';
+        initShell({ activeModule: 'tasks' });
+    </script>
 </body>
 </html>

@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prayosha ERP</title>
-    <!-- Poppins Font -->
+    <title>Prayosha ERP | Site Gateway</title>
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -14,40 +16,131 @@
                 extend: {
                     fontFamily: { sans: ['Poppins', 'sans-serif'] },
                     colors: {
-                        brand: { navy: '#1E3A5F', amber: '#FFBF00' }
+                        brand: {
+                            navy: '#1E3A5F',
+                            navyDark: '#152A45',
+                            amber: '#FFBF00',
+                            emerald: '#10B981',
+                            indigo: '#4F46E5',
+                            canvas: '#F8FAFC'
+                        }
                     }
                 }
             }
         }
     </script>
-    <!-- Supabase JS Library -->
+    <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gray-50 h-screen font-sans antialiased text-gray-800">
-    
-    <!-- Top Navigation Bar -->
-    <nav class="bg-brand-navy text-white px-6 py-4 shadow-md flex justify-between items-center">
-        <div class="text-xl font-semibold flex items-center gap-2">
-            <span class="text-brand-amber">⬢</span> Prayosha ERP
-        </div>
-        <div class="flex items-center gap-4">
-            <!-- Language Toggle Placeholder -->
-            <button class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1 rounded transition">ગુજરાતી (GU)</button>
-            <div id="user-profile" class="text-sm font-medium">Loading...</div>
-        </div>
-    </nav>
+<body class="bg-[#F8FAFC] font-sans antialiased text-slate-800 min-h-screen flex items-center justify-center p-4 selection:bg-brand-amber selection:text-brand-navy">
 
-    <!-- Main Content Area -->
-    <main class="p-6 max-w-7xl mx-auto mt-6">
-        <!-- Glassmorphism Card Base -->
-        <div class="bg-white/70 backdrop-blur-md border border-white/40 shadow-xl rounded-2xl p-8">
-            <h1 class="text-2xl font-semibold mb-4 text-brand-navy">Connection Status</h1>
-            <p id="status-message" class="text-gray-600">Attempting to connect to Supabase...</p>
+    <!-- Auth Guard Gatekeeper Container -->
+    <div class="w-full max-w-sm text-center">
+        <!-- Brand Identity Icon -->
+        <div class="relative inline-flex items-center justify-center mb-6">
+            <div class="w-20 h-20 rounded-2xl bg-brand-navy shadow-xl flex items-center justify-center border border-white/20">
+                <span class="text-brand-amber text-4xl transform transition-transform duration-700 hover:rotate-180">⬢</span>
+            </div>
+            <div class="absolute -inset-1 rounded-2xl bg-brand-amber/20 blur-sm -z-10 animate-pulse"></div>
         </div>
-    </main>
 
-    <!-- Load Scripts -->
+        <!-- Typography -->
+        <h1 class="text-2xl font-bold tracking-tight text-brand-navy">Prayosha ERP</h1>
+        <p class="text-xs uppercase tracking-widest text-slate-500 font-medium mt-1">Construction Operating System</p>
+
+        <!-- Status Card -->
+        <div class="mt-8 bg-white/90 backdrop-blur-md rounded-xl p-5 border border-slate-200/80 shadow-sm">
+            <div class="flex items-center justify-center gap-3">
+                <svg class="animate-spin h-5 w-5 text-brand-amber" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span id="gateway-status" class="text-sm font-medium text-slate-700">Verifying session credentials...</span>
+            </div>
+            
+            <div class="w-full bg-slate-100 rounded-full h-1 mt-4 overflow-hidden">
+                <div class="bg-brand-navy h-1 rounded-full animate-pulse w-3/4 mx-auto"></div>
+            </div>
+        </div>
+
+        <p class="mt-6 text-xs text-slate-400">Gujarat Construction Management Portal</p>
+    </div>
+
+    <!-- Configuration Wrapper & Auth Gateway Script -->
     <script src="config.js"></script>
-    <script src="app.js"></script>
+    <script>
+        (async function authenticateGateway() {
+            const statusEl = document.getElementById('gateway-status');
+            
+            // Fallback endpoints in accordance with tech stack specs
+            const SUPABASE_PROJECT_URL = window.SUPABASE_URL || 'https://lmzowftkbjdzqmmgxcrf.supabase.co';
+            const SUPABASE_PUBLIC_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_ey0ZqXs2eGyaJ5y1ZWtrnA_Rul705D0';
+
+            let client;
+            try {
+                if (window.supabaseClient) {
+                    client = window.supabaseClient;
+                } else if (window.supabase && typeof window.supabase.createClient === 'function') {
+                    client = window.supabase.createClient(SUPABASE_PROJECT_URL, SUPABASE_PUBLIC_KEY);
+                } else {
+                    throw new Error('Supabase client failed to load.');
+                }
+            } catch (initErr) {
+                console.error('[Gateway Init Error]:', initErr);
+                statusEl.textContent = 'Redirecting to sign-in...';
+                window.location.replace('login.html');
+                return;
+            }
+
+            // Hard safety timeout of 3.5 seconds to prevent hanging on flaky network connections
+            const gatewayTimeout = setTimeout(() => {
+                console.warn('[Gateway Timeout]: Auth verification exceeded 3.5s. Redirecting to login.');
+                window.location.replace('login.html');
+            }, 3500);
+
+            try {
+                // 1. Verify Active Supabase Auth Session
+                const { data: { session }, error: sessionError } = await client.auth.getSession();
+
+                if (sessionError || !session || !session.user) {
+                    clearTimeout(gatewayTimeout);
+                    // Clear stale workspace artifacts
+                    localStorage.removeItem('userId');
+                    statusEl.textContent = 'Unauthenticated. Redirecting to login...';
+                    window.location.replace('login.html');
+                    return;
+                }
+
+                // 2. Synchronize Session Identifiers with Local Workspace Memory
+                localStorage.setItem('userId', session.user.id);
+
+                // Check for existing profile metadata in localStorage
+                const cachedUser = localStorage.getItem('prayosha_user');
+                if (cachedUser) {
+                    try {
+                        const parsed = JSON.parse(cachedUser);
+                        if (parsed.role) localStorage.setItem('userRole', parsed.role);
+                        if (parsed.project && !localStorage.getItem('activeProjectId')) {
+                            localStorage.setItem('activeProjectId', parsed.project);
+                        }
+                    } catch (e) {
+                        console.warn('[Gateway Cache Parse Warning]:', e);
+                    }
+                }
+
+                clearTimeout(gatewayTimeout);
+                statusEl.textContent = 'Session verified. Launching workspace...';
+                
+                // 3. Dispatch to Project Dashboard
+                window.location.replace('projects/project-dashboard.html');
+
+            } catch (err) {
+                clearTimeout(gatewayTimeout);
+                console.error('[Gateway Auth Exception]:', err);
+                statusEl.textContent = 'Authentication error. Redirecting to login...';
+                window.location.replace('login.html');
+            }
+        })();
+    </script>
 </body>
 </html>
