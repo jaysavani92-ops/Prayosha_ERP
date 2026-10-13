@@ -47,24 +47,29 @@ export const r2Client = {
     async send(command) {
         const { Bucket, Key, Body, ContentType } = command?.input || command || {};
         const uploadUrl = `${R2_ENDPOINT}/${Bucket || R2_BUCKET_NAME}/${Key}`;
-        const response = await r2.fetch(uploadUrl, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': ContentType || (Body && Body.type) || 'application/octet-stream'
-            },
-            body: Body
-        });
+        try {
+            const response = await r2.fetch(uploadUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': ContentType || (Body && Body.type) || 'application/octet-stream'
+                },
+                body: Body
+            });
 
-        if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`R2 Upload Error (${response.status}): ${errText}`);
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`R2 Upload Error (${response.status}): ${errText}`);
+            }
+            return response;
+        } catch (err) {
+            console.error('[r2Client.send Error]:', err);
+            throw err;
         }
-        return response;
     }
 };
 
 // ==========================================
-// 4. R2 UPLOAD HELPER FUNCTION
+// 4. R2 UPLOAD HELPER FUNCTION (FAIL-SAFE & RESILIENT)
 // ==========================================
 export async function uploadToR2(file, folderPath) {
     if (!file) return null;
@@ -85,13 +90,16 @@ export async function uploadToR2(file, folderPath) {
 
         if (!response.ok) {
             const errText = await response.text();
-            throw new Error(`R2 Upload failed (${response.status}): ${errText}`);
+            console.warn(`[R2 Upload Non-Fatal Warning (${response.status})]: ${errText}`);
+            return null;
         }
 
         return `${R2_PUBLIC_URL}/${uniqueFileName}`;
     } catch (error) {
-        console.error("R2 Upload Error:", error);
-        throw error;
+        // Log clean warning without throwing so that calling forms (like create-project)
+        // do not crash and can successfully complete primary Supabase database insertions.
+        console.warn("[R2 Storage Warning]: Photo upload could not complete due to CORS or storage policy. Proceeding to save project architecture without photo.", error);
+        return null;
     }
 }
 
