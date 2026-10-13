@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pre-Development Module | Prayosha ERP</title>
-<link rel="icon" href="data:,">
+    <title>Phase 1: Liasoning | Prayosha ERP</title>
+    <link rel="icon" href="data:,">
     <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -128,23 +128,20 @@
 
         <!-- Module Actions (Audit Logs, Super Engine, Notifications) -->
         <div class="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-            <!-- Hidden fallback dropdown for backwards compatibility with pre-development.js -->
-            <select id="projectSelectorDropdown" class="hidden"></select>
-
             <!-- Notifications Bell -->
-            <button id="notificationBtn" title="Notifications" class="relative w-9 h-9 rounded-lg glass-card flex items-center justify-center text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 transition">
+            <button id="notificationBtn" title="Notifications" class="relative w-9 h-9 rounded-lg glass-card flex items-center justify-center text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 transition cursor-pointer">
                 <i class="fa-regular fa-bell"></i>
                 <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center animate-pulse">0</span>
             </button>
 
             <!-- Audit Log Drawer Button -->
-            <button id="openAuditDrawerBtn" title="Pre-Development Audit Logs" class="flex items-center gap-1.5 px-3 py-2 rounded-lg glass-card text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 font-semibold text-xs transition">
+            <button id="openAuditDrawerBtn" title="Pre-Development Audit Logs" class="flex items-center gap-1.5 px-3 py-2 rounded-lg glass-card text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 font-semibold text-xs transition cursor-pointer">
                 <i class="fa-solid fa-clock-rotate-left"></i>
                 <span class="hidden sm:inline">Audit Logs</span>
             </button>
 
             <!-- Super Core Engine Modal Button -->
-            <button id="openSuperEngineBtn" title="Super Core Engine (Categories & Fields Configuration)" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-prayosha-amber/15 hover:bg-prayosha-amber/25 text-prayosha-amber border border-prayosha-amber/40 font-semibold text-xs transition shadow-sm">
+            <button id="openSuperEngineBtn" title="Super Core Engine (Categories & Fields Configuration)" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-prayosha-amber/15 hover:bg-prayosha-amber/25 text-prayosha-amber border border-prayosha-amber/40 font-semibold text-xs transition shadow-sm cursor-pointer">
                 <i class="fa-solid fa-sliders text-xs"></i>
                 <span>Super Engine</span>
             </button>
@@ -177,7 +174,7 @@
                 <div class="space-y-1">
                     <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Phase 1: Liasoning</span>
                     <div class="flex items-baseline gap-2">
-                        <span id="kpiLiasoningCount" class="text-2xl font-bold text-white">0 / 11</span>
+                        <span id="kpiLiasoningCount" class="text-2xl font-bold text-white">0 / 0</span>
                         <span id="kpiLiasoningPercent" class="text-xs font-semibold text-prayosha-amber">0%</span>
                     </div>
                     <div class="w-36 h-1.5 rounded-full bg-slate-800 overflow-hidden">
@@ -197,7 +194,7 @@
                         <span class="text-xs font-medium text-slate-400">₹</span>
                         <span id="kpiTotalNewAmount" class="text-2xl font-bold text-white">0.00</span>
                     </div>
-                    <p class="text-[11px] text-slate-400 truncate">Calculated across 67 civil items</p>
+                    <p class="text-[11px] text-slate-400 truncate">Calculated across line items</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-prayosha-emerald/15 border border-prayosha-emerald/30 text-prayosha-emerald flex items-center justify-center text-xl flex-shrink-0">
                     <i class="fa-solid fa-file-invoice-dollar"></i>
@@ -213,7 +210,7 @@
                         <span id="kpiTotalVariance" class="text-2xl font-bold text-slate-200">0.00</span>
                     </div>
                     <div id="kpiVarianceIndicator" class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                        <i class="fa-solid fa-minus"></i> No Benchmark Scanned
+                        <i class="fa-solid fa-minus"></i> Baseline Setup
                     </div>
                 </div>
                 <div id="kpiVarianceIconBox" class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center text-xl flex-shrink-0">
@@ -226,7 +223,7 @@
                 <div class="space-y-1">
                     <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Phase 3: Site Readiness</span>
                     <div class="flex items-baseline gap-2">
-                        <span id="kpiDevCount" class="text-2xl font-bold text-white">0 / 10</span>
+                        <span id="kpiDevCount" class="text-2xl font-bold text-white">0 / 0</span>
                         <span id="kpiDevPercent" class="text-xs font-semibold text-prayosha-indigo">0%</span>
                     </div>
                     <div class="w-36 h-1.5 rounded-full bg-slate-800 overflow-hidden">
@@ -239,46 +236,49 @@
             </div>
         </section>
 
-        <!-- MAIN 3-PHASE TABS & TOOLBAR -->
+        <!-- MAIN SUB-MODULE WORKSPACE: PHASE 1 - LIASONING -->
         <section class="glass-panel rounded-2xl border border-white/10 p-4 sm:p-6 space-y-6">
 
-            <!-- TAB HEADER SELECTOR -->
+            <!-- SUB-NAVIGATION TABS & TOOLBAR -->
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
                 <!-- Nav Tabs -->
                 <div class="flex items-center gap-2 p-1 rounded-xl bg-slate-900/80 border border-white/5 overflow-x-auto">
-                    <button id="tabLiasoningBtn" data-phase="liasoning" class="tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 bg-prayosha-amber text-slate-900 shadow-md">
+                    <!-- Active: Phase 1 -->
+                    <a href="pre-development.html" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 bg-prayosha-amber text-slate-900 shadow-md whitespace-nowrap">
                         <i class="fa-solid fa-file-shield text-xs"></i>
                         <span>Phase 1: Liasoning</span>
-                        <span id="tabBadgeLiasoning" class="px-1.5 py-0.2 rounded-full bg-slate-900/30 text-[10px] font-bold">11</span>
-                    </button>
-                    <button id="tabBoqBtn" data-phase="development_cost" class="tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+                        <span id="tabBadgeLiasoning" class="px-1.5 py-0.2 rounded-full bg-slate-900/30 text-[10px] font-bold">0</span>
+                    </a>
+                    <!-- Phase 2: Cost -->
+                    <a href="development-cost.html" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white whitespace-nowrap">
                         <i class="fa-solid fa-calculator text-xs"></i>
                         <span>Phase 2: Development Cost</span>
-                        <span id="tabBadgeBoq" class="px-1.5 py-0.2 rounded-full bg-white/10 text-[10px] font-bold">67</span>
-                    </button>
-                    <button id="tabDevBtn" data-phase="development" class="tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+                        <span id="tabBadgeBoq" class="px-1.5 py-0.2 rounded-full bg-white/10 text-[10px] font-bold">0</span>
+                    </a>
+                    <!-- Phase 3: Readiness -->
+                    <a href="site-readiness.html" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white whitespace-nowrap">
                         <i class="fa-solid fa-person-digging text-xs"></i>
-                        <span>Phase 3: Development</span>
-                        <span id="tabBadgeDev" class="px-1.5 py-0.2 rounded-full bg-white/10 text-[10px] font-bold">10</span>
-                    </button>
+                        <span>Phase 3: Site Readiness</span>
+                        <span id="tabBadgeDev" class="px-1.5 py-0.2 rounded-full bg-white/10 text-[10px] font-bold">0</span>
+                    </a>
                 </div>
 
-                <!-- Global Search & Phase-Specific Actions -->
+                <!-- Global Search & Save Button -->
                 <div class="flex items-center gap-3">
                     <div class="relative w-full sm:w-64">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
-                        <input type="text" id="phaseSearchInput" placeholder="Filter items..." class="glass-input text-xs w-full py-2 pl-9 pr-3 rounded-lg font-medium">
+                        <input type="text" id="phaseSearchInput" placeholder="Filter clearances..." class="glass-input text-xs w-full py-2 pl-9 pr-3 rounded-lg font-medium">
                     </div>
-                    <!-- Master Save Button for the Active Tab -->
-                    <button id="masterSaveBtn" class="flex-shrink-0 px-4 py-2 rounded-lg bg-prayosha-emerald hover:bg-emerald-600 text-white font-semibold text-xs transition shadow-lg shadow-emerald-500/20 flex items-center gap-2">
+                    <!-- Master Save Button for Phase 1 -->
+                    <button id="masterSaveBtn" class="flex-shrink-0 px-5 py-2 rounded-lg bg-prayosha-emerald hover:bg-emerald-600 text-white font-semibold text-xs transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-floppy-disk text-xs"></i>
                         <span id="masterSaveBtnText">Save Phase 1</span>
                     </button>
                 </div>
             </div>
 
-            <!-- TAB 1: PHASE 1 - LIASONING -->
-            <div id="tabContentLiasoning" class="tab-content space-y-4">
+            <!-- LIASONING WORKSPACE TABLE -->
+            <div class="space-y-4">
                 <div class="flex items-center justify-between text-xs text-slate-400 px-1">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-circle-info text-prayosha-amber"></i>
@@ -286,7 +286,7 @@
                     </div>
                     <div class="hidden md:flex items-center gap-3">
                         <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Approved (Yes)</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500/60"></span> Pending (No)</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span> Pending (No)</span>
                     </div>
                 </div>
 
@@ -299,7 +299,7 @@
                                 <th class="py-3 px-4 min-w-[200px]">Clearance Sub-Category</th>
                                 <th class="py-3 px-4 w-28 text-center">Status</th>
                                 <th class="py-3 px-4 min-w-[150px]">Ref / Inward No.</th>
-                                <th class="py-3 px-4 min-w-[140px]">Clearance Date</th>
+                                <th class="py-3 px-4 min-w-[150px]">Clearance Date</th>
                                 <th class="py-3 px-4 min-w-[160px]">Document (R2)</th>
                                 <th class="py-3 px-4 min-w-[240px]">Remark</th>
                                 <th class="py-3 px-4 w-16 text-center">Action</th>
@@ -317,123 +317,6 @@
                 </div>
             </div>
 
-            <!-- TAB 2: PHASE 2 - DEVELOPMENT COST (COMPARATIVE BOQ ENGINE) -->
-            <div id="tabContentBoq" class="tab-content hidden space-y-4">
-                <!-- Comparative Benchmark Scanner Toolbar -->
-                <div class="glass-card rounded-xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border border-prayosha-amber/20">
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                        <div class="w-9 h-9 rounded-lg bg-prayosha-amber/20 text-prayosha-amber flex items-center justify-center text-sm flex-shrink-0">
-                            <i class="fa-solid fa-code-compare"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Benchmark Project Scanner</h4>
-                            <p class="text-[11px] text-slate-400">Select any prior project in Prayosha ERP to scan rates and compute line-item differences.</p>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-3">
-                        <div class="relative min-w-[240px]">
-                            <select id="benchmarkProjectSelector" class="glass-input text-xs w-full py-2 px-3 pr-8 rounded-lg appearance-none font-medium cursor-pointer">
-                                <option value="">-- No Benchmark (Manual Old Rates) --</option>
-                            </select>
-                            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
-                        </div>
-                        <button id="clearBenchmarkBtn" title="Clear Benchmark Comparison" class="px-2.5 py-2 rounded-lg glass-card text-xs text-slate-400 hover:text-white transition">
-                            <i class="fa-solid fa-rotate-left"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Category Filtering Pills -->
-                <div class="flex items-center gap-2 overflow-x-auto pb-1" id="boqCategoryFilterPills">
-                    <button data-group="ALL" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold bg-prayosha-amber text-slate-900 shadow">All (67)</button>
-                    <button data-group="Regulatory & Consultants" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white">Regulatory & Consultants</button>
-                    <button data-group="Site Facilities" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white">Site Facilities</button>
-                    <button data-group="Civil & Structural" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white">Civil & Structural</button>
-                    <button data-group="Finishing Works" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white">Finishing Works</button>
-                    <button data-group="Electrical & Power" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white">Electrical & Power</button>
-                    <button data-group="Plumbing & Utilities" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white">Plumbing & Utilities</button>
-                    <button data-group="Marketing & Operations" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white">Marketing & Operations</button>
-                </div>
-
-                <!-- Comparative BOQ Table Container -->
-                <div class="overflow-x-auto rounded-xl border border-white/10">
-                    <table class="w-full text-left text-xs text-slate-300">
-                        <thead class="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 font-semibold border-b border-white/10 sticky top-0 z-10">
-                            <tr>
-                                <th class="py-3 px-3 w-10 text-center">#</th>
-                                <th class="py-3 px-4 min-w-[220px]">Field Name (Sub Category)</th>
-                                <th class="py-3 px-2 w-24 text-center">UOM</th>
-                                <th class="py-3 px-2 w-28 text-right">Quantity</th>
-                                <th class="py-3 px-2 w-28 text-right">Old Rate (₹)</th>
-                                <th class="py-3 px-2 w-28 text-right">New Rate (₹)</th>
-                                <th class="py-3 px-3 w-32 text-right">Old Amount (₹)</th>
-                                <th class="py-3 px-3 w-32 text-right">New Amount (₹)</th>
-                                <th class="py-3 px-3 w-32 text-right">Difference (₹)</th>
-                                <th class="py-3 px-3 min-w-[200px]">Remark</th>
-                            </tr>
-                        </thead>
-                        <tbody id="boqTableBody" class="divide-y divide-white/5 bg-slate-900/30 font-mono text-[12px]">
-                            <tr>
-                                <td colspan="10" class="text-center py-8 text-slate-500 font-sans">
-                                    <i class="fa-solid fa-spinner fa-spin text-lg text-prayosha-amber mb-2"></i>
-                                    <div>Loading comparative BOQ table...</div>
-                                </td>
-                            </tr>
-                        </tbody>
-                        <tfoot class="bg-slate-900/95 font-semibold text-white border-t-2 border-prayosha-amber/40">
-                            <tr>
-                                <td colspan="3" class="py-3 px-4 text-xs font-sans uppercase tracking-wider text-prayosha-amber">Totals Summary:</td>
-                                <td id="tfootTotalQty" class="py-3 px-2 text-right font-mono text-slate-300">-</td>
-                                <td colspan="2" class="py-3 px-2 text-center text-slate-500 text-[11px] font-sans">Aggregated Sums</td>
-                                <td id="tfootTotalOldAmount" class="py-3 px-3 text-right font-mono text-slate-300">₹0.00</td>
-                                <td id="tfootTotalNewAmount" class="py-3 px-3 text-right font-mono text-prayosha-emerald">₹0.00</td>
-                                <td id="tfootTotalDifference" class="py-3 px-3 text-right font-mono text-prayosha-amber">₹0.00</td>
-                                <td class="py-3 px-3 text-right">
-                                    <span id="tfootVarianceBadge" class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">0% Variance</span>
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <!-- TAB 3: PHASE 3 - DEVELOPMENT (SITE MOBILIZATION) -->
-            <div id="tabContentDev" class="tab-content hidden space-y-4">
-                <div class="flex items-center justify-between text-xs text-slate-400 px-1">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-circle-info text-prayosha-indigo"></i>
-                        <span>Ground-zero mobilization milestones: Barricading, survey demarcation, temporary power, boring, and excavation readiness.</span>
-                    </div>
-                </div>
-
-                <!-- Site Mobilization Table Container -->
-                <div class="overflow-x-auto rounded-xl border border-white/10">
-                    <table class="w-full text-left text-xs text-slate-300">
-                        <thead class="bg-slate-900/80 text-[11px] uppercase tracking-wider text-slate-400 font-semibold border-b border-white/10">
-                            <tr>
-                                <th class="py-3 px-4 w-12 text-center">#</th>
-                                <th class="py-3 px-4 min-w-[220px]">Mobilization Sub-Category</th>
-                                <th class="py-3 px-4 w-28 text-center">Status</th>
-                                <th class="py-3 px-4 min-w-[150px]">Ref / Contractor No.</th>
-                                <th class="py-3 px-4 min-w-[140px]">Execution Date</th>
-                                <th class="py-3 px-4 min-w-[160px]">Site Photo / Doc (R2)</th>
-                                <th class="py-3 px-4 min-w-[240px]">Remark</th>
-                                <th class="py-3 px-4 w-16 text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="developmentTableBody" class="divide-y divide-white/5 bg-slate-900/30">
-                            <tr>
-                                <td colspan="8" class="text-center py-8 text-slate-500">
-                                    <i class="fa-solid fa-spinner fa-spin text-lg text-prayosha-indigo mb-2"></i>
-                                    <div>Loading site mobilization checklist...</div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </section>
 
     </main>
@@ -441,7 +324,7 @@
     <!-- MODAL 1: CLOUDFLARE R2 DOCUMENT UPLOAD MODAL -->
     <div id="uploadDocModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
         <div class="glass-panel w-full max-w-lg rounded-2xl border border-white/15 p-6 space-y-5 shadow-2xl relative">
-            <button id="closeUploadModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+            <button id="closeUploadModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg cursor-pointer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
@@ -464,7 +347,7 @@
                 <div id="selectedFileChip" class="hidden mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-prayosha-navy text-xs text-white border border-white/10">
                     <i class="fa-solid fa-paperclip text-prayosha-amber"></i>
                     <span id="selectedFileName" class="truncate max-w-[200px]">file.pdf</span>
-                    <button type="button" id="removeSelectedFileBtn" class="text-rose-400 hover:text-rose-300 ml-1"><i class="fa-solid fa-xmark"></i></button>
+                    <button type="button" id="removeSelectedFileBtn" class="text-rose-400 hover:text-rose-300 ml-1 cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
                 </div>
             </div>
 
@@ -480,18 +363,18 @@
             </div>
 
             <div class="flex items-center justify-end gap-3 pt-2">
-                <button type="button" id="cancelUploadBtn" class="px-4 py-2 rounded-lg glass-card text-xs font-semibold text-slate-300 hover:text-white transition">Cancel</button>
-                <button type="button" id="confirmUploadBtn" class="px-5 py-2 rounded-lg bg-prayosha-amber hover:bg-prayosha-amber-dark text-slate-900 font-bold text-xs transition shadow-lg flex items-center gap-2">
+                <button type="button" id="cancelUploadBtn" class="px-4 py-2 rounded-lg glass-card text-xs font-semibold text-slate-300 hover:text-white transition cursor-pointer">Cancel</button>
+                <button type="button" id="confirmUploadBtn" class="px-5 py-2 rounded-lg bg-prayosha-amber hover:bg-prayosha-amber-dark text-slate-900 font-bold text-xs transition shadow-lg flex items-center gap-2 cursor-pointer">
                     <i class="fa-solid fa-cloud-arrow-up"></i> Upload & Attach
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL 2: SUPER CORE ENGINE -->
+    <!-- MODAL 2: SUPER CORE ENGINE (SUB-CATEGORIES CRUD) -->
     <div id="superEngineModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
         <div class="glass-panel w-full max-w-3xl rounded-2xl border border-prayosha-amber/30 p-6 space-y-5 shadow-2xl relative max-h-[90vh] flex flex-col">
-            <button id="closeSuperEngineBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+            <button id="closeSuperEngineBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg cursor-pointer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
 
@@ -505,7 +388,7 @@
                         <span>Super Core Engine</span>
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-prayosha-amber/20 text-prayosha-amber border border-prayosha-amber/30">ADMIN MASTER</span>
                     </h3>
-                    <p class="text-xs text-slate-400">Add, rename, delete, or reorganize sub-categories and configure headers across all 3 phases.</p>
+                    <p class="text-xs text-slate-400">Configure statutory sub-categories and permissions across pre-development phases.</p>
                 </div>
             </div>
 
@@ -513,7 +396,7 @@
             <div class="flex items-center gap-2">
                 <span class="text-xs text-slate-400 font-semibold">Configuring Phase:</span>
                 <select id="superEnginePhaseSelect" class="glass-input text-xs py-1.5 px-3 rounded-lg font-medium cursor-pointer">
-                    <option value="liasoning">Phase 1: Liasoning</option>
+                    <option value="liasoning" selected>Phase 1: Liasoning</option>
                     <option value="development_cost">Phase 2: Development Cost (BOQ)</option>
                     <option value="development">Phase 3: Development (Mobilization)</option>
                 </select>
@@ -523,9 +406,8 @@
             <div class="glass-card rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 border border-white/10">
                 <input type="text" id="newCategoryNameInput" placeholder="New Sub-Category Name (e.g. Tree Cutting NOC)" class="glass-input text-xs flex-1 py-2 px-3 rounded-lg">
                 <input type="text" id="newCategoryGroupInput" placeholder="Category Group" class="glass-input text-xs w-full sm:w-40 py-2 px-3 rounded-lg" value="General">
-                <input type="text" id="newCategoryUomInput" placeholder="UOM" class="glass-input text-xs w-full sm:w-20 py-2 px-3 rounded-lg" value="Nos">
-                <button id="addNewCategoryBtn" class="px-4 py-2 rounded-lg bg-prayosha-amber text-slate-900 font-bold text-xs hover:bg-prayosha-amber-dark transition flex items-center justify-center gap-1.5 flex-shrink-0">
-                    <i class="fa-solid fa-plus"></i> Add Field
+                <button id="addNewCategoryBtn" class="px-4 py-2 rounded-lg bg-prayosha-amber text-slate-900 font-bold text-xs hover:bg-prayosha-amber-dark transition flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer">
+                    <i class="fa-solid fa-plus"></i> Add Clearance
                 </button>
             </div>
 
@@ -539,7 +421,7 @@
 
             <!-- Footer -->
             <div class="pt-3 border-t border-white/10 flex justify-end">
-                <button type="button" id="closeSuperEngineFooterBtn" class="px-4 py-2 rounded-lg glass-card text-xs font-semibold text-slate-300 hover:text-white transition">Close</button>
+                <button type="button" id="closeSuperEngineFooterBtn" class="px-4 py-2 rounded-lg glass-card text-xs font-semibold text-slate-300 hover:text-white transition cursor-pointer">Close</button>
             </div>
         </div>
     </div>
@@ -553,12 +435,12 @@
                         <i class="fa-solid fa-clock-rotate-left text-prayosha-amber text-base"></i>
                         <h3 class="text-sm font-bold text-white uppercase tracking-wider">Audit Trail & Change Log</h3>
                     </div>
-                    <button id="closeAuditDrawerBtn" class="text-slate-400 hover:text-white text-base">
+                    <button id="closeAuditDrawerBtn" class="text-slate-400 hover:text-white text-base cursor-pointer">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
 
-                <p class="text-xs text-slate-400">Immutable chronological history of all saves, rate adjustments, and statutory updates for this project.</p>
+                <p class="text-xs text-slate-400">Immutable chronological history of all saves and statutory updates for this project.</p>
 
                 <!-- Audit Log Timeline -->
                 <div id="auditLogTimeline" class="flex-1 overflow-y-auto space-y-3 pr-1">
@@ -571,7 +453,7 @@
         </div>
     </div>
 
-    <!-- DRAWER 2: REAL-TIME NOTIFICATIONS POPUP DRAWER -->
+    <!-- DRAWER 2: REAL-TIME NOTIFICATIONS DRAWER -->
     <div id="notificationsDrawer" class="hidden fixed inset-0 z-50 overflow-hidden bg-slate-950/70 backdrop-blur-sm">
         <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
             <div class="w-screen max-w-md glass-panel border-l border-white/15 p-6 flex flex-col space-y-4 shadow-2xl">
@@ -581,8 +463,8 @@
                         <h3 class="text-sm font-bold text-white uppercase tracking-wider">Notification Center</h3>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button id="markAllReadBtn" class="text-[11px] text-prayosha-amber hover:underline font-medium">Mark all read</button>
-                        <button id="closeNotificationsDrawerBtn" class="text-slate-400 hover:text-white text-base ml-2">
+                        <button id="markAllReadBtn" class="text-[11px] text-prayosha-amber hover:underline font-medium cursor-pointer">Mark all read</button>
+                        <button id="closeNotificationsDrawerBtn" class="text-slate-400 hover:text-white text-base ml-2 cursor-pointer">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
@@ -600,13 +482,13 @@
     <!-- TOAST CONTAINER -->
     <div id="toastContainer" class="fixed bottom-24 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Application Script -->
+    <!-- Global Config & Module Script -->
     <script type="module" src="./pre-development.js"></script>
 
     <!-- Universal Navigation Shell Injection -->
     <script type="module">
         import { initShell } from '../common/shell.js';
-        initShell({ activeModule: 'Pre-Dev' });
+        document.addEventListener('DOMContentLoaded', () => initShell({ activeModule: 'Pre-Dev' }));
     </script>
 </body>
 </html>

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 2: Development Cost (BOQ) | Prayosha ERP</title>
+    <link rel="icon" href="data:,">
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        prayosha: {
+                            navy: '#1E3A5F',
+                            'navy-dark': '#0F1E33',
+                            'navy-light': '#2A5288',
+                            amber: '#FFBF00',
+                            'amber-dark': '#D9A300',
+                            emerald: '#10B981',
+                            indigo: '#6366F1'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Glassmorphism Custom Utilities -->
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: radial-gradient(circle at top left, #1E3A5F 0%, #0F1E33 45%, #050B14 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .glass-panel {
+            background: rgba(30, 58, 95, 0.28);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card {
+            background: rgba(15, 30, 51, 0.55);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(255, 191, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .glass-input {
+            background: rgba(15, 30, 51, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .glass-input:focus {
+            background: rgba(15, 30, 51, 0.95);
+            border-color: #FFBF00;
+            box-shadow: 0 0 0 2px rgba(255, 191, 0, 0.25);
+            outline: none;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 30, 51, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 191, 0, 0.35);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FFBF00;
+        }
+    </style>
+</head>
+<body class="text-slate-100 flex flex-col min-h-screen antialiased selection:bg-prayosha-amber selection:text-slate-900 pt-20 md:pt-24 pb-28 px-4 sm:px-6 lg:px-8">
+
+    <!-- Page Context & Primary Action Bar -->
+    <section class="max-w-7xl w-full mx-auto mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs uppercase tracking-wider font-semibold text-prayosha-amber">Pre-Construction Operations</span>
+                <span class="text-white/30 text-xs">•</span>
+                <span id="activeProjectBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-prayosha-navy/80 border border-prayosha-amber/30 text-prayosha-amber">
+                    <i class="fa-solid fa-building text-[10px]"></i>
+                    <span id="activeProjectCodeName">Loading Project...</span>
+                </span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                Pre-Development Master
+            </h1>
+            <p class="text-slate-400 text-xs sm:text-sm font-medium">Comparative BOQ benchmarks, line-item rate analysis, and total project budget</p>
+        </div>
+
+        <!-- Module Actions (Notifications, Audit Drawer, Super Engine) -->
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+            <!-- Notifications Bell -->
+            <button id="notificationBtn" title="Notifications" class="relative w-9 h-9 rounded-lg glass-card flex items-center justify-center text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 transition cursor-pointer">
+                <i class="fa-regular fa-bell"></i>
+                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center animate-pulse">0</span>
+            </button>
+
+            <!-- Audit Log Drawer Button -->
+            <button id="openAuditDrawerBtn" title="Pre-Development Audit Logs" class="flex items-center gap-1.5 px-3 py-2 rounded-lg glass-card text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 font-semibold text-xs transition cursor-pointer">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span class="hidden sm:inline">Audit Logs</span>
+            </button>
+
+            <!-- Super Core Engine Modal Button -->
+            <button id="openSuperEngineBtn" title="Super Core Engine (Categories & Fields Configuration)" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-prayosha-amber/15 hover:bg-prayosha-amber/25 text-prayosha-amber border border-prayosha-amber/40 font-semibold text-xs transition shadow-sm cursor-pointer">
+                <i class="fa-solid fa-sliders text-xs"></i>
+                <span>Super Engine</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto space-y-6">
+
+        <!-- ACTIVE PROJECT BANNER (Alert if no project selected) -->
+        <div id="noProjectAlert" class="hidden glass-panel border-amber-500/40 bg-amber-500/10 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-lg flex-shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <div>
+                    <h4 class="text-sm font-semibold text-amber-200">No Active Project Selected</h4>
+                    <p class="text-xs text-amber-300/80">Please select a construction project from the dropdown in the top navigation bar or your Project Directory.</p>
+                </div>
+            </div>
+            <a href="../projects/project-dashboard.html" class="px-4 py-2 rounded-xl bg-prayosha-amber text-slate-900 font-semibold text-xs hover:bg-prayosha-amber-dark transition shadow-lg flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> Go to Project Directory
+            </a>
+        </div>
+
+        <!-- EXECUTIVE KPI CARDS -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- KPI 1: Phase 1 Liasoning Progress -->
+            <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-4 relative overflow-hidden">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Phase 1: Liasoning</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpiLiasoningCount" class="text-2xl font-bold text-white">0 / 0</span>
+                        <span id="kpiLiasoningPercent" class="text-xs font-semibold text-prayosha-amber">0%</span>
+                    </div>
+                    <div class="w-36 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div id="kpiLiasoningBar" class="h-full bg-prayosha-amber transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-prayosha-amber/15 border border-prayosha-amber/30 text-prayosha-amber flex items-center justify-center text-xl flex-shrink-0">
+                    <i class="fa-solid fa-stamp"></i>
+                </div>
+            </div>
+
+            <!-- KPI 2: Phase 2 BOQ Total New Budget -->
+            <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-4 relative overflow-hidden border border-prayosha-emerald/30">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total BOQ Budget</span>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-xs font-medium text-slate-400">₹</span>
+                        <span id="kpiTotalNewAmount" class="text-2xl font-bold text-emerald-400">0.00</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 truncate">Calculated across line items</p>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-prayosha-emerald/15 border border-prayosha-emerald/30 text-prayosha-emerald flex items-center justify-center text-xl flex-shrink-0">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                </div>
+            </div>
+
+            <!-- KPI 3: Phase 2 Benchmark Variance -->
+            <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-4 relative overflow-hidden">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Benchmark Variance</span>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-xs font-medium text-slate-400">₹</span>
+                        <span id="kpiTotalVariance" class="text-2xl font-bold text-slate-200">0.00</span>
+                    </div>
+                    <div id="kpiVarianceIndicator" class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                        <i class="fa-solid fa-minus"></i> Baseline Setup
+                    </div>
+                </div>
+                <div id="kpiVarianceIconBox" class="w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center text-xl flex-shrink-0">
+                    <i class="fa-solid fa-chart-line"></i>
+                </div>
+            </div>
+
+            <!-- KPI 4: Phase 3 Site Mobilization -->
+            <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-4 relative overflow-hidden">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Phase 3: Site Readiness</span>
+                    <div class="flex items-baseline gap-2">
+                        <span id="kpiDevCount" class="text-2xl font-bold text-white">0 / 0</span>
+                        <span id="kpiDevPercent" class="text-xs font-semibold text-prayosha-indigo">0%</span>
+                    </div>
+                    <div class="w-36 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div id="kpiDevBar" class="h-full bg-prayosha-indigo transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-prayosha-indigo/15 border border-prayosha-indigo/30 text-prayosha-indigo flex items-center justify-center text-xl flex-shrink-0">
+                    <i class="fa-solid fa-trowel-bricks"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIN SUB-MODULE WORKSPACE: PHASE 2 - DEVELOPMENT COST -->
+        <section class="glass-panel rounded-2xl border border-white/10 p-4 sm:p-6 space-y-6">
+
+            <!-- SUB-NAVIGATION TABS & TOOLBAR -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 border-b border-white/10">
+                <!-- Nav Tabs -->
+                <div class="flex items-center gap-2 p-1 rounded-xl bg-slate-900/80 border border-white/5 overflow-x-auto">
+                    <!-- Phase 1: Liasoning -->
+                    <a href="pre-development.html" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-file-shield text-xs"></i>
+                        <span>Phase 1: Liasoning</span>
+                        <span id="tabBadgeLiasoning" class="px-1.5 py-0.2 rounded-full bg-white/10 text-[10px] font-bold">0</span>
+                    </a>
+                    <!-- Active: Phase 2 -->
+                    <a href="development-cost.html" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 bg-prayosha-amber text-slate-900 shadow-md whitespace-nowrap">
+                        <i class="fa-solid fa-calculator text-xs"></i>
+                        <span>Phase 2: Development Cost</span>
+                        <span id="tabBadgeBoq" class="px-1.5 py-0.2 rounded-full bg-slate-900/30 text-[10px] font-bold">0</span>
+                    </a>
+                    <!-- Phase 3: Readiness -->
+                    <a href="site-readiness.html" class="flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white whitespace-nowrap">
+                        <i class="fa-solid fa-person-digging text-xs"></i>
+                        <span>Phase 3: Site Readiness</span>
+                        <span id="tabBadgeDev" class="px-1.5 py-0.2 rounded-full bg-white/10 text-[10px] font-bold">0</span>
+                    </a>
+                </div>
+
+                <!-- Global Search & Save Button -->
+                <div class="flex items-center gap-3">
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                        <input type="text" id="phaseSearchInput" placeholder="Filter BOQ line items..." class="glass-input text-xs w-full py-2 pl-9 pr-3 rounded-lg font-medium">
+                    </div>
+                    <!-- Master Save Button for Phase 2 -->
+                    <button id="masterSaveBtn" class="flex-shrink-0 px-5 py-2 rounded-lg bg-prayosha-emerald hover:bg-emerald-600 text-white font-semibold text-xs transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i>
+                        <span id="masterSaveBtnText">Save Phase 2 (BOQ)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- BOQ WORKSPACE: BENCHMARK SCANNER & COMPARATIVE ENGINE -->
+            <div class="space-y-4">
+                
+                <!-- Comparative Benchmark Scanner Toolbar -->
+                <div class="glass-card rounded-xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border border-prayosha-amber/20">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-prayosha-amber/20 text-prayosha-amber flex items-center justify-center text-sm flex-shrink-0">
+                            <i class="fa-solid fa-code-compare"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-white uppercase tracking-wider">Benchmark Project Scanner</h4>
+                            <p class="text-[11px] text-slate-400">Select any prior project in Prayosha ERP to scan baseline rates and automatically compute differences.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div class="relative min-w-[240px]">
+                            <select id="benchmarkProjectSelector" class="glass-input text-xs w-full py-2 px-3 pr-8 rounded-lg appearance-none font-medium cursor-pointer">
+                                <option value="">-- No Benchmark (Manual Old Rates) --</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
+                        </div>
+                        <button id="clearBenchmarkBtn" title="Clear Benchmark Comparison" class="px-2.5 py-2 rounded-lg glass-card text-xs text-slate-400 hover:text-white transition cursor-pointer">
+                            <i class="fa-solid fa-rotate-left"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Category Filtering Pills -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1" id="boqCategoryFilterPills">
+                    <button data-group="ALL" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold bg-prayosha-amber text-slate-900 shadow cursor-pointer">All</button>
+                    <button data-group="Regulatory & Consultants" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white cursor-pointer">Regulatory & Consultants</button>
+                    <button data-group="Site Facilities" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white cursor-pointer">Site Facilities</button>
+                    <button data-group="Civil & Structural" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white cursor-pointer">Civil & Structural</button>
+                    <button data-group="Finishing Works" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white cursor-pointer">Finishing Works</button>
+                    <button data-group="Electrical & Power" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white cursor-pointer">Electrical & Power</button>
+                    <button data-group="Plumbing & Utilities" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white cursor-pointer">Plumbing & Utilities</button>
+                    <button data-group="Marketing & Operations" class="boq-filter-pill px-3 py-1.5 rounded-full text-[11px] font-semibold glass-card text-slate-300 hover:text-white cursor-pointer">Marketing & Operations</button>
+                </div>
+
+                <!-- Comparative BOQ Table Container -->
+                <div class="overflow-x-auto rounded-xl border border-white/10">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900/90 text-[11px] uppercase tracking-wider text-slate-400 font-semibold border-b border-white/10 sticky top-0 z-10">
+                            <tr>
+                                <th class="py-3 px-3 w-10 text-center">#</th>
+                                <th class="py-3 px-4 min-w-[220px]">Field Name (Sub Category)</th>
+                                <th class="py-3 px-2 w-24 text-center">UOM</th>
+                                <th class="py-3 px-2 w-28 text-right">Quantity</th>
+                                <th class="py-3 px-2 w-28 text-right">Old Rate (₹)</th>
+                                <th class="py-3 px-2 w-28 text-right">New Rate (₹)</th>
+                                <th class="py-3 px-3 w-32 text-right">Old Amount (₹)</th>
+                                <th class="py-3 px-3 w-32 text-right">New Amount (₹)</th>
+                                <th class="py-3 px-3 w-32 text-right">Difference (₹)</th>
+                                <th class="py-3 px-3 min-w-[200px]">Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody id="boqTableBody" class="divide-y divide-white/5 bg-slate-900/30 font-mono text-[12px]">
+                            <tr>
+                                <td colspan="10" class="text-center py-8 text-slate-500 font-sans">
+                                    <i class="fa-solid fa-spinner fa-spin text-lg text-prayosha-amber mb-2"></i>
+                                    <div>Loading comparative BOQ table...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot class="bg-slate-900/95 font-semibold text-white border-t-2 border-prayosha-amber/40">
+                            <tr>
+                                <td colspan="3" class="py-3 px-4 text-xs font-sans uppercase tracking-wider text-prayosha-amber">Totals Summary:</td>
+                                <td id="tfootTotalQty" class="py-3 px-2 text-right font-mono text-slate-300">-</td>
+                                <td colspan="2" class="py-3 px-2 text-center text-slate-500 text-[11px] font-sans">Aggregated Sums</td>
+                                <td id="tfootTotalOldAmount" class="py-3 px-3 text-right font-mono text-slate-300">₹0.00</td>
+                                <td id="tfootTotalNewAmount" class="py-3 px-3 text-right font-mono text-prayosha-emerald">₹0.00</td>
+                                <td id="tfootTotalDifference" class="py-3 px-3 text-right font-mono text-prayosha-amber">₹0.00</td>
+                                <td class="py-3 px-3 text-right">
+                                    <span id="tfootVarianceBadge" class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">0% Variance</span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL: SUPER CORE ENGINE (SUB-CATEGORIES CRUD) -->
+    <div id="superEngineModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+        <div class="glass-panel w-full max-w-3xl rounded-2xl border border-prayosha-amber/30 p-6 space-y-5 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <button id="closeSuperEngineBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg cursor-pointer">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <!-- Header -->
+            <div class="flex items-center gap-3 border-b border-white/10 pb-4">
+                <div class="w-10 h-10 rounded-xl bg-prayosha-amber/20 text-prayosha-amber border border-prayosha-amber/30 flex items-center justify-center text-lg flex-shrink-0">
+                    <i class="fa-solid fa-sliders"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        <span>Super Core Engine</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-prayosha-amber/20 text-prayosha-amber border border-prayosha-amber/30">ADMIN MASTER</span>
+                    </h3>
+                    <p class="text-xs text-slate-400">Configure BOQ line-items, category groups, and measurement units.</p>
+                </div>
+            </div>
+
+            <!-- Filter Phase for Config -->
+            <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400 font-semibold">Configuring Phase:</span>
+                <select id="superEnginePhaseSelect" class="glass-input text-xs py-1.5 px-3 rounded-lg font-medium cursor-pointer">
+                    <option value="development_cost" selected>Phase 2: Development Cost (BOQ)</option>
+                    <option value="liasoning">Phase 1: Liasoning</option>
+                    <option value="development">Phase 3: Development (Mobilization)</option>
+                </select>
+            </div>
+
+            <!-- Add New Sub-Category Input Box -->
+            <div class="glass-card rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 border border-white/10">
+                <input type="text" id="newCategoryNameInput" placeholder="New Item Name (e.g. Structural Steel)" class="glass-input text-xs flex-1 py-2 px-3 rounded-lg">
+                <input type="text" id="newCategoryGroupInput" placeholder="Category Group" class="glass-input text-xs w-full sm:w-40 py-2 px-3 rounded-lg" value="Civil & Structural">
+                <input type="text" id="newCategoryUomInput" placeholder="UOM" class="glass-input text-xs w-full sm:w-20 py-2 px-3 rounded-lg" value="MT">
+                <button id="addNewCategoryBtn" class="px-4 py-2 rounded-lg bg-prayosha-amber text-slate-900 font-bold text-xs hover:bg-prayosha-amber-dark transition flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer">
+                    <i class="fa-solid fa-plus"></i> Add Line Item
+                </button>
+            </div>
+
+            <!-- Existing Categories List (Scrollable) -->
+            <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="superEngineCategoryList">
+                <div class="text-center py-8 text-slate-500 text-xs">
+                    <i class="fa-solid fa-spinner fa-spin text-prayosha-amber text-sm mb-1"></i>
+                    <div>Loading line item configurations...</div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="pt-3 border-t border-white/10 flex justify-end">
+                <button type="button" id="closeSuperEngineFooterBtn" class="px-4 py-2 rounded-lg glass-card text-xs font-semibold text-slate-300 hover:text-white transition cursor-pointer">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRAWER 1: AUDIT TRAIL & LOG HISTORY DRAWER -->
+    <div id="auditDrawer" class="hidden fixed inset-0 z-50 overflow-hidden bg-slate-950/70 backdrop-blur-sm">
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md glass-panel border-l border-white/15 p-6 flex flex-col space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left text-prayosha-amber text-base"></i>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Audit Trail & Change Log</h3>
+                    </div>
+                    <button id="closeAuditDrawerBtn" class="text-slate-400 hover:text-white text-base cursor-pointer">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <p class="text-xs text-slate-400">Immutable chronological history of all BOQ rate updates and budget revisions for this project.</p>
+
+                <!-- Audit Log Timeline -->
+                <div id="auditLogTimeline" class="flex-1 overflow-y-auto space-y-3 pr-1">
+                    <div class="text-center py-8 text-slate-500 text-xs">
+                        <i class="fa-solid fa-spinner fa-spin text-prayosha-amber text-sm mb-1"></i>
+                        <div>Loading audit records...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRAWER 2: REAL-TIME NOTIFICATIONS DRAWER -->
+    <div id="notificationsDrawer" class="hidden fixed inset-0 z-50 overflow-hidden bg-slate-950/70 backdrop-blur-sm">
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md glass-panel border-l border-white/15 p-6 flex flex-col space-y-4 shadow-2xl">
+                <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-bell text-prayosha-amber text-base"></i>
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Notification Center</h3>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="markAllReadBtn" class="text-[11px] text-prayosha-amber hover:underline font-medium cursor-pointer">Mark all read</button>
+                        <button id="closeNotificationsDrawerBtn" class="text-slate-400 hover:text-white text-base ml-2 cursor-pointer">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="notificationsList" class="flex-1 overflow-y-auto space-y-2 pr-1">
+                    <div class="text-center py-8 text-slate-500 text-xs">
+                        <div>No new notifications</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-24 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Global Config & Logic Script -->
+    <script src="../config.js"></script>
+    <script type="module" src="./development-cost.js"></script>
+
+    <!-- Universal Navigation Shell Injection -->
+    <script type="module">
+        import { initShell } from '../common/shell.js';
+        document.addEventListener('DOMContentLoaded', () => initShell({ activeModule: 'Pre-Dev' }));
+    </script>
+</body>
+</html>

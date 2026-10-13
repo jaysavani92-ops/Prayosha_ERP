@@ -44,7 +44,7 @@
                     <span class="text-brand-amber font-bold text-lg">⬢</span>
                     <h1 class="text-2xl font-bold text-brand-navy tracking-tight">Log New Task</h1>
                 </div>
-                <p class="text-xs text-slate-500 font-medium">Assign civil work packages and milestone dates to project zones</p>
+                <p class="text-xs text-slate-500 font-medium">Assign civil work packages, priority levels, and milestone dates to project zones</p>
             </div>
             
             <a href="active-tasks.html" class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-navy hover:text-brand-navyDark bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-sm hover:shadow transition self-start sm:self-auto">
@@ -69,27 +69,12 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tower / Block</label>
                         <select id="tower_block" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition" required>
                             <option value="">-- Select Tower --</option>
-                            <option value="Tower A">Tower A</option>
-                            <option value="Tower B">Tower B</option>
-                            <option value="Tower C">Tower C</option>
-                            <option value="Club House">Club House</option>
-                            <option value="Infrastructure / External">Infrastructure / External</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Floor Level</label>
                         <select id="floor_level" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition" required>
                             <option value="">-- Select Floor --</option>
-                            <option value="Basement 2">Basement 2</option>
-                            <option value="Basement 1">Basement 1</option>
-                            <option value="Ground Floor">Ground Floor</option>
-                            <option value="Podium">Podium</option>
-                            <option value="1st Floor">1st Floor</option>
-                            <option value="2nd Floor">2nd Floor</option>
-                            <option value="3rd Floor">3rd Floor</option>
-                            <option value="4th Floor">4th Floor</option>
-                            <option value="5th Floor">5th Floor</option>
-                            <option value="Terrace">Terrace</option>
                         </select>
                     </div>
                 </div>
@@ -115,14 +100,16 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-brand-navy uppercase tracking-wider mb-2">Zone ID / Target Area</label>
-                        <input type="text" id="zone_id" placeholder="e.g. GF-CLS-001 or T-A-FL01-Z1" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-amber focus:border-transparent outline-none font-medium transition" required>
+                        <select id="zone_id" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-amber focus:border-transparent outline-none font-medium transition" required>
+                            <option value="">-- Select Floor First --</option>
+                        </select>
                     </div>
                 </div>
 
-                <!-- Input Row 3: Contractor & Deadlines -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Input Row 3: Contractor, Priority, Execution Status & Deadlines -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Assigned Agency / Contractor</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Assigned Agency</label>
                         <select id="assigned_agency" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition" required>
                             <option value="">-- Select Agency --</option>
                             <option value="Mahavir Enterprise">Mahavir Enterprise</option>
@@ -132,9 +119,34 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Expected Completion Date</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Priority</label>
+                        <select id="priority" class="w-full p-3 text-sm font-semibold rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition text-brand-navy" required>
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Execution Status</label>
+                        <select id="task_status" class="w-full p-3 text-sm font-semibold rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition text-brand-navy" required>
+                            <option value="Not Started" selected>Not Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Ready for QC">Ready for QC</option>
+                            <option value="Delayed">Delayed</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Target Date</label>
                         <input type="date" id="expected_completion_date" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition text-slate-700" required>
                     </div>
+                </div>
+
+                <!-- Input Row 4: Task Description -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Task Description / Scope Notes</label>
+                    <textarea id="task_description" rows="3" placeholder="Enter detailed work instructions, scope specifications, material details, or site guidelines..." class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-navy focus:border-transparent outline-none transition placeholder:text-slate-400"></textarea>
                 </div>
 
                 <!-- Action Toolbar -->
@@ -162,7 +174,7 @@
     <!-- Universal Navigation Shell -->
     <script type="module">
         import { initShell } from '../common/shell.js';
-        initShell({ activeModule: 'tasks' });
+        document.addEventListener('DOMContentLoaded', () => initShell({ activeModule: 'tasks' }));
     </script>
 </body>
 </html>

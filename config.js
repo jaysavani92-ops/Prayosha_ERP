@@ -27,7 +27,7 @@ export const R2_SECRET_ACCESS_KEY = '9e10b9b5318a2cd375636cf44c18b9f0f5ab16a598c
 export const R2_BUCKET_NAME = 'prayosha-media-vault';
 export const R2_PUBLIC_URL = 'https://pub-7b98029994144de2a8a4e2ac9b19d9f2.r2.dev';
 
-// Zero-dependency native browser AWS S3 signer
+// Native browser AWS S3 signer
 const r2 = new AwsClient({
     accessKeyId: R2_ACCESS_KEY_ID,
     secretAccessKey: R2_SECRET_ACCESS_KEY,
@@ -48,12 +48,17 @@ export const r2Client = {
         const { Bucket, Key, Body, ContentType } = command?.input || command || {};
         const uploadUrl = `${R2_ENDPOINT}/${Bucket || R2_BUCKET_NAME}/${Key}`;
         try {
+            let uploadBody = Body;
+            if (Body instanceof Blob) {
+                uploadBody = await Body.arrayBuffer();
+            }
+
             const response = await r2.fetch(uploadUrl, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': ContentType || (Body && Body.type) || 'application/octet-stream'
                 },
-                body: Body
+                body: uploadBody
             });
 
             if (!response.ok) {
@@ -69,37 +74,37 @@ export const r2Client = {
 };
 
 // ==========================================
-// 4. R2 UPLOAD HELPER FUNCTION (FAIL-SAFE & RESILIENT)
+// 4. R2 UPLOAD HELPER FUNCTION (ACCURATE SIGV4 BUFFER DIGEST)
 // ==========================================
 export async function uploadToR2(file, folderPath) {
     if (!file) return null;
     
-    // Create unique filename
-    const fileExtension = file.name.split('.').pop();
-    const uniqueFileName = `${folderPath}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
-    const uploadUrl = `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${uniqueFileName}`;
-
     try {
+        // Read file into an ArrayBuffer so aws4fetch calculates the authentic SHA-256 payload hash
+        const fileBuffer = await file.arrayBuffer();
+
+        // Create unique filename
+        const fileExtension = file.name ? file.name.split('.').pop() : 'jpg';
+        const uniqueFileName = `${folderPath}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+        const uploadUrl = `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${uniqueFileName}`;
+
         const response = await r2.fetch(uploadUrl, {
             method: 'PUT',
             headers: {
                 'Content-Type': file.type || 'application/octet-stream',
             },
-            body: file,
+            body: fileBuffer,
         });
 
         if (!response.ok) {
             const errText = await response.text();
-            console.warn(`[R2 Upload Non-Fatal Warning (${response.status})]: ${errText}`);
-            return null;
+            throw new Error(`R2 Upload Rejected (${response.status}): ${errText}`);
         }
 
         return `${R2_PUBLIC_URL}/${uniqueFileName}`;
     } catch (error) {
-        // Log clean warning without throwing so that calling forms (like create-project)
-        // do not crash and can successfully complete primary Supabase database insertions.
-        console.warn("[R2 Storage Warning]: Photo upload could not complete due to CORS or storage policy. Proceeding to save project architecture without photo.", error);
-        return null;
+        console.error('[R2 Storage Failure]:', error);
+        throw error;
     }
 }
 
