@@ -2,41 +2,30 @@
  * ==============================================================================
  * PRAYOSHA ERP - PRE-DEVELOPMENT MODULE CONTROLLER
  * File: /pre-development/pre-development.js
- * Tech Stack: Vanilla JS (ES Modules), Supabase, Cloudflare R2 (S3), Tailwind CSS
+ * Tech Stack: Vanilla JS (ES Modules), Supabase, Cloudflare R2, Tailwind CSS
  * ==============================================================================
  */
 
-import * as Config from '../config.js';
-import { S3Client, PutObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.540.0';
+import { supabase, uploadToR2 } from '../config.js';
 
-// Initialize Supabase Client from config
-const supabase = Config.supabase;
-
-// Cloudflare R2 S3 Client Configuration (Fallback & Direct Support)
-const R2_CONFIG = {
-    endpoint: 'https://fbfcd5f694d5a76bbc3d9f0226a9e47c.r2.cloudflarestorage.com',
-    accessKeyId: '54aa02b0716423008cf69a17d96c9dde',
-    secretAccessKey: '9e10b9b5318a2cd375636cf44c18b9f0f5ab16a598cb3222ad61b0a81d9a6f68',
-    bucketName: Config.R2_BUCKET || 'prayosha-assets',
-    publicDevUrl: 'https://pub-7b98029994144de2a8a4e2ac9b19d9f2.r2.dev'
-};
-
-const s3Client = new S3Client({
-    region: 'auto',
-    endpoint: R2_CONFIG.endpoint,
-    credentials: {
-        accessKeyId: R2_CONFIG.accessKeyId,
-        secretAccessKey: R2_CONFIG.secretAccessKey
-    }
-});
+// Helper: Validate 36-character standard UUID
+function isValidUUID(str) {
+    if (!str || typeof str !== 'string') return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
+}
 
 // ==============================================================================
 // APPLICATION STATE
 // ==============================================================================
 const state = {
+    activeProjectId: null,
     activeProject: null,
+    activeProjectName: '',
+    activeProjectCode: '',
     projectsList: [],
     currentUser: null,
+    userRole: 'Chief Engineer',
+    userId: null,
     currentPhase: 'liasoning', // 'liasoning' | 'development_cost' | 'development'
     
     // Master categories from Super Core Engine
@@ -81,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await fetchProjectsList();
     await loadActiveProject();
     setupRealtimeSubscriptions();
+    setupCrossModuleSync();
 });
 
 /**
@@ -90,11 +80,12 @@ function initSession() {
     const urlParams = new URLSearchParams(window.location.search);
     const paramProjectId = urlParams.get('project');
 
-    if (paramProjectId) {
+    if (paramProjectId && isValidUUID(paramProjectId)) {
         localStorage.setItem('activeProjectId', paramProjectId);
     }
 
-    state.activeProjectId = localStorage.getItem('activeProjectId') || null;
+    const storedId = localStorage.getItem('activeProjectId');
+    state.activeProjectId = isValidUUID(storedId) ? storedId : null;
     state.activeProjectName = localStorage.getItem('activeProjectName') || '';
     state.activeProjectCode = localStorage.getItem('activeProjectCode') || '';
     state.userRole = localStorage.getItem('userRole') || 'Chief Engineer';
@@ -102,25 +93,57 @@ function initSession() {
 }
 
 /**
- * Fetch authenticated user or fallback profile
+ * Listen for workspace project switches triggered by universal shell top navbar
+ */
+function setupCrossModuleSync() {
+    window.addEventListener('prayosha:project-switched', async (e) => {
+        const project = e.detail;
+        if (project && isValidUUID(project.id)) {
+            state.activeProjectId = project.id;
+            state.activeProjectName = project.project_name || '';
+            state.activeProjectCode = project.project_code || '';
+            await loadActiveProject();
+            showToast(`Pre-Development synchronized: ${state.activeProjectName}`, 'info');
+        } else {
+            state.activeProjectId = null;
+            state.activeProject = null;
+            await loadActiveProject();
+        }
+    });
+}
+
+/**
+ * Fetch authenticated user safely without triggering 401 Unauthorized
  */
 async function loadUserContext() {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-            state.currentUser = user;
-            state.userId = user.id;
+        const storedRole = localStorage.getItem('userRole');
+        if (storedRole) state.userRole = storedRole;
 
-            // Fetch role if profiles table exists
+        const storedUser = localStorage.getItem('prayosha_user');
+        if (storedUser) {
+            try {
+                const parsed = JSON.parse(storedUser);
+                state.currentUser = parsed;
+                state.userId = parsed.id || null;
+            } catch (_) {}
+        }
+
+        // Check for session first to prevent unauthenticated 401 error
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+            state.currentUser = session.user;
+            state.userId = session.user.id;
+
             const { data: profile } = await supabase
                 .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
+                .select('role, full_name')
+                .eq('id', session.user.id)
+                .maybeSingle();
 
             if (profile) {
                 state.userRole = profile.role || state.userRole;
-                state.currentUser.full_name = profile.full_name || user.email;
+                state.currentUser.full_name = profile.full_name || session.user.email;
             }
         }
     } catch (err) {
@@ -129,56 +152,44 @@ async function loadUserContext() {
 }
 
 /**
- * Fetch all projects for the project switcher & benchmark selector
+ * Fetch all projects
  */
 async function fetchProjectsList() {
     try {
         const { data: projects, error } = await supabase
             .from('projects')
-            .select('id, name, project_code')
-            .order('name');
+            .select('id, project_name, project_code')
+            .order('project_name');
 
         if (error) throw error;
 
-        state.projectsList = projects || [];
-        renderProjectDropdowns();
+        state.projectsList = (projects || []).map(p => ({
+            id: p.id,
+            name: p.project_name || 'Untitled Project',
+            project_code: p.project_code || ''
+        }));
+
+        renderBenchmarkDropdown();
     } catch (err) {
         console.error('Error fetching projects list:', err.message);
         showToast('Could not load projects list', 'warning');
     }
 }
 
-/**
- * Render Project Selectors in Header and Phase 2 Benchmark Toolbar
- */
-function renderProjectDropdowns() {
-    const headerDropdown = document.getElementById('projectSelectorDropdown');
+function renderBenchmarkDropdown() {
     const benchmarkDropdown = document.getElementById('benchmarkProjectSelector');
+    if (!benchmarkDropdown) return;
 
-    if (headerDropdown) {
-        headerDropdown.innerHTML = `<option value="" disabled ${!state.activeProjectId ? 'selected' : ''}>Switch Active Project</option>`;
-        state.projectsList.forEach(p => {
-            const isSelected = p.id === state.activeProjectId;
-            headerDropdown.innerHTML += `
-                <option value="${p.id}" ${isSelected ? 'selected' : ''}>
-                    ${p.project_code ? '[' + p.project_code + '] ' : ''}${p.name}
+    benchmarkDropdown.innerHTML = `<option value="">-- No Benchmark (Manual Old Rates) --</option>`;
+    state.projectsList
+        .filter(p => p.id !== state.activeProjectId)
+        .forEach(p => {
+            benchmarkDropdown.innerHTML += `
+                <option value="${p.id}">
+                    Benchmark: ${p.project_code ? '[' + p.project_code + '] ' : ''}${p.name}
                 </option>
             `;
         });
-    }
-
-    if (benchmarkDropdown) {
-        benchmarkDropdown.innerHTML = `<option value="">-- No Benchmark (Manual Old Rates) --</option>`;
-        state.projectsList
-            .filter(p => p.id !== state.activeProjectId)
-            .forEach(p => {
-                benchmarkDropdown.innerHTML += `
-                    <option value="${p.id}">
-                        Benchmark: ${p.project_code ? '[' + p.project_code + '] ' : ''}${p.name}
-                    </option>
-                `;
-            });
-    }
 }
 
 /**
@@ -189,15 +200,16 @@ async function loadActiveProject() {
     const badge = document.getElementById('activeProjectBadge');
     const badgeText = document.getElementById('activeProjectCodeName');
 
-    if (!state.activeProjectId) {
+    if (!isValidUUID(state.activeProjectId)) {
         if (alertBox) alertBox.classList.remove('hidden');
         if (badge) badge.classList.add('hidden');
+        resetKpiSummary();
+        renderEmptyStateTable();
         return;
     }
 
     if (alertBox) alertBox.classList.add('hidden');
 
-    // Find project details
     state.activeProject = state.projectsList.find(p => p.id === state.activeProjectId);
     if (state.activeProject) {
         if (badge && badgeText) {
@@ -211,10 +223,9 @@ async function loadActiveProject() {
         }
     }
 
-    // Load Super Core Engine Categories
-    await fetchMasterCategories();
+    renderBenchmarkDropdown();
 
-    // Load Phase Data
+    await fetchMasterCategories();
     await Promise.all([
         loadLiasoningData(),
         loadBoqData(),
@@ -223,6 +234,17 @@ async function loadActiveProject() {
     ]);
 
     updateKpiSummary();
+}
+
+function renderEmptyStateTable() {
+    const lBody = document.getElementById('liasoningTableBody');
+    const bBody = document.getElementById('boqTableBody');
+    const dBody = document.getElementById('developmentTableBody');
+
+    const msg = `<tr><td colspan="10" class="text-center py-8 text-amber-300/80 font-medium text-xs">Please select a specific project from the top navigation dropdown to load records.</td></tr>`;
+    if (lBody) lBody.innerHTML = msg;
+    if (bBody) bBody.innerHTML = msg;
+    if (dBody) dBody.innerHTML = msg;
 }
 
 // ==============================================================================
@@ -242,10 +264,13 @@ async function fetchMasterCategories() {
         state.categories.development_cost = (data || []).filter(c => c.phase === 'development_cost');
         state.categories.development = (data || []).filter(c => c.phase === 'development');
 
-        // Update badge counts on tabs
-        document.getElementById('tabBadgeLiasoning').textContent = state.categories.liasoning.length;
-        document.getElementById('tabBadgeBoq').textContent = state.categories.development_cost.length;
-        document.getElementById('tabBadgeDev').textContent = state.categories.development.length;
+        const badgeLiasoning = document.getElementById('tabBadgeLiasoning');
+        const badgeBoq = document.getElementById('tabBadgeBoq');
+        const badgeDev = document.getElementById('tabBadgeDev');
+
+        if (badgeLiasoning) badgeLiasoning.textContent = state.categories.liasoning.length;
+        if (badgeBoq) badgeBoq.textContent = state.categories.development_cost.length;
+        if (badgeDev) badgeDev.textContent = state.categories.development.length;
 
     } catch (err) {
         console.error('Error fetching master categories:', err.message);
@@ -254,10 +279,10 @@ async function fetchMasterCategories() {
 }
 
 // ==============================================================================
-// PHASE 1: LIASONING LOGIC & RENDERING
+// PHASE 1: LIASONING
 // ==============================================================================
 async function loadLiasoningData() {
-    if (!state.activeProjectId) return;
+    if (!isValidUUID(state.activeProjectId)) return;
     try {
         const { data, error } = await supabase
             .from('pre_dev_liasoning')
@@ -334,7 +359,7 @@ function renderLiasoningTable() {
                 <td class="py-3 px-4">
                     ${rec.document_url ? `
                         <div class="flex items-center gap-1.5">
-                            <a href="${rec.document_url}" target="_blank" class="truncate max-w-[120px] text-prayosha-amber hover:underline text-[11px] font-medium flex items-center gap-1" title="${rec.document_name}">
+                            <a href="${rec.document_url}" target="_blank" rel="noopener noreferrer" class="truncate max-w-[120px] text-prayosha-amber hover:underline text-[11px] font-medium flex items-center gap-1" title="${rec.document_name}">
                                 <i class="fa-solid fa-file-pdf"></i> ${escapeHtml(rec.document_name || 'Document')}
                             </a>
                             <button type="button" class="text-slate-400 hover:text-white text-xs upload-doc-btn" 
@@ -368,7 +393,6 @@ function renderLiasoningTable() {
 }
 
 function bindLiasoningRowEvents() {
-    // Status Toggle change
     document.querySelectorAll('.liasoning-status-toggle').forEach(el => {
         el.addEventListener('change', (e) => {
             const catId = e.target.dataset.catId;
@@ -379,7 +403,6 @@ function bindLiasoningRowEvents() {
         });
     });
 
-    // Upload Doc Button
     document.querySelectorAll('.upload-doc-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const current = e.currentTarget;
@@ -387,7 +410,6 @@ function bindLiasoningRowEvents() {
         });
     });
 
-    // Single Save Button
     document.querySelectorAll('.save-single-liasoning-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const catId = e.currentTarget.dataset.catId;
@@ -396,12 +418,9 @@ function bindLiasoningRowEvents() {
     });
 }
 
-/**
- * Save All Liasoning Checklist Items
- */
 async function saveAllLiasoningRecords() {
-    if (!state.activeProjectId) {
-        showToast('Please select a project first', 'warning');
+    if (!isValidUUID(state.activeProjectId)) {
+        showToast('Please select a specific project first', 'warning');
         return;
     }
 
@@ -440,7 +459,6 @@ async function saveAllLiasoningRecords() {
 
         if (error) throw error;
 
-        // Commit Audit Log
         const approvedCount = rowsToUpsert.filter(r => r.status === 'Yes').length;
         await createAuditLog(
             'liasoning',
@@ -457,7 +475,7 @@ async function saveAllLiasoningRecords() {
 }
 
 async function saveSingleLiasoningRecord(catId) {
-    if (!state.activeProjectId) return;
+    if (!isValidUUID(state.activeProjectId)) return;
     const rowEl = document.querySelector(`tr[data-cat-id="${catId}"]`);
     if (!rowEl) return;
 
@@ -508,7 +526,7 @@ async function saveSingleLiasoningRecord(catId) {
 // PHASE 2: COMPARATIVE BOQ ENGINE & BENCHMARK SCANNER
 // ==============================================================================
 async function loadBoqData() {
-    if (!state.activeProjectId) return;
+    if (!isValidUUID(state.activeProjectId)) return;
     try {
         const { data, error } = await supabase
             .from('pre_dev_boq')
@@ -526,11 +544,8 @@ async function loadBoqData() {
     }
 }
 
-/**
- * Scan and pull rates from a selected benchmark project
- */
 async function scanBenchmarkProject(benchmarkId) {
-    if (!benchmarkId) {
+    if (!isValidUUID(benchmarkId)) {
         state.benchmarkRates.clear();
         state.selectedBenchmarkProjectId = '';
         renderBoqTable();
@@ -556,7 +571,6 @@ async function scanBenchmarkProject(benchmarkId) {
             });
         });
 
-        // Apply scanned benchmark rates where available
         state.categories.development_cost.forEach(cat => {
             const current = state.boqRecords.get(cat.id) || {
                 quantity: 0,
@@ -675,7 +689,6 @@ function renderBoqTable() {
 }
 
 function bindBoqRowEvents() {
-    // Dynamic recalculation on keystroke
     const handleValueChange = (e) => {
         const catId = e.target.dataset.catId;
         const row = document.querySelector(`tr[data-cat-id="${catId}"]`);
@@ -700,7 +713,6 @@ function bindBoqRowEvents() {
             diffCell.className = `py-2.5 px-3 text-right font-bold font-mono boq-row-diff ${diff > 0 ? 'text-amber-400' : (diff < 0 ? 'text-emerald-400' : 'text-slate-400')}`;
         }
 
-        // Cache update in memory state
         const existing = state.boqRecords.get(catId) || {};
         existing.quantity = qty;
         existing.old_rate = oldRate;
@@ -718,7 +730,6 @@ function bindBoqRowEvents() {
         input.addEventListener('input', handleValueChange);
     });
 
-    // UOM and remarks cache
     document.querySelectorAll('.boq-uom-input').forEach(input => {
         input.addEventListener('change', (e) => {
             const catId = e.target.dataset.catId;
@@ -738,13 +749,9 @@ function bindBoqRowEvents() {
     });
 }
 
-/**
- * Recompute Summary Footers for Phase 2
- */
 function recalculateBoqFooters() {
     let sumOld = 0;
     let sumNew = 0;
-    let sumQty = 0;
 
     state.categories.development_cost.forEach(cat => {
         const rec = state.boqRecords.get(cat.id);
@@ -752,7 +759,6 @@ function recalculateBoqFooters() {
             const q = Number(rec.quantity) || 0;
             const o = Number(rec.old_rate) || 0;
             const n = Number(rec.new_rate) || 0;
-            sumQty += q;
             sumOld += q * o;
             sumNew += q * n;
         }
@@ -784,12 +790,9 @@ function recalculateBoqFooters() {
     }
 }
 
-/**
- * Save All BOQ Records
- */
 async function saveAllBoqRecords() {
-    if (!state.activeProjectId) {
-        showToast('Please select a project first', 'warning');
+    if (!isValidUUID(state.activeProjectId)) {
+        showToast('Please select a specific project first', 'warning');
         return;
     }
 
@@ -830,7 +833,7 @@ async function saveAllBoqRecords() {
             quantity: qty,
             old_rate: oldRate,
             new_rate: newRate,
-            benchmark_project_id: state.selectedBenchmarkProjectId || null,
+            benchmark_project_id: isValidUUID(state.selectedBenchmarkProjectId) ? state.selectedBenchmarkProjectId : null,
             is_manual_old_rate: isManual,
             remarks: remarks || null,
             updated_by: state.userId || null,
@@ -867,7 +870,7 @@ async function saveAllBoqRecords() {
 // PHASE 3: DEVELOPMENT (SITE MOBILIZATION)
 // ==============================================================================
 async function loadDevelopmentData() {
-    if (!state.activeProjectId) return;
+    if (!isValidUUID(state.activeProjectId)) return;
     try {
         const { data, error } = await supabase
             .from('pre_dev_development')
@@ -944,7 +947,7 @@ function renderDevelopmentTable() {
                 <td class="py-3 px-4">
                     ${rec.document_url ? `
                         <div class="flex items-center gap-1.5">
-                            <a href="${rec.document_url}" target="_blank" class="truncate max-w-[120px] text-prayosha-amber hover:underline text-[11px] font-medium flex items-center gap-1" title="${rec.document_name}">
+                            <a href="${rec.document_url}" target="_blank" rel="noopener noreferrer" class="truncate max-w-[120px] text-prayosha-amber hover:underline text-[11px] font-medium flex items-center gap-1" title="${rec.document_name}">
                                 <i class="fa-solid fa-file-image"></i> ${escapeHtml(rec.document_name || 'Attachment')}
                             </a>
                             <button type="button" class="text-slate-400 hover:text-white text-xs upload-doc-btn" 
@@ -1003,12 +1006,9 @@ function bindDevelopmentRowEvents() {
     });
 }
 
-/**
- * Save All Phase 3 Development Records
- */
 async function saveAllDevelopmentRecords() {
-    if (!state.activeProjectId) {
-        showToast('Please select a project first', 'warning');
+    if (!isValidUUID(state.activeProjectId)) {
+        showToast('Please select a specific project first', 'warning');
         return;
     }
 
@@ -1063,7 +1063,7 @@ async function saveAllDevelopmentRecords() {
 }
 
 async function saveSingleDevRecord(catId) {
-    if (!state.activeProjectId) return;
+    if (!isValidUUID(state.activeProjectId)) return;
     const rowEl = document.querySelector(`tr[data-cat-id="${catId}"]`);
     if (!rowEl) return;
 
@@ -1153,37 +1153,15 @@ async function handleDirectR2Upload() {
     confirmBtn.classList.add('opacity-50');
 
     try {
-        // Generate a clean S3 object key
-        const timestamp = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const objectKey = `pre-development/${state.activeProjectId}/${phase}/${timestamp}-${safeName}`;
+        progressBar.style.width = '50%';
+        progressText.textContent = '50%';
 
-        progressBar.style.width = '45%';
-        progressText.textContent = '45%';
-
-        let publicFileUrl = '';
-
-        // Check if config.js provides an upload wrapper
-        if (typeof Config.uploadToR2 === 'function') {
-            publicFileUrl = await Config.uploadToR2(file, `pre-development/${state.activeProjectId}/${phase}`);
-        } else {
-            // Direct AWS SDK PutObjectCommand upload to R2
-            const fileBuffer = await file.arrayBuffer();
-            const command = new PutObjectCommand({
-                Bucket: R2_CONFIG.bucketName,
-                Key: objectKey,
-                Body: new Uint8Array(fileBuffer),
-                ContentType: file.type || 'application/octet-stream'
-            });
-
-            await s3Client.send(command);
-            publicFileUrl = `${R2_CONFIG.publicDevUrl}/${objectKey}`;
-        }
+        const folder = `pre-dev/${state.activeProjectId || 'common'}/${phase}`;
+        const publicFileUrl = await uploadToR2(file, folder);
 
         progressBar.style.width = '100%';
         progressText.textContent = '100%';
 
-        // Attach to in-memory records
         if (phase === 'liasoning') {
             const rec = state.liasoningRecords.get(categoryId) || { status: 'Yes' };
             rec.document_url = publicFileUrl;
@@ -1200,11 +1178,11 @@ async function handleDirectR2Upload() {
             renderDevelopmentTable();
         }
 
-        showToast(`Document uploaded and attached to ${state.uploadContext.categoryName}!`, 'success');
+        showToast(`Document attached to ${state.uploadContext.categoryName}!`, 'success');
         closeUploadModal();
     } catch (err) {
         console.error('Cloudflare R2 Upload Failed:', err);
-        showToast('Document upload failed. Check Cloudflare R2 credentials.', 'warning');
+        showToast('Upload failed: ' + err.message, 'warning');
     } finally {
         confirmBtn.disabled = false;
         confirmBtn.classList.remove('opacity-50');
@@ -1264,7 +1242,6 @@ function renderSuperEngineCategoriesList() {
         </div>
     `).join('');
 
-    // Bind Super Engine events
     listContainer.querySelectorAll('.save-cat-rename-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const catId = e.currentTarget.dataset.catId;
@@ -1304,7 +1281,7 @@ async function handleAddNewCategory() {
 
     try {
         const nextOrder = (state.categories[phase]?.length || 0) + 1;
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('pre_dev_categories')
             .insert({
                 phase: phase,
@@ -1313,9 +1290,7 @@ async function handleAddNewCategory() {
                 default_uom: uom,
                 sort_order: nextOrder,
                 is_active: true
-            })
-            .select()
-            .single();
+            });
 
         if (error) throw error;
 
@@ -1325,7 +1300,6 @@ async function handleAddNewCategory() {
         await fetchMasterCategories();
         renderSuperEngineCategoriesList();
 
-        // Refresh current phase views
         if (state.currentPhase === 'liasoning') renderLiasoningTable();
         if (state.currentPhase === 'development_cost') renderBoqTable();
         if (state.currentPhase === 'development') renderDevelopmentTable();
@@ -1382,7 +1356,7 @@ async function deleteCategory(catId) {
 // AUDIT LOGGING & DRAWER CONTROLS
 // ==============================================================================
 async function createAuditLog(phase, actionType, summary, changes = {}) {
-    if (!state.activeProjectId) return;
+    if (!isValidUUID(state.activeProjectId)) return;
     try {
         await supabase
             .from('pre_dev_audit_logs')
@@ -1405,7 +1379,7 @@ async function openAuditDrawer() {
     const timeline = document.getElementById('auditLogTimeline');
     drawer.classList.remove('hidden');
 
-    if (!state.activeProjectId) {
+    if (!isValidUUID(state.activeProjectId)) {
         timeline.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">Please select a project to view its audit log.</div>`;
         return;
     }
@@ -1477,11 +1451,8 @@ function setupRealtimeSubscriptions() {
 function handleIncomingNotification(notification) {
     state.unreadNotificationsCount += 1;
     updateNotificationBadge();
-
-    // Show toast for instant awareness
     showToast(notification.title + ': ' + notification.message, 'info');
 
-    // Trigger Android / iOS Web Push Notification if browser permission is granted
     if ('Notification' in window && Notification.permission === 'granted') {
         new Notification(notification.title, {
             body: notification.message,
@@ -1576,7 +1547,23 @@ async function markAllNotificationsRead() {
 // ==============================================================================
 // KPI SUMMARY BAR UPDATES
 // ==============================================================================
+function resetKpiSummary() {
+    document.getElementById('kpiLiasoningCount').textContent = '0 / 0';
+    document.getElementById('kpiLiasoningPercent').textContent = '0%';
+    document.getElementById('kpiLiasoningBar').style.width = '0%';
+    document.getElementById('kpiTotalNewAmount').textContent = '0.00';
+    document.getElementById('kpiTotalVariance').textContent = '0.00';
+    document.getElementById('kpiDevCount').textContent = '0 / 0';
+    document.getElementById('kpiDevPercent').textContent = '0%';
+    document.getElementById('kpiDevBar').style.width = '0%';
+}
+
 function updateKpiSummary() {
+    if (!isValidUUID(state.activeProjectId)) {
+        resetKpiSummary();
+        return;
+    }
+
     // 1. Liasoning Clearances
     const totalLiasoning = state.categories.liasoning.length || 11;
     let approvedLiasoning = 0;
@@ -1586,9 +1573,13 @@ function updateKpiSummary() {
     });
 
     const liasoningPct = totalLiasoning > 0 ? Math.round((approvedLiasoning / totalLiasoning) * 100) : 0;
-    document.getElementById('kpiLiasoningCount').textContent = `${approvedLiasoning} / ${totalLiasoning}`;
-    document.getElementById('kpiLiasoningPercent').textContent = `${liasoningPct}%`;
-    document.getElementById('kpiLiasoningBar').style.width = `${liasoningPct}%`;
+    const kpiLCount = document.getElementById('kpiLiasoningCount');
+    const kpiLPct = document.getElementById('kpiLiasoningPercent');
+    const kpiLBar = document.getElementById('kpiLiasoningBar');
+
+    if (kpiLCount) kpiLCount.textContent = `${approvedLiasoning} / ${totalLiasoning}`;
+    if (kpiLPct) kpiLPct.textContent = `${liasoningPct}%`;
+    if (kpiLBar) kpiLBar.style.width = `${liasoningPct}%`;
 
     // 2. BOQ Total New Budget & Variance
     let totalOld = 0;
@@ -1605,28 +1596,33 @@ function updateKpiSummary() {
     });
 
     const variance = totalNew - totalOld;
-    document.getElementById('kpiTotalNewAmount').textContent = formatNumber(totalNew);
-    document.getElementById('kpiTotalVariance').textContent = formatNumber(Math.abs(variance));
+    const kpiNewAmt = document.getElementById('kpiTotalNewAmount');
+    const kpiVar = document.getElementById('kpiTotalVariance');
+
+    if (kpiNewAmt) kpiNewAmt.textContent = formatNumber(totalNew);
+    if (kpiVar) kpiVar.textContent = formatNumber(Math.abs(variance));
 
     const varIndicator = document.getElementById('kpiVarianceIndicator');
     const varIconBox = document.getElementById('kpiVarianceIconBox');
 
-    if (!state.selectedBenchmarkProjectId && totalOld === 0) {
-        varIndicator.innerHTML = `<i class="fa-solid fa-minus"></i> Baseline Setup`;
-        varIndicator.className = 'text-[11px] font-semibold text-slate-400 flex items-center gap-1';
-        varIconBox.className = 'w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center text-xl flex-shrink-0';
-    } else if (variance > 0) {
-        varIndicator.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> +₹${formatNumber(variance)} (Escalation)`;
-        varIndicator.className = 'text-[11px] font-semibold text-rose-400 flex items-center gap-1';
-        varIconBox.className = 'w-12 h-12 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center text-xl flex-shrink-0';
-    } else if (variance < 0) {
-        varIndicator.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> -₹${formatNumber(Math.abs(variance))} (Savings)`;
-        varIndicator.className = 'text-[11px] font-semibold text-emerald-400 flex items-center gap-1';
-        varIconBox.className = 'w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xl flex-shrink-0';
-    } else {
-        varIndicator.innerHTML = `<i class="fa-solid fa-equals"></i> Parity with benchmark`;
-        varIndicator.className = 'text-[11px] font-semibold text-slate-300 flex items-center gap-1';
-        varIconBox.className = 'w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center text-xl flex-shrink-0';
+    if (varIndicator && varIconBox) {
+        if (!state.selectedBenchmarkProjectId && totalOld === 0) {
+            varIndicator.innerHTML = `<i class="fa-solid fa-minus"></i> Baseline Setup`;
+            varIndicator.className = 'text-[11px] font-semibold text-slate-400 flex items-center gap-1';
+            varIconBox.className = 'w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center text-xl flex-shrink-0';
+        } else if (variance > 0) {
+            varIndicator.innerHTML = `<i class="fa-solid fa-arrow-trend-up"></i> +₹${formatNumber(variance)} (Escalation)`;
+            varIndicator.className = 'text-[11px] font-semibold text-rose-400 flex items-center gap-1';
+            varIconBox.className = 'w-12 h-12 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 flex items-center justify-center text-xl flex-shrink-0';
+        } else if (variance < 0) {
+            varIndicator.innerHTML = `<i class="fa-solid fa-arrow-trend-down"></i> -₹${formatNumber(Math.abs(variance))} (Savings)`;
+            varIndicator.className = 'text-[11px] font-semibold text-emerald-400 flex items-center gap-1';
+            varIconBox.className = 'w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-xl flex-shrink-0';
+        } else {
+            varIndicator.innerHTML = `<i class="fa-solid fa-equals"></i> Parity with benchmark`;
+            varIndicator.className = 'text-[11px] font-semibold text-slate-300 flex items-center gap-1';
+            varIconBox.className = 'w-12 h-12 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 flex items-center justify-center text-xl flex-shrink-0';
+        }
     }
 
     // 3. Site Mobilization
@@ -1638,25 +1634,19 @@ function updateKpiSummary() {
     });
 
     const devPct = totalDev > 0 ? Math.round((readyDev / totalDev) * 100) : 0;
-    document.getElementById('kpiDevCount').textContent = `${readyDev} / ${totalDev}`;
-    document.getElementById('kpiDevPercent').textContent = `${devPct}%`;
-    document.getElementById('kpiDevBar').style.width = `${devPct}%`;
+    const kpiDCount = document.getElementById('kpiDevCount');
+    const kpiDPct = document.getElementById('kpiDevPercent');
+    const kpiDBar = document.getElementById('kpiDevBar');
+
+    if (kpiDCount) kpiDCount.textContent = `${readyDev} / ${totalDev}`;
+    if (kpiDPct) kpiDPct.textContent = `${devPct}%`;
+    if (kpiDBar) kpiDBar.style.width = `${devPct}%`;
 }
 
 // ==============================================================================
 // EVENT LISTENERS & UI ROUTING
 // ==============================================================================
 function setupEventListeners() {
-    // Project Switcher Header Dropdown
-    document.getElementById('projectSelectorDropdown').addEventListener('change', (e) => {
-        const selectedId = e.target.value;
-        if (selectedId) {
-            localStorage.setItem('activeProjectId', selectedId);
-            window.location.href = `./pre-development.html?project=${selectedId}`;
-        }
-    });
-
-    // Phase Navigation Tabs Switcher
     const tabBtns = [
         document.getElementById('tabLiasoningBtn'),
         document.getElementById('tabBoqBtn'),
@@ -1664,42 +1654,51 @@ function setupEventListeners() {
     ];
 
     tabBtns.forEach(btn => {
+        if (!btn) return;
         btn.addEventListener('click', (e) => {
             const phase = e.currentTarget.dataset.phase;
             switchPhaseTab(phase);
         });
     });
 
-    // Master Save Button
-    document.getElementById('masterSaveBtn').addEventListener('click', () => {
-        if (state.currentPhase === 'liasoning') {
-            saveAllLiasoningRecords();
-        } else if (state.currentPhase === 'development_cost') {
-            saveAllBoqRecords();
-        } else if (state.currentPhase === 'development') {
-            saveAllDevelopmentRecords();
-        }
-    });
+    const masterSave = document.getElementById('masterSaveBtn');
+    if (masterSave) {
+        masterSave.addEventListener('click', () => {
+            if (state.currentPhase === 'liasoning') {
+                saveAllLiasoningRecords();
+            } else if (state.currentPhase === 'development_cost') {
+                saveAllBoqRecords();
+            } else if (state.currentPhase === 'development') {
+                saveAllDevelopmentRecords();
+            }
+        });
+    }
 
-    // Global Search Input
-    document.getElementById('phaseSearchInput').addEventListener('input', (e) => {
-        state.searchQuery = e.target.value;
-        if (state.currentPhase === 'liasoning') renderLiasoningTable();
-        if (state.currentPhase === 'development_cost') renderBoqTable();
-        if (state.currentPhase === 'development') renderDevelopmentTable();
-    });
+    const searchInput = document.getElementById('phaseSearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            state.searchQuery = e.target.value;
+            if (state.currentPhase === 'liasoning') renderLiasoningTable();
+            if (state.currentPhase === 'development_cost') renderBoqTable();
+            if (state.currentPhase === 'development') renderDevelopmentTable();
+        });
+    }
 
-    // Phase 2 Benchmark Selector
-    document.getElementById('benchmarkProjectSelector').addEventListener('change', (e) => {
-        scanBenchmarkProject(e.target.value);
-    });
+    const benchmarkSelector = document.getElementById('benchmarkProjectSelector');
+    if (benchmarkSelector) {
+        benchmarkSelector.addEventListener('change', (e) => {
+            scanBenchmarkProject(e.target.value);
+        });
+    }
 
-    document.getElementById('clearBenchmarkBtn').addEventListener('click', () => {
-        document.getElementById('benchmarkProjectSelector').value = '';
-        scanBenchmarkProject('');
-    });
+    const clearBenchmark = document.getElementById('clearBenchmarkBtn');
+    if (clearBenchmark) {
+        clearBenchmark.addEventListener('click', () => {
+            if (benchmarkSelector) benchmarkSelector.value = '';
+            scanBenchmarkProject('');
+        });
+    }
 
-    // Phase 2 Category Filter Pills
     document.querySelectorAll('.boq-filter-pill').forEach(pill => {
         pill.addEventListener('click', (e) => {
             document.querySelectorAll('.boq-filter-pill').forEach(p => {
@@ -1711,58 +1710,58 @@ function setupEventListeners() {
         });
     });
 
-    // Cloudflare R2 Upload Modal Controls
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('r2FileInput');
 
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => handleFileSelection(e.target.files[0]));
+    if (dropZone && fileInput) {
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFileSelection(e.target.files[0]));
 
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropZone.classList.add('border-prayosha-amber');
-    });
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-prayosha-amber');
+        });
 
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('border-prayosha-amber');
-    });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-prayosha-amber');
+        });
 
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.classList.remove('border-prayosha-amber');
-        if (e.dataTransfer.files.length) {
-            handleFileSelection(e.dataTransfer.files[0]);
-        }
-    });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-prayosha-amber');
+            if (e.dataTransfer.files.length) {
+                handleFileSelection(e.dataTransfer.files[0]);
+            }
+        });
+    }
 
-    document.getElementById('removeSelectedFileBtn').addEventListener('click', (e) => {
-        e.stopPropagation();
-        state.uploadContext.selectedFile = null;
-        document.getElementById('selectedFileChip').classList.add('hidden');
-        fileInput.value = '';
-    });
+    const removeFileBtn = document.getElementById('removeSelectedFileBtn');
+    if (removeFileBtn) {
+        removeFileBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            state.uploadContext.selectedFile = null;
+            document.getElementById('selectedFileChip').classList.add('hidden');
+            if (fileInput) fileInput.value = '';
+        });
+    }
 
-    document.getElementById('closeUploadModalBtn').addEventListener('click', closeUploadModal);
-    document.getElementById('cancelUploadBtn').addEventListener('click', closeUploadModal);
-    document.getElementById('confirmUploadBtn').addEventListener('click', handleDirectR2Upload);
+    document.getElementById('closeUploadModalBtn')?.addEventListener('click', closeUploadModal);
+    document.getElementById('cancelUploadBtn')?.addEventListener('click', closeUploadModal);
+    document.getElementById('confirmUploadBtn')?.addEventListener('click', handleDirectR2Upload);
 
-    // Super Core Engine Modal Controls
-    document.getElementById('openSuperEngineBtn').addEventListener('click', openSuperEngineModal);
-    document.getElementById('closeSuperEngineBtn').addEventListener('click', closeSuperEngineModal);
-    document.getElementById('closeSuperEngineFooterBtn').addEventListener('click', closeSuperEngineModal);
-    document.getElementById('superEnginePhaseSelect').addEventListener('change', renderSuperEngineCategoriesList);
-    document.getElementById('addNewCategoryBtn').addEventListener('click', handleAddNewCategory);
+    document.getElementById('openSuperEngineBtn')?.addEventListener('click', openSuperEngineModal);
+    document.getElementById('closeSuperEngineBtn')?.addEventListener('click', closeSuperEngineModal);
+    document.getElementById('closeSuperEngineFooterBtn')?.addEventListener('click', closeSuperEngineModal);
+    document.getElementById('superEnginePhaseSelect')?.addEventListener('change', renderSuperEngineCategoriesList);
+    document.getElementById('addNewCategoryBtn')?.addEventListener('click', handleAddNewCategory);
 
-    // Audit Drawer Controls
-    document.getElementById('openAuditDrawerBtn').addEventListener('click', openAuditDrawer);
-    document.getElementById('closeAuditDrawerBtn').addEventListener('click', closeAuditDrawer);
+    document.getElementById('openAuditDrawerBtn')?.addEventListener('click', openAuditDrawer);
+    document.getElementById('closeAuditDrawerBtn')?.addEventListener('click', closeAuditDrawer);
 
-    // Notification Drawer Controls
-    document.getElementById('notificationBtn').addEventListener('click', openNotificationsDrawer);
-    document.getElementById('closeNotificationsDrawerBtn').addEventListener('click', closeNotificationsDrawer);
-    document.getElementById('markAllReadBtn').addEventListener('click', markAllNotificationsRead);
+    document.getElementById('notificationBtn')?.addEventListener('click', openNotificationsDrawer);
+    document.getElementById('closeNotificationsDrawerBtn')?.addEventListener('click', closeNotificationsDrawer);
+    document.getElementById('markAllReadBtn')?.addEventListener('click', markAllNotificationsRead);
 
-    // Request Web Push Permissions on first engagement
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
@@ -1800,17 +1799,19 @@ function switchPhaseTab(phase) {
         const isCurrent = key === phase;
         const t = tabs[key];
 
-        if (isCurrent) {
-            t.btn.className = 'tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 bg-prayosha-amber text-slate-900 shadow-md';
-            t.content.classList.remove('hidden');
-            document.getElementById('masterSaveBtnText').textContent = t.saveLabel;
-        } else {
-            t.btn.className = 'tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white';
-            t.content.classList.add('hidden');
+        if (t.btn && t.content) {
+            if (isCurrent) {
+                t.btn.className = 'tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 bg-prayosha-amber text-slate-900 shadow-md';
+                t.content.classList.remove('hidden');
+                const saveText = document.getElementById('masterSaveBtnText');
+                if (saveText) saveText.textContent = t.saveLabel;
+            } else {
+                t.btn.className = 'tab-btn flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 text-slate-400 hover:text-white';
+                t.content.classList.add('hidden');
+            }
         }
     });
 
-    // Re-render table on switch to apply search or new records
     if (phase === 'liasoning') renderLiasoningTable();
     if (phase === 'development_cost') renderBoqTable();
     if (phase === 'development') renderDevelopmentTable();

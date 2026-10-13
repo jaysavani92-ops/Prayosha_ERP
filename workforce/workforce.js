@@ -1,15 +1,15 @@
 /**
  * ==============================================================================
- * PRAYOSHA ERP - WORKFORCE & EQUIPMENT MODULE CONTROLLER (REFINED)
+ * PRAYOSHA ERP - WORKFORCE & EQUIPMENT MODULE CONTROLLER (UNIVERSAL SHELL READY)
  * File: /workforce/workforce.js
  * Tech Stack: Vanilla JS (ES Modules), Supabase, Tailwind CSS
- * Styling Palette: Prayosha Navy (#1E3A5F), Crisp Off-White, Amber & Emerald
+ * Session Memory: localStorage ('prayosha_user', 'activeProjectId', 'activeProjectName', 'userRole')
  * ==============================================================================
  */
 
 import * as Config from '../config.js';
 
-// Initialize Supabase Client from config
+// Initialize Supabase Client
 const supabase = Config.supabase;
 
 // ==============================================================================
@@ -18,21 +18,21 @@ const supabase = Config.supabase;
 const state = {
     // User & Session Context
     currentUser: null,
-    currentUserName: 'Jay',
+    currentUserName: 'Site Engineer',
     userId: null,
     userRole: 'Site Supervisor',
 
-    // Assigned Projects (Point 1)
+    // Assigned Projects
     allProjects: [],
     assignedProjects: [],
     activeProjectId: null,
     activeProject: null,
 
     // Active Navigation Tabs
-    activeTab: 'log-attendance', // 'log-attendance' | 'daily-logs' | 'generate-report'
-    activeRecordType: 'labor',   // 'labor' | 'equipment' | 'inhouse'
+    activeTab: 'log-attendance',
+    activeRecordType: 'labor',
 
-    // Hybrid Wages Mode (Point 3: Off by default)
+    // Hybrid Wages Mode
     wagesModeEnabled: false,
 
     // Master Configurations
@@ -43,12 +43,12 @@ const state = {
     // Attendance Entry Form State
     selectedDate: new Date().toISOString().split('T')[0],
     selectedWeather: 'Sunny',
-    agencyRows: [],   // Array of { id, agencyName, tradeType, dailyRate, breakdown: {}, totalCount, remarks }
-    inhouseRows: [],  // Array of { id, workerName, roleType, status, units, otHours, dailyWage, remarks }
+    agencyRows: [],
+    inhouseRows: [],
 
     // Daily Logs View State
     dailyLogsDate: new Date().toISOString().split('T')[0],
-    dailyLogsFilter: 'ALL', // 'ALL' | 'LABOR' | 'EQUIPMENT' | 'INHOUSE'
+    dailyLogsFilter: 'ALL',
     dailyLogsSearch: '',
     currentDayDiary: null,
     dailyLaborLogs: [],
@@ -56,7 +56,7 @@ const state = {
     dailyInhouseLogs: [],
 
     // Report Generation Form State
-    reportExportFormat: 'csv' // 'csv' | 'pdf'
+    reportExportFormat: 'csv'
 };
 
 // ==============================================================================
@@ -64,6 +64,7 @@ const state = {
 // ==============================================================================
 document.addEventListener('DOMContentLoaded', async () => {
     initLocalState();
+    loadSessionMemory();
     setupEventListeners();
     await loadUserContext();
     await scanAndLoadAssignedProjects();
@@ -73,9 +74,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupRealtimeSubscriptions();
 });
 
-/**
- * Initialize Dates and Local In-House Roles
- */
 function initLocalState() {
     const today = new Date().toISOString().split('T')[0];
     const dateInput = document.getElementById('attendanceDateInput');
@@ -86,7 +84,6 @@ function initLocalState() {
     state.selectedDate = today;
     state.dailyLogsDate = today;
 
-    // Load custom inhouse roles from localStorage if saved
     try {
         const savedRoles = localStorage.getItem('prayosha_inhouse_roles');
         if (savedRoles) {
@@ -96,13 +93,37 @@ function initLocalState() {
             }
         }
     } catch (e) {
-        console.warn('Inhouse roles localStorage fallback:', e.message);
+        console.warn('Inhouse roles storage fallback:', e.message);
     }
 }
 
-/**
- * Fetch authenticated user profile & enforce Tamper-Proof "Recorded By"
- */
+function loadSessionMemory() {
+    try {
+        const rawUser = localStorage.getItem('prayosha_user');
+        if (rawUser) {
+            const userObj = JSON.parse(rawUser);
+            state.currentUser = userObj;
+            state.userId = userObj.id || null;
+            state.currentUserName = userObj.full_name || userObj.user_metadata?.full_name || userObj.email?.split('@')[0] || 'Site Engineer';
+        }
+
+        const storedRole = localStorage.getItem('userRole');
+        if (storedRole) state.userRole = storedRole;
+
+        const storedProjId = localStorage.getItem('activeProjectId');
+        if (storedProjId) state.activeProjectId = storedProjId;
+
+        const recInput = document.getElementById('recordedByInput');
+        if (recInput) {
+            recInput.value = state.currentUserName;
+            recInput.readOnly = true;
+            recInput.disabled = true;
+        }
+    } catch (err) {
+        console.warn('Session memory parse notice:', err.message);
+    }
+}
+
 async function loadUserContext() {
     try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -114,7 +135,7 @@ async function loadUserContext() {
                 .from('profiles')
                 .select('*')
                 .eq('id', user.id)
-                .single();
+                .maybeSingle();
 
             if (profile) {
                 state.userRole = profile.role || state.userRole;
@@ -127,7 +148,6 @@ async function loadUserContext() {
         console.warn('User auth session fallback:', err.message);
     }
 
-    // Tamper-Proof: Lock input and display name
     const recInput = document.getElementById('recordedByInput');
     if (recInput) {
         recInput.value = state.currentUserName;
@@ -137,7 +157,7 @@ async function loadUserContext() {
 }
 
 // ==============================================================================
-// POINT 1: SCAN ASSIGNED PROJECTS & AUTOMATIC SELECTOR
+// ASSIGNED PROJECTS SCANNER (SUPPORTS project_name OR name)
 // ==============================================================================
 async function scanAndLoadAssignedProjects() {
     const projectSelect = document.getElementById('assignedProjectSelect');
@@ -147,23 +167,26 @@ async function scanAndLoadAssignedProjects() {
     const noProjectAlert = document.getElementById('noProjectAlert');
 
     try {
-        const { data: projects, error } = await supabase
+        // Query projects without strict column ordering to prevent SQL errors
+        const { data: rawProjects, error } = await supabase
             .from('projects')
-            .select('*')
-            .order('name');
+            .select('*');
 
         if (error) throw error;
-        state.allProjects = projects || [];
 
-        // Scan which projects the user is assigned to
+        // Auto-detect project_name or name column
+        state.allProjects = (rawProjects || []).map(p => ({
+            ...p,
+            name: p.project_name || p.name || p.title || 'Project ' + (p.project_code || p.id)
+        })).sort((a, b) => a.name.localeCompare(b.name));
+
         const uId = state.userId;
         const uName = (state.currentUserName || '').toLowerCase();
         const uRole = state.userRole;
 
-        // Executive roles have universal site access
-        const isExecutive = ['Owner', 'General Manager', 'Chief Engineer'].includes(uRole);
+        const isExecutive = ['Owner', 'General Manager', 'Chief Engineer', 'Admin'].includes(uRole);
 
-        if (isExecutive) {
+        if (isExecutive || !uId) {
             state.assignedProjects = state.allProjects;
         } else {
             state.assignedProjects = state.allProjects.filter(p => {
@@ -184,13 +207,11 @@ async function scanAndLoadAssignedProjects() {
                 );
             });
 
-            // Graceful fallback: If site assignments are not yet mapped, allow access to all projects
             if (state.assignedProjects.length === 0) {
                 state.assignedProjects = state.allProjects;
             }
         }
 
-        // Render Assigned Projects Dropdown
         if (state.assignedProjects.length === 0) {
             if (projectSelect) projectSelect.innerHTML = `<option value="" disabled selected>No active projects found</option>`;
             if (statusBadge) statusBadge.textContent = 'None Assigned';
@@ -201,17 +222,10 @@ async function scanAndLoadAssignedProjects() {
 
         if (noProjectAlert) noProjectAlert.classList.add('hidden');
 
-        // Check if there is an active project cached in localStorage
         const cachedProjectId = localStorage.getItem('activeProjectId');
         const isCachedValid = state.assignedProjects.some(p => p.id === cachedProjectId);
 
-        let selectedId = null;
-        if (isCachedValid) {
-            selectedId = cachedProjectId;
-        } else {
-            // Auto-select the first assigned project
-            selectedId = state.assignedProjects[0].id;
-        }
+        let selectedId = isCachedValid ? cachedProjectId : state.assignedProjects[0].id;
 
         state.activeProjectId = selectedId;
         state.activeProject = state.assignedProjects.find(p => p.id === selectedId);
@@ -219,7 +233,6 @@ async function scanAndLoadAssignedProjects() {
         localStorage.setItem('activeProjectId', state.activeProject.id);
         localStorage.setItem('activeProjectName', state.activeProject.name);
 
-        // Populate Dropdown
         if (projectSelect) {
             projectSelect.innerHTML = state.assignedProjects.map(p => `
                 <option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>
@@ -228,7 +241,6 @@ async function scanAndLoadAssignedProjects() {
             `).join('');
         }
 
-        // Update Status Badges
         if (state.assignedProjects.length === 1) {
             if (statusBadge) statusBadge.textContent = '1 Project Assigned (Auto-Selected)';
         } else {
@@ -240,7 +252,6 @@ async function scanAndLoadAssignedProjects() {
             headerBadgeText.textContent = `${state.activeProject.project_code ? '[' + state.activeProject.project_code + '] ' : ''}${state.activeProject.name}`;
         }
 
-        // Populate Point 4 Report Project Filter Dropdown
         populateReportProjectFilter();
 
     } catch (err) {
@@ -317,9 +328,6 @@ function populateReportScopeDropdowns() {
     }
 }
 
-// ==============================================================================
-// POINT 3: HYBRID WAGES MODE TOGGLE
-// ==============================================================================
 function toggleWagesMode() {
     state.wagesModeEnabled = !state.wagesModeEnabled;
 
@@ -329,36 +337,31 @@ function toggleWagesMode() {
     const statusLabel = document.getElementById('kpiWagesStatusLabel');
 
     if (state.wagesModeEnabled) {
-        btn.className = 'px-3 py-2 rounded-lg border-2 border-emerald-600 bg-emerald-50 text-emerald-800 font-bold text-xs transition shadow-sm flex items-center gap-2';
-        icon.className = 'fa-solid fa-toggle-on text-emerald-600 text-sm';
-        btn.querySelector('span').textContent = 'Wages: Active';
+        if (btn) btn.className = 'px-3 py-2 rounded-lg border-2 border-emerald-600 bg-emerald-50 text-emerald-800 font-bold text-xs transition shadow-sm flex items-center gap-2';
+        if (icon) icon.className = 'fa-solid fa-toggle-on text-emerald-600 text-sm';
+        if (btn) btn.querySelector('span').textContent = 'Wages: Active';
         if (eqpRateContainer) eqpRateContainer.classList.remove('hidden');
         if (statusLabel) statusLabel.textContent = 'Wages Mode: Active';
         showToast('Wages mode enabled: Financial rates & costs are now editable', 'info');
     } else {
-        btn.className = 'px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition shadow-sm flex items-center gap-2';
-        icon.className = 'fa-solid fa-toggle-off text-slate-400 text-sm';
-        btn.querySelector('span').textContent = 'Add Wages';
+        if (btn) btn.className = 'px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition shadow-sm flex items-center gap-2';
+        if (icon) icon.className = 'fa-solid fa-toggle-off text-slate-400 text-sm';
+        if (btn) btn.querySelector('span').textContent = 'Add Wages';
         if (eqpRateContainer) eqpRateContainer.classList.add('hidden');
         if (statusLabel) statusLabel.textContent = 'Wages Mode: Off';
         showToast('Wages mode disabled: Financial rates hidden for simplified attendance', 'info');
     }
 
-    // Refresh dynamic forms to toggle wage input visibility
     renderAgencyRows();
     renderInhouseRows();
     populateEquipmentDropdown(document.getElementById('eqpTypeSelect')?.value);
     updateExecutiveKpis();
 }
 
-// ==============================================================================
-// 1. LOG ATTENDANCE: CONTRACTOR & AGENCY LABOUR LOG
-// ==============================================================================
 function resetAttendanceForms() {
     state.agencyRows = [];
     state.inhouseRows = [];
 
-    // Pre-populate with standard agencies if available
     if (state.agencyConfigs.length > 0) {
         state.agencyConfigs.forEach(conf => {
             addAgencyRow(conf.agency_name, conf.trade_type, conf.default_wage_rate);
@@ -367,15 +370,10 @@ function resetAttendanceForms() {
         addAgencyRow('Bholenath Construction', 'Contractor', 550.00);
     }
 
-    // Pre-populate standard in-house worker rows
     addInhouseRow('Ramesh Mistri', 'Head Mistri', 'Full Day', 1.0, 0, 700.00);
     addInhouseRow('Suresh Kumar', 'Male Helper', 'Full Day', 1.0, 0, 450.00);
 }
 
-/**
- * Add an agency attendance row.
- * NOTE: Agency names are selected strictly from pre-approved master configs (Point 2: Higher management only).
- */
 function addAgencyRow(defaultAgencyName = '', defaultTrade = '', defaultRate = 550.00) {
     const rowId = 'agency_row_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
     const newRow = {
@@ -421,7 +419,6 @@ function renderAgencyRows() {
 
         return `
             <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4 hover:border-slate-300 transition" data-row-id="${row.id}">
-                <!-- Agency Header Row -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
                         <span class="w-6 h-6 rounded-lg bg-prayosha-navy text-white font-mono text-xs font-bold flex items-center justify-center">${index + 1}</span>
@@ -443,7 +440,6 @@ function renderAgencyRows() {
                         </span>
                     </div>
 
-                    <!-- Auto-filled Indicator & Remove Action -->
                     <div class="flex items-center gap-3">
                         ${row.isYesterdayPrefilled ? `
                             <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-1">
@@ -456,10 +452,8 @@ function renderAgencyRows() {
                     </div>
                 </div>
 
-                <!-- Dynamic Trade Sub-Breakdown Input Fields -->
                 ${breakdownHtml}
 
-                <!-- Totals & Hybrid Rate Strip -->
                 <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 text-xs">
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-1.5 font-bold text-slate-800">
@@ -468,7 +462,6 @@ function renderAgencyRows() {
                             <span class="text-[11px] text-slate-500 font-normal">Labours</span>
                         </div>
 
-                        <!-- Hybrid Wages Display (Point 3) -->
                         ${state.wagesModeEnabled ? `
                             <div class="flex items-center gap-1.5 text-slate-600">
                                 <span>Wage:</span>
@@ -481,7 +474,6 @@ function renderAgencyRows() {
                         ` : ''}
                     </div>
 
-                    <!-- Remarks Input -->
                     <div class="flex-1 max-w-sm">
                         <input type="text" placeholder="Remarks (Tower, slab, location)..." class="glass-input text-xs py-1.5 px-3 rounded-lg w-full agency-remark-input" data-row-id="${row.id}" value="${escapeHtml(row.remarks || '')}">
                     </div>
@@ -493,11 +485,7 @@ function renderAgencyRows() {
     bindAgencyRowEvents();
 }
 
-/**
- * Generate Sub-Trade input boxes
- */
 function generateTradeBreakdownHtml(rowId, tradeType, currentBreakdown = {}, customFields = []) {
-    // 1. If Contractor: 5 Fields (Senting, Steel, Masionary, Plaster, Casting)
     if (tradeType.toLowerCase() === 'contractor') {
         const fields = [
             { key: 'senting', label: 'Senting (Shuttering)' },
@@ -522,7 +510,6 @@ function generateTradeBreakdownHtml(rowId, tradeType, currentBreakdown = {}, cus
         `;
     }
 
-    // 2. If Plumber: 2 Fields (Water Proofing, Plumbing)
     if (tradeType.toLowerCase() === 'plumber' || tradeType.toLowerCase() === 'plumbing') {
         const fields = [
             { key: 'water_proofing', label: 'Water Proofing' },
@@ -544,7 +531,6 @@ function generateTradeBreakdownHtml(rowId, tradeType, currentBreakdown = {}, cus
         `;
     }
 
-    // 3. Custom Fields from Super Engine
     if (Array.isArray(customFields) && customFields.length > 0) {
         return `
             <div class="grid grid-cols-2 sm:grid-cols-${Math.min(customFields.length, 4)} gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
@@ -561,7 +547,6 @@ function generateTradeBreakdownHtml(rowId, tradeType, currentBreakdown = {}, cus
         `;
     }
 
-    // 4. Default Single Trade Count Input
     return `
         <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 max-w-xs space-y-1">
             <label class="text-[10px] font-bold text-slate-600 uppercase tracking-wider">Number of Labours</label>
@@ -574,7 +559,6 @@ function generateTradeBreakdownHtml(rowId, tradeType, currentBreakdown = {}, cus
 }
 
 function bindAgencyRowEvents() {
-    // Agency Select change
     document.querySelectorAll('.agency-name-select').forEach(select => {
         select.addEventListener('change', (e) => {
             const rowId = e.target.dataset.rowId;
@@ -597,7 +581,6 @@ function bindAgencyRowEvents() {
         });
     });
 
-    // Sub-Trade Count input change
     document.querySelectorAll('.trade-count-input').forEach(input => {
         input.addEventListener('input', (e) => {
             const rowId = e.target.dataset.rowId;
@@ -625,7 +608,6 @@ function bindAgencyRowEvents() {
         });
     });
 
-    // Wage input change
     document.querySelectorAll('.agency-wage-input').forEach(input => {
         input.addEventListener('change', (e) => {
             const rowId = e.target.dataset.rowId;
@@ -642,7 +624,6 @@ function bindAgencyRowEvents() {
         });
     });
 
-    // Remark input change
     document.querySelectorAll('.agency-remark-input').forEach(input => {
         input.addEventListener('change', (e) => {
             const rowId = e.target.dataset.rowId;
@@ -651,7 +632,6 @@ function bindAgencyRowEvents() {
         });
     });
 
-    // Remove row button
     document.querySelectorAll('.remove-agency-row-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const rowId = e.currentTarget.dataset.rowId;
@@ -662,9 +642,6 @@ function bindAgencyRowEvents() {
     });
 }
 
-/**
- * Scan Yesterday's Attendance for a Single Agency
- */
 async function scanYesterdayAttendanceForAgency(rowId, agencyName) {
     if (!state.activeProjectId || !agencyName) return;
 
@@ -699,9 +676,6 @@ async function scanYesterdayAttendanceForAgency(rowId, agencyName) {
     }
 }
 
-/**
- * 1-Click Copy All Yesterday's Deployments
- */
 async function copyAllYesterdayDeployments() {
     if (!state.activeProjectId) {
         showToast('Please select a project first', 'warning');
@@ -747,9 +721,6 @@ async function copyAllYesterdayDeployments() {
     }
 }
 
-/**
- * Save Labor Attendance Records to Supabase
- */
 async function saveLaborLogs() {
     if (!state.activeProjectId) {
         showToast('Please select a project first', 'warning');
@@ -792,9 +763,6 @@ async function saveLaborLogs() {
     }
 }
 
-// ==============================================================================
-// 2. LOG ATTENDANCE: HEAVY EQUIPMENT LOG & QUICK ADD (POINT 2)
-// ==============================================================================
 function openQuickAddEquipmentModal() {
     document.getElementById('quickEqpNameInput').value = '';
     document.getElementById('quickEqpRateInput').value = '1000.00';
@@ -905,9 +873,6 @@ async function saveEquipmentLog() {
     }
 }
 
-// ==============================================================================
-// 3. LOG ATTENDANCE: IN-HOUSE SITE LABOUR & QUICK ADD ROLE (POINT 2)
-// ==============================================================================
 function openQuickAddRoleModal() {
     document.getElementById('quickRoleNameInput').value = '';
     document.getElementById('quickRoleWageInput').value = '500.00';
@@ -969,7 +934,6 @@ function renderInhouseRows() {
                 <span class="w-5 h-5 rounded bg-prayosha-navy text-white font-mono text-[11px] font-bold flex items-center justify-center">${idx + 1}</span>
                 <input type="text" placeholder="Worker Name" class="glass-input text-xs py-1 px-2.5 rounded w-44 font-bold text-slate-800 inh-name-input" data-inh-id="${row.id}" value="${escapeHtml(row.workerName)}">
                 
-                <!-- Dynamic In-House Roles Dropdown -->
                 <select class="glass-input text-xs py-1 px-2.5 rounded font-semibold inh-role-select" data-inh-id="${row.id}">
                     ${state.inhouseRoles.map(r => `
                         <option value="${escapeHtml(r)}" ${row.roleType === r ? 'selected' : ''}>${escapeHtml(r)}</option>
@@ -991,7 +955,6 @@ function renderInhouseRows() {
                     <input type="number" step="0.5" class="glass-input text-xs py-1 px-1.5 rounded w-14 text-center font-mono inh-ot-input" data-inh-id="${row.id}" value="${row.overtimeHours}" placeholder="Hrs">
                 </div>
 
-                <!-- Hybrid Wages Input (Point 3) -->
                 ${state.wagesModeEnabled ? `
                     <div class="flex items-center gap-1 text-slate-600">
                         <span class="font-medium">Wage:</span>
@@ -1112,9 +1075,6 @@ async function saveInhouseLogs() {
     }
 }
 
-// ==============================================================================
-// 4. SITE WEATHER & DAILY DIARY LOGIC
-// ==============================================================================
 async function saveDailyDiary() {
     if (!state.activeProjectId) return;
     try {
@@ -1134,9 +1094,6 @@ async function saveDailyDiary() {
     }
 }
 
-// ==============================================================================
-// 5. DAILY LOGS: MUSTER FEED & KPI CALCULATIONS
-// ==============================================================================
 async function fetchDailyLogs() {
     if (!state.activeProjectId) return;
 
@@ -1182,7 +1139,7 @@ function renderDailyDiaryBanner() {
     if (banner) banner.classList.remove('hidden');
     if (weatherBadge) weatherBadge.textContent = state.currentDayDiary.weather || '☀️ Sunny';
     if (notesText) notesText.textContent = state.currentDayDiary.notes || 'Normal Operations';
-    if (recText) recText.textContent = `Recorded by ${state.currentDayDiary.recorded_by_name || 'Site Supervisor'}`;
+    if (recText) recText.textContent = `Recorded by ${state.currentDayDiary.recorded_by_name || 'Site Engineer'}`;
 }
 
 function renderDailyLogsTable() {
@@ -1286,7 +1243,7 @@ function renderDailyLogsTable() {
             </td>
             <td class="py-3 px-4 text-slate-700 font-medium flex items-center gap-1.5">
                 <i class="fa-solid fa-user-shield text-[10px] text-prayosha-navy"></i>
-                <span>${escapeHtml(item.recordedBy || 'Jay')}</span>
+                <span>${escapeHtml(item.recordedBy || 'Site Engineer')}</span>
             </td>
             <td class="py-3 px-3 text-center">
                 <button type="button" class="text-slate-400 hover:text-rose-600 text-xs transition delete-log-record-btn p-1" data-table="${item.table}" data-id="${item.id}" title="Delete Record">
@@ -1330,9 +1287,6 @@ async function deleteLogRecord(tableKey, recordId) {
     }
 }
 
-/**
- * Top KPI Summary Update
- */
 function updateExecutiveKpis() {
     let totalContractor = 0;
     let totalInhouse = 0;
@@ -1384,7 +1338,7 @@ function updateRealtimeKpis() {
 }
 
 // ==============================================================================
-// 6. GENERATE REPORT: PROJECT FILTER (POINT 4), 7 TIMEFRAMES, CSV & PDF
+// 6. GENERATE REPORT: PROJECT FILTER, 7 TIMEFRAMES, CSV & PDF
 // ==============================================================================
 async function handleGenerateReport() {
     if (!state.activeProjectId) {
@@ -1407,7 +1361,6 @@ async function handleGenerateReport() {
         let eqpQuery = supabase.from('workforce_equipment_logs').select('*').gte('log_date', startStr).lte('log_date', endStr).order('log_date', { ascending: true });
         let inhQuery = supabase.from('workforce_inhouse_logs').select('*').gte('log_date', startStr).lte('log_date', endStr).order('log_date', { ascending: true });
 
-        // Point 4: Apply Project Filter
         if (projectFilter !== 'ALL') {
             lbrQuery = lbrQuery.eq('project_id', projectFilter);
             eqpQuery = eqpQuery.eq('project_id', projectFilter);
@@ -1493,9 +1446,6 @@ function computeTimeframeRange(timeframe) {
     };
 }
 
-/**
- * CSV Generation
- */
 function exportWorkforceCsv(reportType, projectLabel, startStr, endStr, lbrLogs, eqpLogs, inhLogs) {
     let csvRows = [];
     csvRows.push(['Prayosha ERP - Workforce & Equipment Muster Register']);
@@ -1562,9 +1512,6 @@ function exportWorkforceCsv(reportType, projectLabel, startStr, endStr, lbrLogs,
     showToast('Workforce CSV downloaded successfully!', 'success');
 }
 
-/**
- * Printable PDF Muster Register
- */
 function exportWorkforcePdf(reportType, projectLabel, startStr, endStr, lbrLogs, eqpLogs, inhLogs) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -1688,9 +1635,6 @@ function exportWorkforcePdf(reportType, projectLabel, startStr, endStr, lbrLogs,
     printWindow.document.close();
 }
 
-// ==============================================================================
-// 7. WHATSAPP SITE SUMMARY DISPATCH
-// ==============================================================================
 function dispatchWhatsAppSummary() {
     const projName = state.activeProject?.name || 'Prayosha Site';
     const date = state.dailyLogsDate;
@@ -1724,9 +1668,6 @@ ${eqpSummary.length > 0 ? eqpSummary.map(m => '• ' + m).join('\n') : '• No h
     window.open(url, '_blank');
 }
 
-// ==============================================================================
-// 8. SUPER CORE ENGINE: MANAGEMENT CONTROLS
-// ==============================================================================
 function openSuperEngineModal() {
     renderSuperEngineLists();
     document.getElementById('superEngineModal').classList.remove('hidden');
@@ -1867,9 +1808,6 @@ async function handleAddNewEquipmentConfig() {
     }
 }
 
-// ==============================================================================
-// REALTIME NOTIFICATIONS & CHANNEL LISTENER
-// ==============================================================================
 function setupRealtimeSubscriptions() {
     try {
         supabase
@@ -1890,11 +1828,31 @@ function setupRealtimeSubscriptions() {
     }
 }
 
-// ==============================================================================
-// EVENT LISTENERS & UI ROUTING
-// ==============================================================================
 function setupEventListeners() {
-    // Point 1: Assigned Project Selector Change
+    window.addEventListener('projectChanged', async (e) => {
+        const targetId = e.detail?.projectId || localStorage.getItem('activeProjectId');
+        if (targetId && targetId !== state.activeProjectId) {
+            state.activeProjectId = targetId;
+            state.activeProject = state.allProjects.find(p => p.id === targetId) || {
+                id: targetId,
+                name: localStorage.getItem('activeProjectName') || 'Assigned Site'
+            };
+
+            const projSelect = document.getElementById('assignedProjectSelect');
+            if (projSelect) projSelect.value = targetId;
+
+            const headerBadgeText = document.getElementById('activeProjectCodeName');
+            if (headerBadgeText && state.activeProject) {
+                headerBadgeText.textContent = `${state.activeProject.project_code ? '[' + state.activeProject.project_code + '] ' : ''}${state.activeProject.name}`;
+            }
+
+            resetAttendanceForms();
+            await fetchDailyLogs();
+            populateReportProjectFilter();
+            showToast(`Switched site to: ${state.activeProject.name}`, 'info');
+        }
+    });
+
     document.getElementById('assignedProjectSelect')?.addEventListener('change', (e) => {
         const selectedId = e.target.value;
         if (selectedId) {
@@ -1914,10 +1872,8 @@ function setupEventListeners() {
         }
     });
 
-    // Point 3: Hybrid Wages Toggle Button
     document.getElementById('toggleWagesGlobalBtn')?.addEventListener('click', toggleWagesMode);
 
-    // Module Top Tabs
     const tabs = ['tabLogAttendanceBtn', 'tabDailyLogsBtn', 'tabGenerateReportBtn'];
     tabs.forEach(id => {
         document.getElementById(id)?.addEventListener('click', (e) => {
@@ -1926,7 +1882,6 @@ function setupEventListeners() {
         });
     });
 
-    // Record Type Switcher (Labor / Equipment / Inhouse)
     const recordPills = [
         document.getElementById('recordTypeLaborBtn'),
         document.getElementById('recordTypeEquipmentBtn'),
@@ -1939,7 +1894,6 @@ function setupEventListeners() {
         });
     });
 
-    // Weather Pills
     document.querySelectorAll('.weather-pill').forEach(pill => {
         pill.addEventListener('click', (e) => {
             document.querySelectorAll('.weather-pill').forEach(p => {
@@ -1950,18 +1904,15 @@ function setupEventListeners() {
         });
     });
 
-    // Date Picker
     document.getElementById('attendanceDateInput')?.addEventListener('change', (e) => {
         state.selectedDate = e.target.value;
         state.agencyRows.forEach(r => scanYesterdayAttendanceForAgency(r.id, r.agencyName));
     });
 
-    // Bulk & Save Buttons
     document.getElementById('copyAllYesterdayBtn')?.addEventListener('click', copyAllYesterdayDeployments);
     document.getElementById('addAgencyRowBtn')?.addEventListener('click', () => addAgencyRow());
     document.getElementById('saveLaborLogsBtn')?.addEventListener('click', saveLaborLogs);
 
-    // Equipment Listeners & Point 2 Quick Add Equipment
     document.getElementById('quickAddEquipmentBtn')?.addEventListener('click', openQuickAddEquipmentModal);
     document.getElementById('closeQuickEquipmentBtn')?.addEventListener('click', closeQuickAddEquipmentModal);
     document.getElementById('cancelQuickEquipmentBtn')?.addEventListener('click', closeQuickAddEquipmentModal);
@@ -1977,7 +1928,6 @@ function setupEventListeners() {
     document.getElementById('eqpHourlyRateInput')?.addEventListener('input', updateEquipmentCostPreview);
     document.getElementById('saveEquipmentLogBtn')?.addEventListener('click', saveEquipmentLog);
 
-    // In-House Listeners & Point 2 Quick Add Role
     document.getElementById('quickAddInhouseRoleBtn')?.addEventListener('click', openQuickAddRoleModal);
     document.getElementById('closeQuickRoleBtn')?.addEventListener('click', closeQuickAddRoleModal);
     document.getElementById('cancelQuickRoleBtn')?.addEventListener('click', closeQuickAddRoleModal);
@@ -1986,7 +1936,6 @@ function setupEventListeners() {
     document.getElementById('addInhouseRowBtn')?.addEventListener('click', () => addInhouseRow());
     document.getElementById('saveInhouseLogsBtn')?.addEventListener('click', saveInhouseLogs);
 
-    // Daily Logs Controls
     document.getElementById('dailyLogsDateFilter')?.addEventListener('change', (e) => {
         state.dailyLogsDate = e.target.value;
         fetchDailyLogs();
@@ -2017,10 +1966,8 @@ function setupEventListeners() {
         renderDailyLogsTable();
     });
 
-    // WhatsApp Summary Button
     document.getElementById('whatsappSummaryBtn')?.addEventListener('click', dispatchWhatsAppSummary);
 
-    // Report Generation Form Listeners
     document.getElementById('reportTimeframeSelect')?.addEventListener('change', (e) => {
         const customContainer = document.getElementById('customDateRangeContainer');
         if (e.target.value === 'custom') {
@@ -2047,7 +1994,6 @@ function setupEventListeners() {
 
     document.getElementById('generateDownloadReportBtn')?.addEventListener('click', handleGenerateReport);
 
-    // Super Core Engine Modal Listeners
     document.getElementById('openSuperEngineBtn')?.addEventListener('click', openSuperEngineModal);
     document.getElementById('closeSuperEngineBtn')?.addEventListener('click', closeSuperEngineModal);
     document.getElementById('closeSuperEngineFooterBtn')?.addEventListener('click', closeSuperEngineModal);
@@ -2140,9 +2086,6 @@ function stepDailyLogsDate(days) {
     fetchDailyLogs();
 }
 
-// ==============================================================================
-// UTILITIES & HELPERS
-// ==============================================================================
 function formatNumber(num) {
     if (isNaN(num) || num === null) return '0.00';
     return Number(num).toLocaleString('en-IN', {

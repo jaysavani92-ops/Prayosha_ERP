@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Report - Prayosha ERP</title>
+
+    <!-- Suppress favicon 404 console notice -->
+    <link rel="icon" href="data:,">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Poppins Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Supabase JS Client v2 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .glass-card {
+            background-color: rgba(255, 255, 255, 0.90);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 10px 30px 0 rgba(30, 58, 95, 0.05);
+        }
+
+        .glass-input {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .glass-input:focus {
+            background-color: #ffffff;
+            border-color: #1E3A5F;
+            box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 8px;
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 antialiased selection:bg-[#FFBF00] selection:text-[#1E3A5F]">
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Header & Modular Sub-Tab Navigation -->
+        <header class="glass-card rounded-2xl p-5 border border-slate-200/80">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/60 pb-5">
+                <div>
+                    <h1 class="text-2xl font-bold text-[#1E3A5F] flex items-center gap-2">
+                        <span class="text-[#FFBF00]">⬢</span> Purchases & Indents
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium mt-1">Procurement intelligence, auditing exports, and financial statement generation</p>
+                </div>
+                <!-- Project Context Badge -->
+                <div class="inline-flex items-center gap-2 bg-[#1E3A5F]/5 border border-[#1E3A5F]/15 px-3.5 py-1.5 rounded-xl self-start md:self-auto">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="activeProjectDisplay" class="text-xs font-semibold text-[#1E3A5F]">Loading Project...</span>
+                </div>
+            </div>
+
+            <!-- Horizontal Sub-Module Tabs -->
+            <nav class="flex items-center gap-2 overflow-x-auto pt-4 custom-scrollbar">
+                <a href="purchase-ledger.html" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-[#1E3A5F] hover:bg-white/80 transition flex items-center gap-1.5 flex-shrink-0">
+                    <span>📋</span> Purchase Ledger
+                </a>
+                <a href="log-invoice.html" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-[#1E3A5F] hover:bg-white/80 transition flex items-center gap-1.5 flex-shrink-0">
+                    <span>🧾</span> Log Invoice
+                </a>
+                <a href="indent-status.html" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-[#1E3A5F] hover:bg-white/80 transition flex items-center gap-1.5 flex-shrink-0">
+                    <span>📦</span> Indent Status
+                </a>
+                <a href="pending-payments.html" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-[#1E3A5F] hover:bg-white/80 transition flex items-center gap-1.5 flex-shrink-0">
+                    <span>⏳</span> Pending Payments
+                </a>
+                <a href="cash-ledger.html" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-[#1E3A5F] hover:bg-white/80 transition flex items-center gap-1.5 flex-shrink-0">
+                    <span>💵</span> Cash Ledger
+                </a>
+                <a href="bank-ledger.html" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 hover:text-[#1E3A5F] hover:bg-white/80 transition flex items-center gap-1.5 flex-shrink-0">
+                    <span>🏦</span> Bank Ledger
+                </a>
+                <a href="generate-report.html" class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#1E3A5F] text-white shadow-md transition flex items-center gap-1.5 flex-shrink-0">
+                    <span>📊</span> Generate Report
+                </a>
+            </nav>
+        </header>
+
+        <!-- Analytics & Report Generation Form Card -->
+        <section class="glass-card rounded-2xl p-6 border border-slate-200/80 space-y-6">
+            <div class="flex items-center gap-2 border-b border-slate-200/60 pb-3">
+                <span class="text-sm font-bold text-[#1E3A5F]">📊 ANALYTICS & REPORT GENERATION</span>
+            </div>
+
+            <form id="reportForm" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                    <!-- 1. SELECT REPORT TYPE -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">1. Select Report Type</label>
+                        <select id="reportTypeSelect" class="glass-input w-full px-4 py-3 rounded-xl text-xs font-semibold text-slate-800 outline-none cursor-pointer">
+                            <option value="MASTER_LEDGER">Master Purchase Ledger (Comprehensive)</option>
+                            <option value="VENDOR_SUMMARY">Vendor-wise Financial Summary</option>
+                            <option value="CBS_BREAKDOWN">CBS Cost Breakdown Analysis</option>
+                            <option value="PENDING_LIABILITIES">Pending Vendor Liabilities Statement</option>
+                            <option value="BANK_DISBURSEMENTS">Bank Clearing & UTR Register</option>
+                        </select>
+                    </div>
+
+                    <!-- 3. TIMEFRAME -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">3. Timeframe</label>
+                        <select id="timeframeSelect" class="glass-input w-full px-4 py-3 rounded-xl text-xs font-semibold text-slate-800 outline-none cursor-pointer">
+                            <option value="ALL_TIME">All Time (Default)</option>
+                            <option value="THIS_MONTH">This Month</option>
+                            <option value="LAST_MONTH">Last Month</option>
+                            <option value="THIS_QUARTER">Current Quarter</option>
+                            <option value="FY_CURRENT">Current Financial Year (FY 2026-27)</option>
+                            <option value="CUSTOM">Custom Date Range...</option>
+                        </select>
+
+                        <!-- Dynamic Custom Date Range Pickers -->
+                        <div id="customDateRangeBox" class="hidden grid grid-cols-2 gap-3 mt-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">From Date</label>
+                                <input type="date" id="customStartDate" class="glass-input w-full px-3 py-2 rounded-xl text-xs font-medium outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">To Date</label>
+                                <input type="date" id="customEndDate" class="glass-input w-full px-3 py-2 rounded-xl text-xs font-medium outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. EXPORT FORMAT -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-2">2. Export Format</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label id="formatCsvLabel" class="flex items-center justify-center gap-2 p-3 rounded-xl border border-emerald-500 bg-emerald-50/70 text-emerald-800 font-bold text-xs cursor-pointer transition">
+                                <input type="radio" name="exportFormat" value="CSV" checked class="hidden">
+                                <span>📄</span> CSV / Excel Format
+                            </label>
+                            <label id="formatPdfLabel" class="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-200 bg-white/50 text-slate-600 font-semibold text-xs cursor-pointer hover:bg-slate-50 transition">
+                                <input type="radio" name="exportFormat" value="PDF" class="hidden">
+                                <span>📑</span> PDF Print Format
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 4. ADVANCED FILTERS -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase">4. Advanced Filters</label>
+                        
+                        <!-- Department Filter -->
+                        <select id="filterDepartment" class="glass-input w-full px-4 py-2.5 rounded-xl text-xs font-medium text-slate-700 outline-none cursor-pointer">
+                            <option value="ALL">All Departments</option>
+                            <option value="Pre-Construction & Approvals">Pre-Construction & Approvals</option>
+                            <option value="Site Establishment & Admin">Site Establishment & Admin</option>
+                            <option value="Civil & Structural Works">Civil & Structural Works</option>
+                            <option value="MEP Works">MEP Works</option>
+                            <option value="Finishing Works">Finishing Works</option>
+                            <option value="Plant & Machinery">Plant & Machinery</option>
+                            <option value="Workforce & Labor">Workforce & Labor</option>
+                            <option value="Miscellaneous">Miscellaneous</option>
+                        </select>
+
+                        <!-- Payment Status Filter -->
+                        <select id="filterStatus" class="glass-input w-full px-4 py-2.5 rounded-xl text-xs font-medium text-slate-700 outline-none cursor-pointer">
+                            <option value="ALL">All Payment / Clearance Statuses</option>
+                            <option value="PAID">Paid / Cleared Only</option>
+                            <option value="PARTIAL">Partially Settled</option>
+                            <option value="PENDING">Pending Balances Only</option>
+                        </select>
+
+                        <!-- Vendor Filter -->
+                        <input type="text" id="filterVendor" placeholder="Filter by Vendor Name (Optional)..." class="glass-input w-full px-4 py-2.5 rounded-xl text-xs font-medium outline-none">
+                    </div>
+
+                </div>
+
+                <!-- Action Button -->
+                <div class="flex items-center justify-end pt-3 border-t border-slate-200/60">
+                    <button type="submit" id="generateDownloadBtn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#1E3A5F] hover:bg-[#FFBF00] hover:text-[#1E3A5F] text-white font-bold text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                        <svg id="generateSpinner" class="w-4 h-4 hidden animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <span id="generateBtnIcon">📥</span>
+                        <span id="generateBtnText">Generate & Download</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Live Report Preview Section -->
+        <section class="glass-card rounded-2xl p-6 border border-slate-200/80 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-[#1E3A5F] uppercase tracking-wider">Audit Preview</span>
+                    <span id="previewCountBadge" class="text-[10px] font-bold bg-[#1E3A5F]/10 text-[#1E3A5F] px-2 py-0.5 rounded-full">0 Records Qualified</span>
+                </div>
+                <span class="text-[11px] text-slate-400 font-medium">Real-time compilation from primary verified database</span>
+            </div>
+
+            <!-- Preview Table Scroll -->
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                    <thead class="bg-[#1E3A5F] text-white uppercase text-[10px] tracking-wider font-semibold">
+                        <tr id="previewTableHeadRow">
+                            <th class="py-3 px-3">Date</th>
+                            <th class="py-3 px-3">Purchase ID</th>
+                            <th class="py-3 px-3">Vendor</th>
+                            <th class="py-3 px-3">Item / Description</th>
+                            <th class="py-3 px-3 text-right">Total (₹)</th>
+                            <th class="py-3 px-3 text-right">Bank Paid (₹)</th>
+                            <th class="py-3 px-3 text-right">Balance Due (₹)</th>
+                            <th class="py-3 px-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="previewTableBody" class="divide-y divide-slate-100 bg-white/60 font-medium text-slate-700">
+                        <tr>
+                            <td colspan="8" class="py-8 text-center text-slate-400 font-medium text-xs">
+                                Configure parameters above to generate audit preview.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 1. Central Configuration (Loaded as ES Module) -->
+    <script type="module" src="../config.js"></script>
+
+    <!-- 2. Universal Navigation Shell (Loaded as ES Module) -->
+    <script type="module">
+        import { initShell } from '../common/shell.js';
+        document.addEventListener('DOMContentLoaded', () => {
+            initShell({ activeModule: 'purchase' });
+        });
+    </script>
+
+    <!-- 3. Sub-Tab Script Logic (Loaded as ES Module) -->
+    <script type="module" src="generate-report.js"></script>
+
+</body>
+</html>

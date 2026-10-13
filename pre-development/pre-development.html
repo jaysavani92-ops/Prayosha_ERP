@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pre-Development Module | Prayosha ERP</title>
-
+<link rel="icon" href="data:,">
     <!-- Google Fonts: Poppins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -107,66 +107,52 @@
         }
     </style>
 </head>
-<body class="text-slate-100 flex flex-col min-h-screen antialiased selection:bg-prayosha-amber selection:text-slate-900">
+<body class="text-slate-100 flex flex-col min-h-screen antialiased selection:bg-prayosha-amber selection:text-slate-900 pt-20 md:pt-24 pb-28 px-4 sm:px-6 lg:px-8">
 
-    <!-- TOP NAVIGATION BAR -->
-    <header class="glass-panel sticky top-0 z-40 border-b border-white/10 px-4 sm:px-6 lg:px-8 py-3">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <!-- Brand & Breadcrumb -->
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-prayosha-amber/20 border border-prayosha-amber/40 flex items-center justify-center text-prayosha-amber shadow-lg shadow-prayosha-amber/10 flex-shrink-0">
-                    <i class="fa-solid fa-compass-drafting text-lg"></i>
-                </div>
-                <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs uppercase tracking-wider font-semibold text-prayosha-amber">Prayosha ERP</span>
-                        <span class="text-white/30 text-xs">/</span>
-                        <a href="../projects/project-dashboard.html" class="text-xs text-slate-400 hover:text-white transition">Projects</a>
-                        <span class="text-white/30 text-xs">/</span>
-                        <span class="text-xs text-slate-300 font-medium">Pre-Development</span>
-                    </div>
-                    <h1 class="text-base sm:text-lg font-bold text-white truncate flex items-center gap-2">
-                        <span>Pre-Development Master</span>
-                        <span id="activeProjectBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-prayosha-navy/80 border border-prayosha-amber/30 text-prayosha-amber">
-                            <i class="fa-solid fa-building text-[10px]"></i>
-                            <span id="activeProjectCodeName">Loading Project...</span>
-                        </span>
-                    </h1>
-                </div>
+    <!-- Page Context & Primary Action Bar -->
+    <section class="max-w-7xl w-full mx-auto mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-xs uppercase tracking-wider font-semibold text-prayosha-amber">Pre-Construction Operations</span>
+                <span class="text-white/30 text-xs">•</span>
+                <span id="activeProjectBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-prayosha-navy/80 border border-prayosha-amber/30 text-prayosha-amber">
+                    <i class="fa-solid fa-building text-[10px]"></i>
+                    <span id="activeProjectCodeName">Loading Project...</span>
+                </span>
             </div>
-
-            <!-- Header Action Controls -->
-            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <!-- Project Selector Dropdown Button -->
-                <div class="relative">
-                    <select id="projectSelectorDropdown" class="glass-input text-xs sm:text-sm py-2 px-3 rounded-lg pr-8 cursor-pointer appearance-none bg-no-repeat bg-[right_0.5rem_center] bg-[length:1em_1em] font-medium text-slate-200">
-                        <option value="" disabled selected>Switch Active Project</option>
-                    </select>
-                    <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none"></i>
-                </div>
-
-                <!-- Notifications Bell -->
-                <button id="notificationBtn" title="Notifications" class="relative w-9 h-9 rounded-lg glass-card flex items-center justify-center text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 transition">
-                    <i class="fa-regular fa-bell"></i>
-                    <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center animate-pulse">0</span>
-                </button>
-
-                <!-- Audit Log Drawer Button -->
-                <button id="openAuditDrawerBtn" title="Pre-Development Audit Logs" class="w-9 h-9 rounded-lg glass-card flex items-center justify-center text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 transition">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                </button>
-
-                <!-- Super Core Engine Modal Button -->
-                <button id="openSuperEngineBtn" title="Super Core Engine (Categories & Fields Configuration)" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-prayosha-amber/15 hover:bg-prayosha-amber/25 text-prayosha-amber border border-prayosha-amber/40 font-semibold text-xs transition shadow-sm">
-                    <i class="fa-solid fa-sliders text-xs"></i>
-                    <span class="hidden md:inline">Super Engine</span>
-                </button>
-            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                Pre-Development Master
+            </h1>
+            <p class="text-slate-400 text-xs sm:text-sm font-medium">Statutory liasoning, comparative BOQ benchmarks, and site mobilization milestones</p>
         </div>
-    </header>
+
+        <!-- Module Actions (Audit Logs, Super Engine, Notifications) -->
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+            <!-- Hidden fallback dropdown for backwards compatibility with pre-development.js -->
+            <select id="projectSelectorDropdown" class="hidden"></select>
+
+            <!-- Notifications Bell -->
+            <button id="notificationBtn" title="Notifications" class="relative w-9 h-9 rounded-lg glass-card flex items-center justify-center text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 transition">
+                <i class="fa-regular fa-bell"></i>
+                <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center animate-pulse">0</span>
+            </button>
+
+            <!-- Audit Log Drawer Button -->
+            <button id="openAuditDrawerBtn" title="Pre-Development Audit Logs" class="flex items-center gap-1.5 px-3 py-2 rounded-lg glass-card text-slate-300 hover:text-prayosha-amber hover:border-prayosha-amber/40 font-semibold text-xs transition">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span class="hidden sm:inline">Audit Logs</span>
+            </button>
+
+            <!-- Super Core Engine Modal Button -->
+            <button id="openSuperEngineBtn" title="Super Core Engine (Categories & Fields Configuration)" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-prayosha-amber/15 hover:bg-prayosha-amber/25 text-prayosha-amber border border-prayosha-amber/40 font-semibold text-xs transition shadow-sm">
+                <i class="fa-solid fa-sliders text-xs"></i>
+                <span>Super Engine</span>
+            </button>
+        </div>
+    </section>
 
     <!-- MAIN CONTENT CONTAINER -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <main class="flex-1 max-w-7xl w-full mx-auto space-y-6">
 
         <!-- ACTIVE PROJECT BANNER (Alert if no project selected) -->
         <div id="noProjectAlert" class="hidden glass-panel border-amber-500/40 bg-amber-500/10 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -176,7 +162,7 @@
                 </div>
                 <div>
                     <h4 class="text-sm font-semibold text-amber-200">No Active Project Selected</h4>
-                    <p class="text-xs text-amber-300/80">Please select a construction project from the dropdown above or your Project Directory to record pre-development milestones.</p>
+                    <p class="text-xs text-amber-300/80">Please select a construction project from the dropdown in the top navigation bar or your Project Directory.</p>
                 </div>
             </div>
             <a href="../projects/project-dashboard.html" class="px-4 py-2 rounded-xl bg-prayosha-amber text-slate-900 font-semibold text-xs hover:bg-prayosha-amber-dark transition shadow-lg flex items-center gap-2">
@@ -291,9 +277,7 @@
                 </div>
             </div>
 
-            <!-- =================================================================== -->
-            <!-- TAB 1: PHASE 1 - LIASONING (STATUTORY CLEARANCES) -->
-            <!-- =================================================================== -->
+            <!-- TAB 1: PHASE 1 - LIASONING -->
             <div id="tabContentLiasoning" class="tab-content space-y-4">
                 <div class="flex items-center justify-between text-xs text-slate-400 px-1">
                     <div class="flex items-center gap-2">
@@ -333,9 +317,7 @@
                 </div>
             </div>
 
-            <!-- =================================================================== -->
             <!-- TAB 2: PHASE 2 - DEVELOPMENT COST (COMPARATIVE BOQ ENGINE) -->
-            <!-- =================================================================== -->
             <div id="tabContentBoq" class="tab-content hidden space-y-4">
                 <!-- Comparative Benchmark Scanner Toolbar -->
                 <div class="glass-card rounded-xl p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 border border-prayosha-amber/20">
@@ -399,7 +381,6 @@
                                 </td>
                             </tr>
                         </tbody>
-                        <!-- Totals Footer Row -->
                         <tfoot class="bg-slate-900/95 font-semibold text-white border-t-2 border-prayosha-amber/40">
                             <tr>
                                 <td colspan="3" class="py-3 px-4 text-xs font-sans uppercase tracking-wider text-prayosha-amber">Totals Summary:</td>
@@ -417,9 +398,7 @@
                 </div>
             </div>
 
-            <!-- =================================================================== -->
             <!-- TAB 3: PHASE 3 - DEVELOPMENT (SITE MOBILIZATION) -->
-            <!-- =================================================================== -->
             <div id="tabContentDev" class="tab-content hidden space-y-4">
                 <div class="flex items-center justify-between text-xs text-slate-400 px-1">
                     <div class="flex items-center gap-2">
@@ -459,9 +438,7 @@
 
     </main>
 
-    <!-- ======================================================================= -->
     <!-- MODAL 1: CLOUDFLARE R2 DOCUMENT UPLOAD MODAL -->
-    <!-- ======================================================================= -->
     <div id="uploadDocModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
         <div class="glass-panel w-full max-w-lg rounded-2xl border border-white/15 p-6 space-y-5 shadow-2xl relative">
             <button id="closeUploadModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
@@ -511,9 +488,7 @@
         </div>
     </div>
 
-    <!-- ======================================================================= -->
-    <!-- MODAL 2: SUPER CORE ENGINE (DYNAMIC CATEGORIES & HEADERS CONFIG) -->
-    <!-- ======================================================================= -->
+    <!-- MODAL 2: SUPER CORE ENGINE -->
     <div id="superEngineModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
         <div class="glass-panel w-full max-w-3xl rounded-2xl border border-prayosha-amber/30 p-6 space-y-5 shadow-2xl relative max-h-[90vh] flex flex-col">
             <button id="closeSuperEngineBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
@@ -569,9 +544,7 @@
         </div>
     </div>
 
-    <!-- ======================================================================= -->
     <!-- DRAWER 1: AUDIT TRAIL & LOG HISTORY DRAWER -->
-    <!-- ======================================================================= -->
     <div id="auditDrawer" class="hidden fixed inset-0 z-50 overflow-hidden bg-slate-950/70 backdrop-blur-sm">
         <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
             <div class="w-screen max-w-md glass-panel border-l border-white/15 p-6 flex flex-col space-y-4 shadow-2xl">
@@ -598,9 +571,7 @@
         </div>
     </div>
 
-    <!-- ======================================================================= -->
     <!-- DRAWER 2: REAL-TIME NOTIFICATIONS POPUP DRAWER -->
-    <!-- ======================================================================= -->
     <div id="notificationsDrawer" class="hidden fixed inset-0 z-50 overflow-hidden bg-slate-950/70 backdrop-blur-sm">
         <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
             <div class="w-screen max-w-md glass-panel border-l border-white/15 p-6 flex flex-col space-y-4 shadow-2xl">
@@ -627,14 +598,15 @@
     </div>
 
     <!-- TOAST CONTAINER -->
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toastContainer" class="fixed bottom-24 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- LOAD CONFIG AND APPLICATION LOGIC -->
+    <!-- Application Script -->
     <script type="module" src="./pre-development.js"></script>
-    <!-- Universal Navigation Shell -->
+
+    <!-- Universal Navigation Shell Injection -->
     <script type="module">
         import { initShell } from '../common/shell.js';
-        initShell();
+        initShell({ activeModule: 'Pre-Dev' });
     </script>
 </body>
 </html>

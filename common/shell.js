@@ -7,13 +7,16 @@
  * 2. Top Executive Bar: Monogram, active project selector, tri-lingual dropdown, alerts, logout.
  * 3. Mobile-First Bottom Dock: 5 ergonomic destinations with raised center Action Hub.
  * 4. Action Hub Drawer: Zero click-blocking when closed, smooth slide-up when opened.
- * 5. Automatic Module Highlighting: Auto-detects current URL subfolder.
+ * 5. Automatic Module Highlighting: Auto-detects current URL subfolder (including /inventory/ and /purchase/).
  * 6. Smart Auto-Hide on Scroll: Disappears on downward scroll, reappears on upward scroll.
  * 7. Workspace Session Synchronization: activeProjectId, activeProjectName, activeProjectCode.
+ * 8. Full Suite Navigation: Civil Tasks, Inventory, Purchase & Indents, Workforce, Pre-Dev, Admin.
  */
 
-const SUPABASE_PROJECT_URL = window.SUPABASE_URL || 'https://lmzowftkbjdzqmmgxcrf.supabase.co';
-const SUPABASE_PUBLIC_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_ey0ZqXs2eGyaJ5y1ZWtrnA_Rul705D0';
+import * as Config from '../config.js';
+
+// Central Supabase Client from config.js
+const supabase = Config.supabase || Config.default?.supabase || window.supabaseClient;
 
 // Universal Tri-Lingual Dictionary
 const I18N_DICTIONARY = {
@@ -40,6 +43,21 @@ const I18N_DICTIONARY = {
         taskIssues: 'Issue Logs',
         taskTimeline: 'Zone Timeline',
         taskHistory: 'Tasks History',
+        sectionInventory: 'Inventory & Materials Suite',
+        invStock: 'Stock Overview',
+        invLog: 'Log Transaction',
+        invIssues: 'Civil Issue Logs',
+        invIndent: 'Request Indent',
+        invReport: 'Damage & Returns',
+        invAnalytics: 'Generate Report',
+        sectionPurchase: 'Purchase & Indents Suite',
+        purLedger: 'Purchase Ledger',
+        purLog: 'Log Invoice',
+        purIndent: 'Indent Status',
+        purPending: 'Pending Payments',
+        purCash: 'Cash Ledger',
+        purBank: 'Bank Ledger',
+        purReport: 'Generate Report',
         sectionPreDev: 'Pre-Development',
         linkLiasoning: '• Liasoning & BOQ Master',
         sectionWorkforce: 'Workforce & Equipment',
@@ -72,6 +90,21 @@ const I18N_DICTIONARY = {
         taskIssues: 'સમસ્યા લોગ',
         taskTimeline: 'ઝોન સમયરેખા',
         taskHistory: 'કાર્ય ઇતિહાસ',
+        sectionInventory: 'ઇન્વેન્ટરી અને સામગ્રી સૂટ',
+        invStock: 'સ્ટોક વિહંગાવલોકન',
+        invLog: 'ટ્રાન્ઝેક્શન લોગ',
+        invIssues: 'ઇશ્યુ લોગ્સ',
+        invIndent: 'ઇન્ડેન્ટ વિનંતી',
+        invReport: 'નુકસાન અને વળતર',
+        invAnalytics: 'અહેવાલ બનાવો',
+        sectionPurchase: 'ખરીદી અને ઇન્ડેન્ટ સૂટ',
+        purLedger: 'ખરીદી લેજર',
+        purLog: 'ઇન્વોઇસ લોગ કરો',
+        purIndent: 'ઇન્ડેન્ટ સ્ટેટસ',
+        purPending: 'બાકી ચૂકવણી',
+        purCash: 'રોકડ લેજર',
+        purBank: 'બેંક લેજર',
+        purReport: 'અહેવાલ બનાવો',
         sectionPreDev: 'પ્રી-ડેવલપમેન્ટ (આયોજન)',
         linkLiasoning: '• લાયઝનિંગ અને BOQ માસ્ટર',
         sectionWorkforce: 'શ્રમિક અને સાધન સામગ્રી',
@@ -104,6 +137,21 @@ const I18N_DICTIONARY = {
         taskIssues: 'समस्या लॉग',
         taskTimeline: 'ज़ोन समयरेखा',
         taskHistory: 'कार्य इतिहास',
+        sectionInventory: 'इन्वेंट्री एवं सामग्री सूट',
+        invStock: 'स्टॉक अवलोकन',
+        invLog: 'लेन-देन लॉग',
+        invIssues: 'इश्यू लॉग्स',
+        invIndent: 'इंडेंट अनुरोध',
+        invReport: 'क्षति एवं वापसी',
+        invAnalytics: 'रिपोर्ट बनाएं',
+        sectionPurchase: 'खरीद और इंडेंट सूट',
+        purLedger: 'खरीद लेज़र',
+        purLog: 'चालान लॉग करें',
+        purIndent: 'इंडेंट स्थिति',
+        purPending: 'लंबित भुगतान',
+        purCash: 'नकद लेज़र',
+        purBank: 'बैंक लेज़र',
+        purReport: 'रिपोर्ट बनाएं',
         sectionPreDev: 'प्री-डेवलपमेंट (आयोजन)',
         linkLiasoning: '• लायजनिंग एवं BOQ मास्टर',
         sectionWorkforce: 'श्रमिक एवं उपकरण',
@@ -123,6 +171,8 @@ function getRootPrefix() {
         path.includes('/pre-development/') ||
         path.includes('/workforce/') ||
         path.includes('/tasks/') ||
+        path.includes('/inventory/') ||
+        path.includes('/purchase/') ||
         path.includes('/users/') ||
         path.includes('/common/')
     ) {
@@ -145,6 +195,10 @@ export async function initShell(options = {}) {
             activeModule = 'dashboard';
         } else if (currentPath.includes('/tasks/')) {
             activeModule = 'tasks';
+        } else if (currentPath.includes('/inventory/')) {
+            activeModule = 'inventory';
+        } else if (currentPath.includes('/purchase/')) {
+            activeModule = 'purchase';
         } else if (currentPath.includes('/workforce/')) {
             activeModule = 'workforce';
         } else if (currentPath.includes('/pre-development/')) {
@@ -154,8 +208,7 @@ export async function initShell(options = {}) {
         }
     }
 
-    // 2. Session & Auth Verification
-    const userId = localStorage.getItem('userId');
+    // 2. Session & Auth Verification from localStorage
     const prayoshaUserStr = localStorage.getItem('prayosha_user');
     let currentUser = null;
     try {
@@ -164,22 +217,22 @@ export async function initShell(options = {}) {
         currentUser = null;
     }
 
-    let client = window.supabaseClient;
-    if (!client && window.supabase) {
-        client = window.supabase.createClient(SUPABASE_PROJECT_URL, SUPABASE_PUBLIC_KEY);
-        window.supabaseClient = client;
-    }
+    const storedRole = localStorage.getItem('userRole') || 'Engineer';
 
-    // 3. Fetch Projects for Switcher
+    // 3. Fetch Projects for Switcher using config.js Supabase client
     let availableProjects = [];
-    if (client) {
+    if (supabase) {
         try {
-            const { data, error } = await client
+            const { data, error } = await supabase
                 .from('projects')
-                .select('id, project_name, project_code')
-                .order('project_name', { ascending: true });
+                .select('*');
+
             if (!error && data && data.length > 0) {
-                availableProjects = data;
+                availableProjects = data.map(p => ({
+                    id: p.id,
+                    project_name: p.project_name || p.name || 'Project ' + (p.project_code || p.id),
+                    project_code: p.project_code || ''
+                })).sort((a, b) => a.project_name.localeCompare(b.project_name));
             }
         } catch (err) {
             console.warn('[Shell] Could not fetch projects list:', err);
@@ -213,6 +266,7 @@ export async function initShell(options = {}) {
     injectShellHTML({
         activeModule: activeModule,
         currentUser: currentUser,
+        userRole: storedRole,
         availableProjects: availableProjects,
         activeProjectId: activeProjectId,
         activeProjectName: activeProjectName || 'Select Site Project',
@@ -224,7 +278,7 @@ export async function initShell(options = {}) {
     applyTranslations(currentLang);
 
     // 6. Attach Event Handlers
-    setupShellListeners(client);
+    setupShellListeners();
 }
 
 /**
@@ -233,7 +287,6 @@ export async function initShell(options = {}) {
 export function applyTranslations(lang) {
     const dict = I18N_DICTIONARY[lang] || I18N_DICTIONARY.en;
     
-    // Find all elements marked with data-i18n
     const elements = document.querySelectorAll('[data-i18n]');
     elements.forEach(el => {
         const key = el.getAttribute('data-i18n');
@@ -242,7 +295,6 @@ export function applyTranslations(lang) {
         }
     });
 
-    // Synchronize select value
     const langSelect = document.getElementById('shell-lang-select');
     if (langSelect && langSelect.value !== lang) {
         langSelect.value = lang;
@@ -274,6 +326,8 @@ function injectShellHTML(data) {
 
     const isDashboard = data.activeModule === 'dashboard';
     const isTasks = data.activeModule === 'tasks';
+    const isInventory = data.activeModule === 'inventory';
+    const isPurchase = data.activeModule === 'purchase';
     const isWorkforce = data.activeModule === 'workforce';
     const isPreDev = data.activeModule === 'pre-dev';
 
@@ -289,9 +343,12 @@ function injectShellHTML(data) {
     const preColorClass = isPreDev ? 'text-[#1E3A5F]' : 'text-slate-400 hover:text-slate-600';
     const preFontClass = isPreDev ? 'font-bold text-[#1E3A5F]' : 'font-medium';
 
-    const userName = (data.currentUser && data.currentUser.displayName) ? data.currentUser.displayName : 'User';
-    const rawRole = (data.currentUser && data.currentUser.role) ? data.currentUser.role : 'Engineer';
-    const userRole = rawRole.replace(/_/g, ' ');
+    const userName = data.currentUser?.full_name 
+        || data.currentUser?.displayName 
+        || data.currentUser?.user_metadata?.full_name 
+        || data.currentUser?.email?.split('@')[0] 
+        || 'User';
+    const userRole = (data.userRole || data.currentUser?.role || 'Engineer').replace(/_/g, ' ');
 
     const shellContainer = document.createElement('div');
     shellContainer.id = 'prayosha-shell-container';
@@ -373,7 +430,7 @@ function injectShellHTML(data) {
                     <span data-i18n="navTasks" class="text-[10px] ${taskFontClass}">Tasks</span>
                 </a>
 
-                <!-- 3. CENTER ACTION HUB (Raised Button) -->
+                <!-- 3. CENTER ACTION HUB -->
                 <div class="flex-1 flex justify-center -mt-6">
                     <button id="shell-hub-toggle" type="button" class="relative group focus:outline-none cursor-pointer" aria-label="Open Action Hub">
                         <div class="w-14 h-14 rounded-full bg-[#1E3A5F] text-[#FFBF00] flex items-center justify-center shadow-lg border-4 border-white transition-transform transform group-hover:scale-105 active:scale-95 group-hover:shadow-amber-500/20">
@@ -400,13 +457,10 @@ function injectShellHTML(data) {
 
         <!-- ================= BOTTOM SHEET: ACTION HUB DRAWER ================= -->
         <div id="prayosha-hub-drawer" class="fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-300">
-            <!-- Backdrop -->
             <div id="shell-drawer-backdrop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer"></div>
 
-            <!-- Bottom Sheet Panel -->
-            <div id="shell-drawer-panel" class="absolute bottom-0 left-0 right-0 max-h-[85vh] bg-[#F8FAFC] rounded-t-3xl shadow-2xl flex flex-col transform translate-y-full transition-transform duration-300 ease-out border-t border-slate-200">
+            <div id="shell-drawer-panel" class="absolute bottom-0 left-0 right-0 max-h-[88vh] bg-[#F8FAFC] rounded-t-3xl shadow-2xl flex flex-col transform translate-y-full transition-transform duration-300 ease-out border-t border-slate-200">
                 
-                <!-- Drawer Top Handle & Title -->
                 <div class="px-6 pt-4 pb-3 border-b border-slate-200/80 bg-white rounded-t-3xl flex items-center justify-between">
                     <div class="flex items-center gap-2.5">
                         <span class="text-[#FFBF00] text-xl font-bold">⬢</span>
@@ -420,7 +474,6 @@ function injectShellHTML(data) {
                     </button>
                 </div>
 
-                <!-- Scrollable Drawer Body -->
                 <div class="p-6 overflow-y-auto space-y-6">
                     
                     <!-- 1. Quick Actions -->
@@ -435,14 +488,14 @@ function injectShellHTML(data) {
                                 <span class="text-[#FFBF00] mb-1 text-lg">📝</span>
                                 <span data-i18n="actionLogTask" class="text-xs font-semibold text-amber-900">Log Task</span>
                             </a>
-                            <a href="${ROOT_PATH}tasks/generate-report.html" class="p-3 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/70 rounded-xl flex flex-col items-center text-center transition group">
-                                <span class="text-indigo-600 mb-1 text-lg">📊</span>
-                                <span data-i18n="actionDailyReport" class="text-xs font-semibold text-indigo-900">Daily Report</span>
+                            <a href="${ROOT_PATH}purchase/log-invoice.html" class="p-3 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200/70 rounded-xl flex flex-col items-center text-center transition group">
+                                <span class="text-indigo-600 mb-1 text-lg">🧾</span>
+                                <span data-i18n="purLog" class="text-xs font-semibold text-indigo-900">Log Invoice</span>
                             </a>
                         </div>
                     </div>
 
-                    <!-- 2. Civil Task Management Suite -->
+                    <!-- 2. Civil Tasks Suite -->
                     <div>
                         <span data-i18n="sectionCivilTasks" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Civil Tasks Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -467,7 +520,60 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 3. Pre-Development & Workforce -->
+                    <!-- 3. INVENTORY & MATERIALS SUITE -->
+                    <div>
+                        <span data-i18n="sectionInventory" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Inventory & Materials Suite</span>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <a href="${ROOT_PATH}inventory/stock-overview.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span data-i18n="invStock">Stock Overview</span>
+                            </a>
+                            <a href="${ROOT_PATH}inventory/log-transaction.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span> <span data-i18n="invLog">Log Transaction</span>
+                            </a>
+                            <a href="${ROOT_PATH}inventory/issue-logs.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span> <span data-i18n="invIssues">Civil Issue Logs</span>
+                            </a>
+                            <a href="${ROOT_PATH}inventory/request-indent.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span data-i18n="invIndent">Request Indent</span>
+                            </a>
+                            <a href="${ROOT_PATH}inventory/report.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span> <span data-i18n="invReport">Damage & Returns</span>
+                            </a>
+                            <a href="${ROOT_PATH}inventory/generate-report.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-slate-500"></span> <span data-i18n="invAnalytics">Generate Report</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 4. PURCHASE & INDENTS SUITE (Newly Added) -->
+                    <div>
+                        <span data-i18n="sectionPurchase" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Purchase & Indents Suite</span>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            <a href="${ROOT_PATH}purchase/purchase-ledger.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-[#1E3A5F]"></span> <span data-i18n="purLedger">Purchase Ledger</span>
+                            </a>
+                            <a href="${ROOT_PATH}purchase/log-invoice.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-[#FFBF00]"></span> <span data-i18n="purLog">Log Invoice</span>
+                            </a>
+                            <a href="${ROOT_PATH}purchase/indent-status.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span> <span data-i18n="purIndent">Indent Status</span>
+                            </a>
+                            <a href="${ROOT_PATH}purchase/pending-payments.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-red-500"></span> <span data-i18n="purPending">Pending Payments</span>
+                            </a>
+                            <a href="${ROOT_PATH}purchase/cash-ledger.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span data-i18n="purCash">Cash Ledger</span>
+                            </a>
+                            <a href="${ROOT_PATH}purchase/bank-ledger.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span data-i18n="purBank">Bank Ledger</span>
+                            </a>
+                            <a href="${ROOT_PATH}purchase/generate-report.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-slate-500"></span> <span data-i18n="purReport">Generate Report</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 5. Pre-Development & Workforce -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-white p-3.5 rounded-2xl border border-slate-200">
                             <span data-i18n="sectionPreDev" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Pre-Development</span>
@@ -488,7 +594,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 4. Administration & Masters -->
+                    <!-- 6. Administration & Masters -->
                     <div class="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
                         <span data-i18n="sectionAdmin" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Administration</span>
                         <div class="flex items-center gap-3">
@@ -513,16 +619,21 @@ function injectShellHTML(data) {
 /**
  * Event Listeners & Interaction Logic
  */
-function setupShellListeners(client) {
+function setupShellListeners() {
     // 1. Project Switcher Change
     const projectSelector = document.getElementById('shell-project-selector');
     if (projectSelector) {
         projectSelector.addEventListener('change', (e) => {
             const selectedId = e.target.value;
-            const selectedText = e.target.options[e.target.selectedIndex].text;
+            const selectedOpt = e.target.options[e.target.selectedIndex];
+            const selectedText = selectedOpt ? selectedOpt.text.replace(/^\[.*?\]\s*/, '') : '';
             
             localStorage.setItem('activeProjectId', selectedId);
             localStorage.setItem('activeProjectName', selectedText);
+
+            window.dispatchEvent(new CustomEvent('projectChanged', { 
+                detail: { projectId: selectedId, projectName: selectedText } 
+            }));
 
             window.location.reload();
         });
@@ -568,11 +679,7 @@ function setupShellListeners(client) {
         langSelect.addEventListener('change', (e) => {
             const chosenLang = e.target.value;
             localStorage.setItem('prayosha_lang', chosenLang);
-            
-            // Instantly apply translation to the shell DOM
             applyTranslations(chosenLang);
-            
-            // Dispatch event for all active and upcoming module pages
             window.dispatchEvent(new CustomEvent('prayosha-language-changed', { detail: { lang: chosenLang } }));
         });
     }
@@ -587,9 +694,9 @@ function setupShellListeners(client) {
             const confirmLogout = confirm(dict.logoutConfirm);
             if (!confirmLogout) return;
 
-            if (client && client.auth) {
+            if (supabase && supabase.auth) {
                 try {
-                    await client.auth.signOut();
+                    await supabase.auth.signOut();
                 } catch (err) {
                     console.warn('[Shell Logout Error]:', err);
                 }

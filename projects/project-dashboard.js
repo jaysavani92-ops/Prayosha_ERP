@@ -11,8 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. Role-based UI visibility
     const userRole = localStorage.getItem('userRole');
     const createBtn = document.getElementById('createProjectBtn');
-    if (userRole && userRole !== 'Owner' && userRole !== 'General Manager') {
-        // Hide create button for non-executive roles if strict enforcement is desired
+    if (createBtn && userRole && userRole !== 'Owner' && userRole !== 'General Manager') {
         createBtn.classList.add('hidden');
     }
 
@@ -45,7 +44,6 @@ async function loadProjectsWithAnalytics() {
     const emptyState = document.getElementById('emptyState');
 
     try {
-        // Fetch projects ordered by newest creation
         const { data: projectsData, error: projectsError } = await supabase
             .from('projects')
             .select('*')
@@ -84,7 +82,7 @@ async function loadProjectsWithAnalytics() {
         console.error('Error loading projects:', error);
         grid.innerHTML = `
             <div class="col-span-full glass-card p-8 rounded-2xl text-center text-red-600">
-                <p class="font-bold">Failed to load projects from Supabase database.</p>
+                <p class="font-bold">Failed to load projects from database.</p>
                 <p class="text-xs text-gray-500 mt-1">${error.message}</p>
             </div>
         `;
@@ -122,7 +120,6 @@ function filterAndRenderProjects() {
     const activeWorkspaceId = localStorage.getItem('activeProjectId');
 
     grid.innerHTML = filtered.map(project => {
-        // Calculate progress percentage
         let progress = 0;
         if (taskStatsByProject[project.id] && taskStatsByProject[project.id].total > 0) {
             const stats = taskStatsByProject[project.id];
@@ -148,7 +145,6 @@ function filterAndRenderProjects() {
             </p>
         `;
 
-        // Image / Media Card Top Banner
         const photoBanner = project.project_photo_url ? `
             <div class="h-36 w-full rounded-xl overflow-hidden relative mb-4 bg-slate-100">
                 <img src="${project.project_photo_url}" alt="${project.project_name}" class="w-full h-full object-cover">
@@ -176,7 +172,6 @@ function filterAndRenderProjects() {
                 <div>
                     ${photoBanner}
 
-                    <!-- Title & Code -->
                     <div class="mb-2">
                         <div class="flex items-center justify-between">
                             <h3 class="text-lg font-bold prayosha-navy truncate" title="${project.project_name}">${project.project_name}</h3>
@@ -185,7 +180,6 @@ function filterAndRenderProjects() {
                         ${mapButton}
                     </div>
 
-                    <!-- Meta Scope Metrics Grid -->
                     <div class="grid grid-cols-2 gap-2 my-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
                         <div>
                             <span class="block text-[10px] text-gray-400 uppercase font-semibold">Total Area</span>
@@ -205,7 +199,6 @@ function filterAndRenderProjects() {
                         </div>
                     </div>
 
-                    <!-- Progress Bar -->
                     <div class="mb-4">
                         <div class="flex justify-between items-center text-xs mb-1">
                             <span class="font-medium text-gray-500">Overall Progress</span>
@@ -217,29 +210,40 @@ function filterAndRenderProjects() {
                     </div>
                 </div>
 
-                <!-- Action Button Controls -->
-                <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
-                    <button type="button" class="btn-inspect flex-1 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-1.5" data-id="${project.id}">
-                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        Inspect
-                    </button>
+                <div>
+                    <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
+                        <button type="button" class="btn-inspect flex-1 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-1.5" data-id="${project.id}">
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            Inspect
+                        </button>
 
-                    <button type="button" class="btn-activate flex-1 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm ${
-                        isCurrentWorkspace 
-                            ? 'bg-emerald-600 text-white cursor-default' 
-                            : 'bg-prayosha-navy text-white hover:bg-opacity-90'
-                    }" data-id="${project.id}">
-                        ${isCurrentWorkspace 
-                            ? '<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Active' 
-                            : '<svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Work On Project'
-                        }
-                    </button>
+                        <button type="button" class="btn-activate flex-1 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm ${
+                            isCurrentWorkspace 
+                                ? 'bg-emerald-600 text-white cursor-default' 
+                                : 'bg-prayosha-navy text-white hover:bg-opacity-90'
+                        }" data-id="${project.id}">
+                            ${isCurrentWorkspace 
+                                ? '<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Active' 
+                                : '<svg class="w-3.5 h-3.5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Work On Project'
+                            }
+                        </button>
+                    </div>
+
+                    ${isCurrentWorkspace ? `
+                        <div class="mt-2 pt-2 border-t border-slate-100 grid grid-cols-2 gap-2">
+                            <a href="../tasks/active-tasks.html" class="py-1.5 px-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold text-center flex items-center justify-center gap-1 transition">
+                                <span>🏗️ Civil Tasks</span>
+                            </a>
+                            <a href="../inventory/stock-overview.html" class="py-1.5 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold text-center flex items-center justify-center gap-1 transition">
+                                <span>📦 Stock & Materials</span>
+                            </a>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
     }).join('');
 
-    // Attach card level event handlers
     grid.querySelectorAll('.btn-activate').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const projectId = e.currentTarget.getAttribute('data-id');
@@ -269,8 +273,11 @@ function activateWorkspaceProject(projectId) {
     filterAndRenderProjects();
     showToast(`Active workspace switched to "${project.project_name}"`, 'success');
 
-    // Notify any parent or global navigation component
+    // Notify universal shell top navbar dropdown and dashboard launchpad
     window.dispatchEvent(new CustomEvent('prayosha:project-switched', { detail: project }));
+    window.dispatchEvent(new CustomEvent('projectChanged', { 
+        detail: { projectId: project.id, projectName: project.project_name } 
+    }));
 }
 
 // ==========================================
@@ -314,13 +321,12 @@ async function openArchitectureModal(projectId) {
             contentEl.innerHTML = `
                 <div class="p-8 text-center text-gray-500 bg-slate-50 rounded-2xl border border-dashed border-gray-300">
                     <p class="font-semibold text-gray-700">No architecture or zones recorded yet.</p>
-                    <p class="text-xs text-gray-400 mt-1">This project does not have tower or facility records saved in Supabase.</p>
+                    <p class="text-xs text-gray-400 mt-1">This project does not have tower or facility records saved.</p>
                 </div>
             `;
             return;
         }
 
-        // Group zones by Tower / Structure
         const structuresMap = {};
         zones.forEach(zone => {
             const structure = zone.tower_name || 'Common Area';
@@ -337,7 +343,7 @@ async function openArchitectureModal(projectId) {
                 html += `
                     <div class="p-5 rounded-2xl bg-emerald-50/60 border border-emerald-200/80">
                         <div class="flex items-center gap-2 mb-3">
-                            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                            <span class="w-3 hand-3 rounded-full bg-emerald-500"></span>
                             <h4 class="font-bold text-base text-emerald-950">${structureName}</h4>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -382,7 +388,6 @@ async function openArchitectureModal(projectId) {
                                             </div>
                                         </div>
 
-                                        <!-- Granular Unit Sizes Breakdown -->
                                         ${(config.flats?.length > 0 || config.shops?.length > 0 || hasRooms || config.amenities_sizes) ? `
                                             <div class="mt-2 pt-2 border-t border-slate-200/60 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px] text-gray-600">
                                                 ${config.flats?.length > 0 ? `

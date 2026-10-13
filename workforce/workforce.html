@@ -111,51 +111,45 @@
 </head>
 <body class="text-slate-800 flex flex-col min-h-screen antialiased selection:bg-prayosha-amber selection:text-slate-900">
 
-    <!-- TOP NAVIGATION BAR (Prayosha Navy Anchor) -->
-    <header class="bg-prayosha-navy text-white sticky top-0 z-40 border-b border-prayosha-navy-dark px-4 sm:px-6 lg:px-8 py-3 shadow-md">
-        <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <!-- Brand & Breadcrumb -->
-            <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-prayosha-amber/20 border border-prayosha-amber/40 flex items-center justify-center text-prayosha-amber shadow-sm flex-shrink-0">
-                    <i class="fa-solid fa-users-gear text-lg"></i>
+    <!-- MAIN CONTENT CONTAINER (pb-28 ensures clear separation from bottom floating dock) -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-28">
+
+        <!-- IN-PAGE MODULE HEADER (Replaces redundant top navbar) -->
+        <section class="glass-card rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-slate-200 shadow-sm">
+            <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-11 h-11 rounded-xl bg-prayosha-navy text-white flex items-center justify-center text-lg shadow-sm flex-shrink-0">
+                    <i class="fa-solid fa-users-gear text-prayosha-amber"></i>
                 </div>
                 <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs uppercase tracking-wider font-semibold text-prayosha-amber">Prayosha ERP</span>
-                        <span class="text-white/40 text-xs">/</span>
-                        <a href="../projects/project-dashboard.html" class="text-xs text-slate-300 hover:text-white transition">Projects</a>
-                        <span class="text-white/40 text-xs">/</span>
-                        <span class="text-xs text-slate-200 font-medium">Workforce</span>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+                        <span class="text-prayosha-navy font-semibold uppercase tracking-wider">Site Operations</span>
+                        <span>/</span>
+                        <span class="text-slate-700">Muster & Plant</span>
                     </div>
-                    <h1 class="text-base sm:text-lg font-bold text-white truncate flex items-center gap-2">
-                        <span>Workforce & Equipment</span>
-                        <span id="activeProjectBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 border border-white/20 text-prayosha-amber">
-                            <i class="fa-solid fa-building text-[10px]"></i>
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h1 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">Workforce & Equipment</h1>
+                        <span id="activeProjectBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-prayosha-navy/10 border border-prayosha-navy/20 text-prayosha-navy">
+                            <i class="fa-solid fa-building text-[10px] text-prayosha-amber"></i>
                             <span id="activeProjectCodeName">Detecting Assignment...</span>
                         </span>
-                    </h1>
+                    </div>
                 </div>
             </div>
 
-            <!-- Header Action Controls -->
-            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-                <!-- Notifications Bell -->
-                <button id="notificationBtn" title="Notifications" class="relative w-9 h-9 rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-slate-200 hover:text-white transition">
-                    <i class="fa-regular fa-bell text-sm"></i>
-                    <span id="notificationBadge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[10px] font-bold text-white flex items-center justify-center animate-pulse">0</span>
-                </button>
+            <!-- Module Specific Controls -->
+            <div class="flex items-center gap-2.5 self-start sm:self-auto flex-shrink-0">
+                <!-- Defensive Stubs for legacy scripts -->
+                <div class="hidden" aria-hidden="true">
+                    <button id="notificationBtn"><span id="notificationBadge"></span></button>
+                </div>
 
-                <!-- Super Core Engine Modal Button -->
-                <button id="openSuperEngineBtn" title="Agency Breakdowns & Equipment Rate Configurations" class="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-prayosha-amber hover:bg-prayosha-amber-dark text-slate-900 font-bold text-xs transition shadow-sm">
+                <!-- Super Core Engine Modal Trigger -->
+                <button id="openSuperEngineBtn" title="Agency Breakdowns & Equipment Rate Configurations" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-prayosha-amber hover:bg-prayosha-amber-dark text-slate-900 font-bold text-xs transition shadow-sm">
                     <i class="fa-solid fa-sliders text-xs"></i>
-                    <span class="hidden md:inline">Super Engine</span>
+                    <span>Super Core Engine</span>
                 </button>
             </div>
-        </div>
-    </header>
-
-    <!-- MAIN CONTENT CONTAINER -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        </section>
 
         <!-- NO PROJECT ASSIGNMENT WARNING -->
         <div id="noProjectAlert" class="hidden glass-card border-amber-300 bg-amber-50 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -165,7 +159,7 @@
                 </div>
                 <div>
                     <h4 class="text-sm font-bold text-amber-900">No Assigned Project Found</h4>
-                    <p class="text-xs text-amber-700">You are currently not assigned to any active project. Contact your General Manager or select a project manually.</p>
+                    <p class="text-xs text-amber-700">You are currently not assigned to any active project. Contact your General Manager or select a project from the top navbar.</p>
                 </div>
             </div>
             <a href="../projects/project-dashboard.html" class="px-4 py-2 rounded-xl bg-prayosha-navy text-white font-semibold text-xs hover:bg-prayosha-navy-light transition shadow flex items-center gap-2">
@@ -173,7 +167,7 @@
             </a>
         </div>
 
-        <!-- EXECUTIVE KPI CARDS (Crisp White + Navy Highlights) -->
+        <!-- EXECUTIVE KPI CARDS -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <!-- KPI 1: Total Labour Deployment Today -->
             <div class="glass-card rounded-2xl p-4 flex items-center justify-between gap-3 border-l-4 border-l-prayosha-navy">
@@ -274,13 +268,11 @@
 
                 <!-- Global Quick Action: WhatsApp Dispatch & Wages Hybrid Mode Toggle -->
                 <div class="flex items-center gap-3">
-                    <!-- HYBRID WAGES TOGGLE (Point 3) -->
                     <button type="button" id="toggleWagesGlobalBtn" class="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs transition shadow-sm flex items-center gap-2">
                         <i id="wagesToggleIcon" class="fa-solid fa-toggle-off text-slate-400 text-sm"></i>
                         <span>Add Wages</span>
                     </button>
 
-                    <!-- WhatsApp Summary -->
                     <button id="whatsappSummaryBtn" title="Send Daily Workforce Summary via WhatsApp" class="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition shadow-sm flex items-center gap-2">
                         <i class="fa-brands fa-whatsapp text-sm"></i>
                         <span class="hidden sm:inline">WhatsApp Summary</span>
@@ -288,9 +280,7 @@
                 </div>
             </div>
 
-            <!-- =================================================================== -->
             <!-- TAB 1: LOG ATTENDANCE -->
-            <!-- =================================================================== -->
             <div id="tabContentLogAttendance" class="tab-content space-y-6">
 
                 <!-- RECORD TYPE SWITCHER -->
@@ -343,9 +333,8 @@
                     </div>
                 </div>
 
-                <!-- FORM HEADER: ASSIGNED PROJECT SCANNER (POINT 1), DATE, RECORDED BY -->
+                <!-- FORM HEADER: ASSIGNED PROJECT, DATE, RECORDED BY -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <!-- Point 1: Assigned Project Scanner & Selector -->
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
                             <span>Project</span>
@@ -359,13 +348,11 @@
                         </div>
                     </div>
 
-                    <!-- Attendance Date -->
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700">Date</label>
                         <input type="date" id="attendanceDateInput" class="glass-input text-xs w-full py-2.5 px-3 rounded-xl font-medium cursor-pointer">
                     </div>
 
-                    <!-- Tamper-Proof Recorded By (Auto) -->
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
                             <span>Recorded By (Auto)</span>
@@ -374,17 +361,14 @@
                             </span>
                         </label>
                         <div class="relative">
-                            <input type="text" id="recordedByInput" readonly disabled value="Jay" class="glass-input text-xs w-full py-2.5 px-3 pl-8 rounded-xl font-bold text-prayosha-navy">
+                            <input type="text" id="recordedByInput" readonly disabled value="Site Engineer" class="glass-input text-xs w-full py-2.5 px-3 pl-8 rounded-xl font-bold text-prayosha-navy">
                             <i class="fa-solid fa-user-shield absolute left-3 top-1/2 -translate-y-1/2 text-xs text-prayosha-navy"></i>
                         </div>
                     </div>
                 </div>
 
-                <!-- ----------------------------------------------------------- -->
-                <!-- SUB-FORM A: LABOR LOG (CONTRACTOR & AGENCIES) -->
-                <!-- ----------------------------------------------------------- -->
+                <!-- SUB-FORM A: LABOR LOG -->
                 <div id="subFormLabor" class="space-y-4">
-                    <!-- Bulk Actions Toolbar -->
                     <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Agency Attendance Entries</span>
@@ -394,12 +378,10 @@
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <!-- 1-Click Copy All Yesterday's Deployments -->
                             <button type="button" id="copyAllYesterdayBtn" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
                                 <i class="fa-solid fa-copy text-amber-600 text-xs"></i>
                                 <span>Copy All Yesterday</span>
                             </button>
-                            <!-- NOTE: Only adds an agency row from pre-approved master list; does NOT allow creating new agency (Point 2) -->
                             <button type="button" id="addAgencyRowBtn" class="px-3 py-1.5 rounded-lg bg-prayosha-navy hover:bg-prayosha-navy-light text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                                 <i class="fa-solid fa-plus text-xs"></i>
                                 <span>+ Add Agency Row</span>
@@ -407,10 +389,8 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic Agency Rows Container -->
                     <div id="agencyRowsContainer" class="space-y-4"></div>
 
-                    <!-- Labor Log Action Bar -->
                     <div class="pt-4 flex items-center justify-end gap-3 border-t border-slate-200">
                         <button type="button" id="saveLaborLogsBtn" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-md flex items-center gap-2">
                             <i class="fa-solid fa-floppy-disk text-xs"></i>
@@ -419,13 +399,10 @@
                     </div>
                 </div>
 
-                <!-- ----------------------------------------------------------- -->
-                <!-- SUB-FORM B: EQUIPMENT LOG (MACHINERY) -->
-                <!-- ----------------------------------------------------------- -->
+                <!-- SUB-FORM B: EQUIPMENT LOG -->
                 <div id="subFormEquipment" class="hidden space-y-4">
                     <div class="glass-card rounded-2xl p-5 border border-slate-200 space-y-4">
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <!-- Equipment Type Selection WITH Inline + Add Equipment (Point 2) -->
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between">
                                     <label class="text-xs font-bold text-slate-700">Equipment Type</label>
@@ -441,13 +418,11 @@
                                 </div>
                             </div>
 
-                            <!-- Hours Used -->
                             <div class="space-y-1.5">
                                 <label class="text-xs font-bold text-slate-700">Hours Used</label>
                                 <input type="number" step="0.5" id="eqpHoursInput" placeholder="e.g. 8.0" class="glass-input text-xs w-full py-2.5 px-3 rounded-xl font-bold font-mono" value="0.0">
                             </div>
 
-                            <!-- Per Hour Rate & Cost Preview (Revealed via Add Wages Mode - Point 3) -->
                             <div id="eqpRateContainer" class="space-y-1.5 hidden">
                                 <label class="text-xs font-bold text-slate-700 flex items-center justify-between">
                                     <span>Hourly Rate (₹/hr)</span>
@@ -457,13 +432,11 @@
                             </div>
                         </div>
 
-                        <!-- Purpose of Use -->
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Purpose of Use / Activity</label>
-                            <input type="text" id="eqpPurposeInput" placeholder="e.g. Earth excavation, Foundation trenching, Sand leveling (Khodaan mate)" class="glass-input text-xs w-full py-2.5 px-3 rounded-xl font-medium">
+                            <input type="text" id="eqpPurposeInput" placeholder="e.g. Earth excavation, Foundation trenching, Sand leveling" class="glass-input text-xs w-full py-2.5 px-3 rounded-xl font-medium">
                         </div>
 
-                        <!-- Remarks -->
                         <div class="space-y-1.5">
                             <label class="text-xs font-bold text-slate-700">Remarks / Operator Details (Optional)</label>
                             <input type="text" id="eqpRemarksInput" placeholder="Diesel provided, site location, driver name..." class="glass-input text-xs w-full py-2.5 px-3 rounded-xl font-medium">
@@ -478,14 +451,11 @@
                     </div>
                 </div>
 
-                <!-- ----------------------------------------------------------- -->
-                <!-- SUB-FORM C: IN-HOUSE LABOUR LOG (DIRECT PAYROLL) -->
-                <!-- ----------------------------------------------------------- -->
+                <!-- SUB-FORM C: IN-HOUSE LABOUR LOG -->
                 <div id="subFormInhouse" class="hidden space-y-4">
                     <div class="flex items-center justify-between pt-2">
                         <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">In-House Staff Muster Entry</span>
                         <div class="flex items-center gap-2">
-                            <!-- Point 2: Quick Add Inhouse Role -->
                             <button type="button" id="quickAddInhouseRoleBtn" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
                                 <i class="fa-solid fa-plus-circle text-prayosha-indigo"></i>
                                 <span>+ Add Role</span>
@@ -509,13 +479,9 @@
 
             </div>
 
-            <!-- =================================================================== -->
-            <!-- TAB 2: DAILY LOGS (DEPLOYMENT FEED & FILTER) -->
-            <!-- =================================================================== -->
+            <!-- TAB 2: DAILY LOGS -->
             <div id="tabContentDailyLogs" class="tab-content hidden space-y-4">
-                <!-- Toolbar -->
                 <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pb-2">
-                    <!-- Date Stepper -->
                     <div class="flex items-center gap-2">
                         <button id="logsPrevDayBtn" title="Previous Day" class="w-8 h-8 rounded-lg bg-white border border-slate-300 flex items-center justify-center text-slate-600 hover:text-prayosha-navy shadow-sm transition">
                             <i class="fa-solid fa-chevron-left text-xs"></i>
@@ -529,7 +495,6 @@
                         </button>
                     </div>
 
-                    <!-- Category Filter Pills -->
                     <div class="flex items-center gap-1.5 overflow-x-auto">
                         <button data-filter="ALL" class="daily-feed-pill px-3 py-1.5 rounded-lg text-xs font-bold bg-prayosha-navy text-white shadow-sm">All Logs</button>
                         <button data-filter="LABOR" class="daily-feed-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-600 hover:text-prayosha-navy">Contractors</button>
@@ -537,23 +502,20 @@
                         <button data-filter="INHOUSE" class="daily-feed-pill px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-300 text-slate-600 hover:text-prayosha-navy">In-House</button>
                     </div>
 
-                    <!-- Search Input -->
                     <div class="relative w-full md:w-64">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
                         <input type="text" id="dailyLogsSearchInput" placeholder="Search logs, agencies..." class="glass-input text-xs w-full py-1.5 pl-9 pr-3 rounded-lg">
                     </div>
                 </div>
 
-                <!-- Daily Diary Weather Banner -->
                 <div id="dailyDiaryDisplayBanner" class="hidden glass-card rounded-xl p-3 border border-slate-200 flex items-center justify-between text-xs bg-slate-50">
                     <div class="flex items-center gap-2">
                         <span id="diaryWeatherBadge" class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[11px]">☀️ Sunny</span>
                         <span id="diaryNotesText" class="text-slate-700 truncate font-medium">Normal Operations</span>
                     </div>
-                    <span id="diaryRecordedByText" class="text-[10px] text-slate-500 font-medium">Recorded by Jay</span>
+                    <span id="diaryRecordedByText" class="text-[10px] text-slate-500 font-medium">Recorded by Site Engineer</span>
                 </div>
 
-                <!-- Daily Logs Table -->
                 <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
                     <table class="w-full text-left text-xs text-slate-700">
                         <thead class="bg-prayosha-navy text-white text-[11px] uppercase tracking-wider font-semibold">
@@ -580,9 +542,7 @@
                 </div>
             </div>
 
-            <!-- =================================================================== -->
-            <!-- TAB 3: GENERATE REPORT (POINT 4: PROJECT FILTER REPLACES PHASE) -->
-            <!-- =================================================================== -->
+            <!-- TAB 3: GENERATE REPORT -->
             <div id="tabContentGenerateReport" class="tab-content hidden space-y-6">
                 <div class="glass-card rounded-2xl p-6 border border-slate-200 space-y-6 max-w-4xl mx-auto bg-white">
                     <div class="flex items-center gap-3 border-b border-slate-200 pb-4">
@@ -596,7 +556,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- 1. Report Type -->
                         <div class="space-y-2">
                             <label class="text-xs font-bold text-slate-700">1. Select Report Type</label>
                             <div class="relative">
@@ -611,7 +570,6 @@
                             </div>
                         </div>
 
-                        <!-- 2. Timeframe Selection (7 Options) -->
                         <div class="space-y-2">
                             <label class="text-xs font-bold text-slate-700">2. Timeframe Selection</label>
                             <div class="relative">
@@ -630,7 +588,6 @@
                         </div>
                     </div>
 
-                    <!-- Custom Date Range -->
                     <div id="customDateRangeContainer" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
                         <div class="space-y-1">
                             <label class="text-[11px] font-bold text-slate-600">Start Date</label>
@@ -642,7 +599,6 @@
                         </div>
                     </div>
 
-                    <!-- 3. Export Format Toggles -->
                     <div class="space-y-2">
                         <label class="text-xs font-bold text-slate-700">3. Export Format</label>
                         <div class="grid grid-cols-2 gap-4">
@@ -657,11 +613,9 @@
                         </div>
                     </div>
 
-                    <!-- 4. Advanced Scope Filters (POINT 4: Project Filter Replaces Phase) -->
                     <div class="space-y-3 pt-2 border-t border-slate-200">
                         <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">4. Advanced Scope Filters</span>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <!-- Project Filter (Replaces Phase) -->
                             <div class="relative">
                                 <select id="reportFilterProject" class="glass-input text-xs w-full py-2 px-3 rounded-lg font-semibold cursor-pointer appearance-none">
                                     <option value="ALL">All Assigned Projects</option>
@@ -685,7 +639,6 @@
                         </div>
                     </div>
 
-                    <!-- Action Generate Button -->
                     <div class="pt-4 flex justify-end">
                         <button type="button" id="generateDownloadReportBtn" class="px-6 py-3 rounded-xl bg-prayosha-navy hover:bg-prayosha-navy-light text-white font-bold text-xs transition shadow-md flex items-center gap-2">
                             <i class="fa-solid fa-download text-prayosha-amber"></i>
@@ -699,9 +652,7 @@
 
     </main>
 
-    <!-- ======================================================================= -->
-    <!-- MODAL 1: QUICK ADD EQUIPMENT MODAL (POINT 2) -->
-    <!-- ======================================================================= -->
+    <!-- MODAL 1: QUICK ADD EQUIPMENT -->
     <div id="quickAddEquipmentModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xl relative">
             <button id="closeQuickEquipmentBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg">
@@ -733,9 +684,7 @@
         </div>
     </div>
 
-    <!-- ======================================================================= -->
-    <!-- MODAL 2: QUICK ADD INHOUSE ROLE MODAL (POINT 2) -->
-    <!-- ======================================================================= -->
+    <!-- MODAL 2: QUICK ADD INHOUSE ROLE -->
     <div id="quickAddRoleModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-2xl border border-slate-200 p-6 space-y-4 shadow-2xl relative">
             <button id="closeQuickRoleBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg">
@@ -767,9 +716,7 @@
         </div>
     </div>
 
-    <!-- ======================================================================= -->
-    <!-- MODAL 3: SUPER CORE ENGINE (ADMIN MASTER) -->
-    <!-- ======================================================================= -->
+    <!-- MODAL 3: SUPER CORE ENGINE -->
     <div id="superEngineModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
         <div class="bg-white w-full max-w-3xl rounded-2xl border border-slate-200 p-6 space-y-5 shadow-2xl relative max-h-[90vh] flex flex-col">
             <button id="closeSuperEngineBtn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 text-lg">
@@ -825,15 +772,16 @@
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION CONTAINER -->
-    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <!-- TOAST NOTIFICATION CONTAINER (Shifted up to avoid floating dock collision) -->
+    <div id="toastContainer" class="fixed bottom-24 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- UNIVERSAL NAVIGATION SHELL -->
+    <script type="module">
+        import { initShell } from '../common/shell.js';
+        initShell({ activeModule: 'workforce' });
+    </script>
 
     <!-- SCRIPT MODULE -->
     <script type="module" src="./workforce.js"></script>
-    <!-- Universal Navigation Shell -->
-    <script type="module">
-        import { initShell } from '../common/shell.js';
-        initShell();
-    </script>
 </body>
 </html>

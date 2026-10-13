@@ -46,45 +46,95 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="p-6">
+<body class="pt-20 md:pt-24 pb-28 px-4 sm:px-6 lg:px-8">
 
-    <!-- Top Navigation & Control Header -->
-    <header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <!-- Page Context & Primary Action Bar -->
+    <section class="max-w-7xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-prayosha-navy flex items-center justify-center text-white shadow-md">
-                    <svg class="w-6 h-6 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="text-3xl font-bold prayosha-navy leading-tight">Project Management</h1>
-                    <p class="text-gray-500 text-xs font-medium tracking-wide uppercase">Multi-Site Architecture Control</p>
-                </div>
-            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold prayosha-navy tracking-tight">Project Directory</h1>
+            <p class="text-gray-500 text-xs sm:text-sm font-medium">Multi-site portfolio, structural zones, and live progress tracking</p>
         </div>
 
-        <!-- Global Action Switches -->
-        <div class="flex items-center gap-3 w-full md:w-auto">
-            <span class="px-5 py-2.5 rounded-xl font-semibold bg-prayosha-navy text-white text-sm shadow-sm flex items-center gap-2">
+        <div class="flex items-center gap-3 w-full sm:w-auto">
+            <a href="create-project.html" id="createProjectBtn" class="w-full sm:w-auto justify-center px-5 py-2.5 rounded-xl font-semibold bg-prayosha-navy text-white text-sm shadow hover:bg-opacity-90 transition flex items-center gap-2">
                 <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-                </svg>
-                Project Directory
-            </span>
-            <a href="create-project.html" id="createProjectBtn" class="px-5 py-2.5 rounded-xl font-semibold bg-white/90 text-gray-700 hover:text-prayosha-navy text-sm border border-gray-200 hover:border-amber-400 transition shadow-sm flex items-center gap-2">
-                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
-                Create New Project
+                Create Project
             </a>
         </div>
-    </header>
+    </section>
 
-    <!-- Toolbar: Search, Filters & Counters -->
-    <section class="max-w-7xl mx-auto mb-8">
+    <!-- Active Workspace Quick-Launch Suite (Direct Module Shortcuts) -->
+    <section id="activeWorkspaceLaunchpad" class="max-w-7xl mx-auto mb-6">
+        <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-[#FFBF00]">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-gray-100">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">🏢</span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Active Workspace</span>
+                            <span id="activeWorkspacePill" class="text-xs font-bold prayosha-navy bg-amber-100/80 px-2.5 py-0.5 rounded-full border border-amber-200">
+                                Synchronizing...
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5">Quick access to operational suites for this site project</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 Core Operational Modules Launch Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <!-- 1. Civil Tasks -->
+                <a href="../tasks/active-tasks.html" class="p-3 bg-white/90 hover:bg-white rounded-xl border border-gray-200/80 hover:border-prayosha-navy shadow-xs transition group flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition">
+                        🏗️
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold prayosha-navy leading-tight">Civil Tasks</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">Live site execution</div>
+                    </div>
+                </a>
+
+                <!-- 2. Inventory & Materials (Newly Created Module) -->
+                <a href="../inventory/stock-overview.html" class="p-3 bg-white/90 hover:bg-white rounded-xl border border-gray-200/80 hover:border-prayosha-navy shadow-xs transition group flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition">
+                        📦
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold prayosha-navy leading-tight">Inventory & Stock</div>
+                        <div class="text-[10px] text-emerald-600 font-medium mt-0.5">Store & receipts</div>
+                    </div>
+                </a>
+
+                <!-- 3. Workforce & Muster Roll -->
+                <a href="../workforce/workforce.html" class="p-3 bg-white/90 hover:bg-white rounded-xl border border-gray-200/80 hover:border-prayosha-navy shadow-xs transition group flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition">
+                        👷
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold prayosha-navy leading-tight">Workforce Roll</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">Labor & contractors</div>
+                    </div>
+                </a>
+
+                <!-- 4. Pre-Development & BOQ -->
+                <a href="../pre-development/pre-development.html" class="p-3 bg-white/90 hover:bg-white rounded-xl border border-gray-200/80 hover:border-prayosha-navy shadow-xs transition group flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition">
+                        📋
+                    </div>
+                    <div>
+                        <div class="text-xs font-bold prayosha-navy leading-tight">Pre-Development</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">Approvals & liasoning</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Toolbar: Search, Filters & Refresh -->
+    <section class="max-w-7xl mx-auto mb-6">
         <div class="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
-            
             <!-- Search Bar -->
             <div class="relative w-full md:w-96">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
@@ -95,7 +145,7 @@
                 <input type="text" id="searchInput" class="input-search text-sm" placeholder="Search by Project Name, Code, or Location...">
             </div>
 
-            <!-- Filters & Active Project Pill -->
+            <!-- Filters -->
             <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
                 <select id="statusFilter" class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white/90 text-xs font-semibold text-gray-700 focus:outline-none focus:border-amber-400">
                     <option value="ALL">All Statuses</option>
@@ -117,9 +167,9 @@
     </section>
 
     <!-- Main Dynamic Projects Grid -->
-    <main class="max-w-7xl mx-auto mb-12">
+    <main class="max-w-7xl mx-auto">
         <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Loading Skeletons will appear here initially -->
+            <!-- Loading Skeletons -->
             <div class="glass-card rounded-2xl p-6 animate-pulse flex flex-col gap-4">
                 <div class="h-4 bg-gray-200 rounded w-1/3"></div>
                 <div class="h-32 bg-gray-200 rounded-xl"></div>
@@ -160,14 +210,13 @@
 
     <!-- Project Architecture Inspector Modal -->
     <div id="architectureModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-modal w-full max-w-4xl max-h-[90vh] rounded-3xl p-6 md:p-8 flex flex-col custom-scroll overflow-hidden">
-            
+        <div class="glass-modal w-full max-w-4xl max-h-[85vh] rounded-3xl p-6 md:p-8 flex flex-col custom-scroll overflow-hidden">
             <!-- Modal Header -->
             <div class="flex justify-between items-start pb-4 border-b border-gray-200 mb-6 shrink-0">
                 <div>
                     <div class="flex items-center gap-2">
-                        <span id="modalProjectCode" class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">PRSG-001</span>
-                        <h2 id="modalProjectName" class="text-2xl font-bold prayosha-navy">Prayosha Imperia</h2>
+                        <span id="modalProjectCode" class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">CODE</span>
+                        <h2 id="modalProjectName" class="text-2xl font-bold prayosha-navy">Project Name</h2>
                     </div>
                     <p id="modalProjectMeta" class="text-xs text-gray-500 mt-1">Architecture & Zone Breakdown</p>
                 </div>
@@ -179,9 +228,7 @@
             </div>
 
             <!-- Modal Content (Scrollable Zone Tree) -->
-            <div id="modalZonesContent" class="space-y-6 overflow-y-auto pr-2 custom-scroll flex-1">
-                <!-- Zone groups will be dynamically injected here -->
-            </div>
+            <div id="modalZonesContent" class="space-y-6 overflow-y-auto pr-2 custom-scroll flex-1"></div>
 
             <!-- Modal Footer -->
             <div class="pt-6 border-t border-gray-200 mt-6 flex justify-end gap-3 shrink-0">
@@ -199,13 +246,30 @@
     </div>
 
     <!-- Toast Notification Container -->
-    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none"></div>
+    <div id="toastContainer" class="fixed bottom-24 right-6 z-50 space-y-2 pointer-events-none"></div>
 
+    <!-- Page Logic -->
     <script type="module" src="project-dashboard.js"></script>
-    <!-- Universal Navigation Shell -->
+
+    <!-- Universal Navigation Shell Injection & Workspace Sync -->
     <script type="module">
         import { initShell } from '../common/shell.js';
-        initShell();
+        
+        // Correct module key so Overview button in the bottom dock is highlighted
+        initShell({ activeModule: 'dashboard' });
+
+        // Update the Active Workspace Pill dynamically from localStorage
+        function syncWorkspacePill() {
+            const pill = document.getElementById('activeWorkspacePill');
+            if (pill) {
+                const name = localStorage.getItem('activeProjectName') || 'Select Site Project';
+                const code = localStorage.getItem('activeProjectCode');
+                pill.textContent = code ? `[${code}] ${name}` : name;
+            }
+        }
+
+        syncWorkspacePill();
+        window.addEventListener('projectChanged', syncWorkspacePill);
     </script>
 </body>
 </html>
