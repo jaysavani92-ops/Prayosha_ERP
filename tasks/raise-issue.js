@@ -4,9 +4,11 @@
  * 
  * Features:
  * 1. Automatic Project Synchronization: Pulls project master records and selects the active workspace project.
- * 2. Identity Binding: Resolves active user display name and binds it to the reporter field.
- * 3. Blocker Logging: Inserts critical site impediments into the `issues_blockers` Supabase table.
- * 4. Rapid Multi-Entry: Preserves location context (Project, Tower, Floor) for rapid consecutive blocker logs.
+ * 2. Deep-Link / QR Code Zone Auto-Fill: Pre-fills and locks/highlights Zone ID from ?zone_id=... parameter.
+ * 3. Spatial Metadata Auto-Resolution: Queries `project_map_zones` to auto-fill Tower and Floor Level.
+ * 4. Identity Binding: Resolves active user display name and binds it to the reporter field.
+ * 5. Blocker Logging: Inserts critical site impediments into the `issues_blockers` Supabase table.
+ * 6. Rapid Multi-Entry: Preserves location context (Project, Tower, Floor) for rapid consecutive blocker logs.
  */
 
 // Supabase Client Initialization
@@ -14,7 +16,9 @@ const SUPABASE_PROJECT_URL = window.SUPABASE_URL || 'https://lmzowftkbjdzqmmgxcr
 const SUPABASE_PUBLIC_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_ey0ZqXs2eGyaJ5y1ZWtrnA_Rul705D0';
 
 const client = window.supabaseClient || (window.supabase 
-    ? window.supabase.createClient(SUPABASE_PROJECT_URL, SUPABASE_PUBLIC_KEY) 
+    ? (typeof window.supabase.createClient === 'function' 
+        ? window.supabase.createClient(SUPABASE_PROJECT_URL, SUPABASE_PUBLIC_KEY) 
+        : window.supabase)
     : null);
 
 // DOM Elements
@@ -22,9 +26,13 @@ const raiseIssueForm = document.getElementById('raiseIssueForm');
 const projectSelect = document.getElementById('project_name');
 const reportedByInput = document.getElementById('reported_by');
 const feedbackBox = document.getElementById('issue-feedback');
+const zoneInput = document.getElementById('zone_id');
+const towerInput = document.getElementById('tower_block');
+const floorInput = document.getElementById('floor_level');
+const descriptionInput = document.getElementById('description');
 
 /**
- * 1. Initialize Form Context (User Identity & Active Project)
+ * 1. Initialize Form Context (User Identity, Active Project, and URL Deep-Links)
  */
 async function initFormContext() {
     // 1.1 Resolve Reporter Name from Session Memory
@@ -36,6 +44,8 @@ async function initFormContext() {
                 reportedByInput.value = userObj.displayName;
             } else if (userObj.username) {
                 reportedByInput.value = userObj.username;
+            } else if (userObj.full_name) {
+                reportedByInput.value = userObj.full_name;
             }
         } catch (e) {
             console.warn('[Issue Reporter] Could not parse prayosha_user session:', e);
@@ -48,6 +58,7 @@ async function initFormContext() {
 
     if (!client) {
         populateFallbackProject(activeProjectName);
+        handleIncomingZoneParam();
         return;
     }
 
@@ -96,6 +107,9 @@ async function initFormContext() {
         console.error('[Issue Reporter] Error loading projects:', err);
         populateFallbackProject(activeProjectName);
     }
+
+    // 1.3 Handle Incoming ?zone_id= Deep Link from Site Map / QR Scan
+    await handleIncomingZoneParam();
 }
 
 /**
@@ -112,7 +126,81 @@ function populateFallbackProject(name) {
 }
 
 /**
- * 2. Form Submission Handler
+ * 2. Deep Link Zone Parameter Handler
+ */
+async function handleIncomingZoneParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const zoneParam = urlParams.get('zone_id') || urlParams.get('zone');
+
+    if (!zoneParam || !zoneInput) return;
+
+    const cleanZone = zoneParam.trim().toUpperCase();
+    zoneInput.value = cleanZone;
+
+    // Highlight Zone field to indicate auto-detection from Site Map
+    zoneInput.classList.add('ring-2', 'ring-[#FFBF00]', 'bg-amber-50/50');
+
+    // Display a quick confirmation tag above the form
+    let tag = document.getElementById('zone-detected-tag');
+    if (!tag) {
+        tag = document.createElement('div');
+        tag.id = 'zone-detected-tag';
+        tag.className = 'mb-3 px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 text-xs font-semibold text-[#1E3A5F] flex items-center justify-between';
+        raiseIssueForm.parentNode.insertBefore(tag, raiseIssueForm);
+    }
+    tag.innerHTML = `
+        <span class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            Pin Linked: Logging issue directly for Zone <strong>${cleanZone}</strong>
+        </span>
+        <button type="button" id="btnRemoveZoneLink" class="text-[10px] text-slate-500 hover:text-red-600 font-bold ml-2">✕ Clear</button>
+    `;
+
+    document.getElementById('btnRemoveZoneLink').addEventListener('click', () => {
+        zoneInput.value = '';
+        zoneInput.classList.remove('ring-2', 'ring-[#FFBF00]', 'bg-amber-50/50');
+        tag.remove();
+        const url = new URL(window.location);
+        url.searchParams.delete('zone_id');
+        url.searchParams.delete('zone');
+        window.history.replaceState({}, document.title, url.pathname);
+    });
+
+    // Auto-resolve Tower and Floor from project_map_zones if configured
+    if (client) {
+        try {
+            const activeProjectId = localStorage.getItem('activeProjectId');
+            let query = client
+                .from('project_map_zones')
+                .select('tower_name, floor_level, room_identifier')
+                .eq('zone_id', cleanZone);
+
+            if (activeProjectId) {
+                query = query.eq('project_id', activeProjectId);
+            }
+
+            const { data: matchedZone } = await query.maybeSingle();
+
+            if (matchedZone) {
+                if (towerInput && (!towerInput.value || towerInput.value.trim() === '')) {
+                    towerInput.value = matchedZone.tower_name || '';
+                }
+                if (floorInput && (!floorInput.value || floorInput.value.trim() === '')) {
+                    floorInput.value = matchedZone.floor_level || '';
+                }
+            }
+        } catch (e) {
+            console.warn('[Issue Reporter] Could not auto-resolve zone location:', e);
+        }
+    }
+
+    if (descriptionInput) {
+        descriptionInput.focus();
+    }
+}
+
+/**
+ * 3. Form Submission Handler
  */
 raiseIssueForm.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -135,10 +223,10 @@ raiseIssueForm.addEventListener('submit', async function(e) {
 
     const issuePayload = {
         project_name: projectSelect.value,
-        tower_block: document.getElementById('tower_block').value,
-        floor_level: document.getElementById('floor_level').value,
-        zone_id: document.getElementById('zone_id').value.trim().toUpperCase(),
-        description: document.getElementById('description').value.trim(),
+        tower_block: towerInput ? towerInput.value.trim() : '',
+        floor_level: floorInput ? floorInput.value.trim() : '',
+        zone_id: zoneInput.value.trim().toUpperCase(),
+        description: descriptionInput.value.trim(),
         reported_by: reportedByInput.value.trim(),
         status: 'Open',
         priority: 'Critical'
@@ -167,9 +255,14 @@ raiseIssueForm.addEventListener('submit', async function(e) {
         `;
 
         // Clear specific fields for quick multi-entry while keeping project/tower/floor selected
-        document.getElementById('zone_id').value = '';
-        document.getElementById('description').value = '';
-        document.getElementById('zone_id').focus();
+        zoneInput.value = '';
+        zoneInput.classList.remove('ring-2', 'ring-[#FFBF00]', 'bg-amber-50/50');
+        descriptionInput.value = '';
+
+        const tag = document.getElementById('zone-detected-tag');
+        if (tag) tag.remove();
+
+        zoneInput.focus();
 
     } catch (err) {
         console.error('[Issue Log Failure]:', err);

@@ -3,11 +3,13 @@
  * File: /purchase/log-invoice.js
  * 
  * Features:
- * 1. CBS Cascading Selectors (Department -> Category -> Sub-Category).
- * 2. Real-time Quantity x Rate Calculation.
- * 3. Pre-save Site Damage & Incident Verification Audit.
- * 4. Native Cloudflare R2 Media Vault Document Uploader.
- * 5. Primary Record Insertion with Disguised Offshore Telemetry Dispatcher.
+ * 1. Dynamic Vendor Master Integration (Live fetch from public.vendors).
+ * 2. Real-time Vendor Compliance & Credit Terms Inspector.
+ * 3. CBS Cascading Selectors (Department -> Category -> Sub-Category).
+ * 4. Real-time Quantity x Rate Calculation.
+ * 5. Pre-save Site Damage & Incident Verification Audit.
+ * 6. Native Cloudflare R2 Media Vault Document Uploader.
+ * 7. Primary Record Insertion with Disguised Offshore Telemetry Dispatcher.
  */
 
 import { supabase, rokduSupabase, uploadToR2, CONFIG } from '../config.js';
@@ -40,14 +42,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Cached Vendors Registry
+    let cachedVendors = [];
+
     // =========================================================================
     // 2. DOM ELEMENT SELECTORS
     // =========================================================================
     const activeProjectDisplay = document.getElementById('activeProjectDisplay');
     const invoiceForm = document.getElementById('invoiceForm');
 
-    // Section 1: Invoice Details
+    // Section 1: Invoice Details & Vendor Selector
+    const vendorSelect = document.getElementById('vendorSelect');
     const vendorNameInput = document.getElementById('vendorName');
+    const vendorIdInput = document.getElementById('vendorId');
+    const vendorMetaBadge = document.getElementById('vendorMetaBadge');
+    const vendorCodeBadge = document.getElementById('vendorCodeBadge');
+    const vendorGstinBadge = document.getElementById('vendorGstinBadge');
+    const vendorCreditBadge = document.getElementById('vendorCreditBadge');
+    const vendorRokduBadge = document.getElementById('vendorRokduBadge');
+
     const invDateInput = document.getElementById('invDate');
     const invNoInput = document.getElementById('invNo');
     const challanNoInput = document.getElementById('challanNo');
@@ -111,7 +124,90 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // =========================================================================
-    // 3. COST BREAKDOWN STRUCTURE (CBS) HIERARCHY
+    // 3. VENDOR DIRECTORY REAL-TIME LOADER & SELECTOR ENGINE
+    // =========================================================================
+    async function loadVendorOptions() {
+        if (!vendorSelect) return;
+
+        try {
+            const { data, error } = await primaryClient
+                .from('vendors')
+                .select('id, vendor_code, name, trade_name, gstin, credit_period_days, allows_cash_rokdu, status')
+                .order('name', { ascending: true });
+
+            if (error) throw error;
+
+            cachedVendors = data || [];
+
+            vendorSelect.innerHTML = '<option value="">Select Vendor / Supplier...</option>';
+
+            if (cachedVendors.length === 0) {
+                vendorSelect.innerHTML = '<option value="">No vendors found (Register in Directory)</option>';
+                return;
+            }
+
+            cachedVendors.forEach((v) => {
+                const opt = document.createElement('option');
+                opt.value = v.id;
+                const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
+                const tradeSuffix = v.trade_name && v.trade_name !== v.name ? ` (${v.trade_name})` : '';
+                const statusSuffix = v.status !== 'Active' ? ` - [${v.status}]` : '';
+                
+                opt.textContent = `${v.name}${tradeSuffix}${codeSuffix}${statusSuffix}`;
+                if (v.status === 'Blacklisted') {
+                    opt.disabled = true;
+                }
+                vendorSelect.appendChild(opt);
+            });
+
+        } catch (err) {
+            console.error('[Purchase Invoice] Error fetching vendors:', err);
+            vendorSelect.innerHTML = '<option value="">Failed to load vendors</option>';
+        }
+    }
+
+    function handleVendorSelectionChange() {
+        const selectedId = vendorSelect.value;
+        const selectedVendor = cachedVendors.find((v) => v.id === selectedId);
+
+        if (!selectedVendor) {
+            if (vendorNameInput) vendorNameInput.value = '';
+            if (vendorIdInput) vendorIdInput.value = '';
+            if (vendorMetaBadge) vendorMetaBadge.classList.add('hidden');
+            return;
+        }
+
+        // Synchronize hidden values
+        if (vendorNameInput) vendorNameInput.value = selectedVendor.name;
+        if (vendorIdInput) vendorIdInput.value = selectedVendor.id;
+
+        // Populate Live Metadata Strip
+        if (vendorMetaBadge) {
+            vendorCodeBadge.textContent = selectedVendor.vendor_code || 'VEND';
+            vendorGstinBadge.textContent = selectedVendor.gstin ? `GST: ${selectedVendor.gstin}` : 'GST: Unregistered';
+            vendorCreditBadge.textContent = `${selectedVendor.credit_period_days || 0} Days Credit`;
+
+            if (selectedVendor.allows_cash_rokdu) {
+                vendorRokduBadge.textContent = 'Rokdu Allowed';
+                vendorRokduBadge.className = 'px-2 py-0.5 rounded font-semibold bg-amber-100 text-amber-900 border border-amber-300';
+            } else {
+                vendorRokduBadge.textContent = 'Bank Only';
+                vendorRokduBadge.className = 'px-2 py-0.5 rounded font-semibold bg-slate-100 text-slate-600 border border-slate-200';
+            }
+
+            vendorMetaBadge.classList.remove('hidden');
+        }
+    }
+
+    if (vendorSelect) {
+        vendorSelect.addEventListener('change', handleVendorSelectionChange);
+    }
+
+    // Initial fetch of vendors on load
+    await loadVendorOptions();
+
+    // =========================================================================
+    // 4. COST BREAKDOWN STRUCTURE (CBS) HIERARCHY
     // =========================================================================
     const CBS_MASTER = {
         'Pre-Construction & Approvals': {
@@ -213,7 +309,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =========================================================================
-    // 4. REAL-TIME ITEM PRICE CALCULATION
+    // 5. REAL-TIME ITEM PRICE CALCULATION
     // =========================================================================
     function recalculateTotal() {
         const qty = parseFloat(itemQtyInput.value) || 0;
@@ -231,7 +327,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (itemRateInput) itemRateInput.addEventListener('input', recalculateTotal);
 
     // =========================================================================
-    // 5. CLOUDFLARE R2 INVOICE PHOTO UPLOADER
+    // 6. CLOUDFLARE R2 INVOICE PHOTO UPLOADER
     // =========================================================================
     if (invoicePhotoInput) {
         invoicePhotoInput.addEventListener('change', async (e) => {
@@ -273,7 +369,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =========================================================================
-    // 6. DAMAGE & INCIDENT VERIFICATION CHECK BEFORE SAVE
+    // 7. DAMAGE & INCIDENT VERIFICATION CHECK BEFORE SAVE
     // =========================================================================
     async function checkForUnresolvedIncidents(itemDesc, vendorName) {
         try {
@@ -327,7 +423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (cancelSaveBtn) cancelSaveBtn.addEventListener('click', closeIncidentModal);
 
     // =========================================================================
-    // 7. FORM SUBMISSION & SPLIT DATABASE PIPELINE
+    // 8. FORM SUBMISSION & SPLIT DATABASE PIPELINE
     // =========================================================================
     let pendingExecutionData = null;
 
@@ -335,7 +431,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         invoiceForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const vendor = vendorNameInput.value.trim();
+            const vendor = (vendorNameInput?.value || vendorSelect?.options[vendorSelect.selectedIndex]?.text || '').trim();
+            const vendorId = (vendorIdInput?.value || vendorSelect?.value || '').trim();
             const date = invDateInput.value;
             const invNo = invNoInput.value.trim();
             const itemDesc = itemDescriptionInput.value.trim();
@@ -346,12 +443,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const cashPaid = parseFloat(cashPaidInput.value) || 0;
 
             if (!vendor || !date || !invNo || !itemDesc || total <= 0) {
-                showNotification('Please fill in all required fields and item quantities.', 'error');
+                showNotification('Please select a valid vendor and fill all required fields.', 'error');
                 return;
             }
 
             pendingExecutionData = {
                 vendor,
+                vendorId,
                 date,
                 invNo,
                 challanNo: challanNoInput.value.trim(),
@@ -473,9 +571,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     project_id: activeProjectId || null
                 };
 
+                // Attach vendor foreign ID if column exists
+                if (payload.vendorId) {
+                    primaryRecord.vendor_id = payload.vendorId;
+                }
+
                 let { error: insertError } = await primaryClient
                     .from('purchase_logs')
                     .insert([primaryRecord]);
+
+                // Fallback attempt if table schema is without vendor_id or named 'purchases'
+                if (insertError && insertError.message?.includes('vendor_id')) {
+                    delete primaryRecord.vendor_id;
+                    const retry = await primaryClient
+                        .from('purchase_logs')
+                        .insert([primaryRecord]);
+                    insertError = retry.error;
+                }
 
                 if (insertError && insertError.code === '42P01') {
                     const fallback = await primaryClient
@@ -497,6 +609,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             subCategorySelect.disabled = true;
             uploadStatusText.textContent = 'Accepts PNG, JPG, or PDF (Max 10MB)';
             uploadStatusText.className = 'text-[10px] text-slate-400 mt-1 font-medium';
+            if (vendorMetaBadge) vendorMetaBadge.classList.add('hidden');
             pendingExecutionData = null;
 
             showNotification(`Invoice ${payload.invNo} successfully logged and verified.`, 'success');
@@ -532,7 +645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // =========================================================================
-    // 8. UI HELPERS & NOTIFICATIONS
+    // 9. UI HELPERS & NOTIFICATIONS
     // =========================================================================
     function setLoadingState(isLoading) {
         if (!saveInvoiceBtn) return;

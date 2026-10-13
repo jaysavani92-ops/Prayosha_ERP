@@ -32,6 +32,8 @@
     </script>
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Central Configuration (ES Module) -->
+    <script type="module" src="../config.js"></script>
 </head>
 <body class="bg-[#F8FAFC] min-h-screen font-sans antialiased text-slate-800 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
 
@@ -128,10 +130,23 @@
                         <input id="inwardQty" type="number" step="any" min="0.01" required placeholder="0.00" class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
                     </div>
 
-                    <!-- Supplier / Agency -->
+                    <!-- Supplier / Agency (Dynamic Vendor Master Dropdown) -->
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">SUPPLIER / AGENCY NAME *</label>
-                        <input id="inwardSupplier" type="text" required placeholder="e.g. Steel Enterprise, Krishna Buildcon" class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-[11px] font-semibold text-slate-600 uppercase">SUPPLIER / AGENCY NAME *</label>
+                            <a href="../vendors/vendors.html" target="_blank" class="text-[10px] font-semibold text-brand-navy hover:text-brand-amber transition flex items-center gap-0.5" title="Register New Vendor in Directory">
+                                + New Vendor
+                            </a>
+                        </div>
+                        <select id="inwardSupplierSelect" required class="w-full px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none cursor-pointer">
+                            <option value="">Loading suppliers...</option>
+                        </select>
+                        <input type="hidden" id="inwardSupplier" />
+                        <!-- Live Vendor Identifier Strip -->
+                        <div id="inwardSupplierMeta" class="hidden flex flex-wrap items-center gap-1.5 pt-1.5 text-[10px]">
+                            <span id="inwardSupplierCode" class="px-2 py-0.5 rounded font-mono font-bold bg-slate-100 text-slate-700"></span>
+                            <span id="inwardSupplierGstin" class="px-2 py-0.5 rounded font-mono bg-blue-50 text-blue-700 border border-blue-200/60"></span>
+                        </div>
                     </div>
 
                     <!-- Date -->
@@ -140,13 +155,13 @@
                         <input id="inwardDate" type="date" required class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
                     </div>
 
-                    <!-- Delivery Challan No (Added Refinement) -->
+                    <!-- Delivery Challan No -->
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-600 mb-1">DELIVERY CHALLAN NUMBER *</label>
                         <input id="inwardChallanNo" type="text" required placeholder="e.g. CH-001, DC-8841" class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
                     </div>
 
-                    <!-- Tax Invoice No (Added Refinement) -->
+                    <!-- Tax Invoice No -->
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-600 mb-1">TAX INVOICE NUMBER *</label>
                         <input id="inwardInvoiceNo" type="text" required placeholder="e.g. INV-2026-904" class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
@@ -209,10 +224,23 @@
                         <input id="outwardQty" type="number" step="any" min="0.01" required placeholder="0.00" class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
                     </div>
 
-                    <!-- Sub-contractor Agency -->
+                    <!-- Sub-contractor Agency (Dynamic Vendor / Contractor Dropdown) -->
                     <div>
-                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">ISSUED TO / SUB-CONTRACTOR *</label>
-                        <input id="outwardAgency" type="text" required placeholder="e.g. Bholenath Construction, Somnath Realtor" class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-[11px] font-semibold text-slate-600 uppercase">ISSUED TO / SUB-CONTRACTOR *</label>
+                            <a href="../vendors/vendors.html" target="_blank" class="text-[10px] font-semibold text-brand-navy hover:text-brand-amber transition flex items-center gap-0.5" title="Register New Agency / Contractor in Directory">
+                                + New Agency
+                            </a>
+                        </div>
+                        <select id="outwardAgencySelect" required class="w-full px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none cursor-pointer">
+                            <option value="">Loading contractor agencies...</option>
+                        </select>
+                        <input type="hidden" id="outwardAgency" />
+                        <!-- Live Contractor Category Badge -->
+                        <div id="outwardAgencyMeta" class="hidden flex flex-wrap items-center gap-1.5 pt-1.5 text-[10px]">
+                            <span id="outwardAgencyCode" class="px-2 py-0.5 rounded font-mono font-bold bg-slate-100 text-slate-700"></span>
+                            <span id="outwardAgencyCategory" class="px-2 py-0.5 rounded font-semibold bg-purple-50 text-purple-700 border border-purple-200/60"></span>
+                        </div>
                     </div>
 
                     <!-- Issue Date -->

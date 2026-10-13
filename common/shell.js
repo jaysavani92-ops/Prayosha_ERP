@@ -7,10 +7,10 @@
  * 2. Top Executive Bar: Monogram, active project selector, tri-lingual dropdown, alerts, logout.
  * 3. Mobile-First Bottom Dock: 5 ergonomic destinations with raised center Action Hub.
  * 4. Action Hub Drawer: Zero click-blocking when closed, smooth slide-up when opened.
- * 5. Automatic Module Highlighting: Auto-detects current URL subfolder (including /inventory/ and /purchase/).
+ * 5. Automatic Module Highlighting: Auto-detects current URL subfolder (including /inventory/, /purchase/, /vendors/, and /site-map/).
  * 6. Smart Auto-Hide on Scroll: Disappears on downward scroll, reappears on upward scroll.
  * 7. Workspace Session Synchronization: activeProjectId, activeProjectName, activeProjectCode.
- * 8. Full Suite Navigation: Civil Tasks, Inventory, Purchase & Indents, Workforce, Pre-Dev, Admin.
+ * 8. Full Suite Navigation: Civil Tasks, Inventory, Purchase & Indents, Workforce, Pre-Dev, Admin, Vendors, Site Map (Zones).
  */
 
 import * as Config from '../config.js';
@@ -36,6 +36,12 @@ const I18N_DICTIONARY = {
         actionRaiseIssue: 'Raise Issue',
         actionLogTask: 'Log Task',
         actionDailyReport: 'Daily Report',
+        sectionSiteMap: 'Site Map & Spatial Suite',
+        navSiteMap: 'Site Map (Zones)',
+        linkInteractiveMap: 'Interactive 3D Map',
+        linkCadDrawings: 'Original 2D Drawings',
+        linkZoneGrid: 'Zone KPIs & Grid',
+        linkFloorManager: 'Floor Plan Manager',
         sectionCivilTasks: 'Civil Tasks Suite',
         taskActive: 'Active Tasks',
         taskPending: 'Pending Tasks',
@@ -65,6 +71,7 @@ const I18N_DICTIONARY = {
         sectionAdmin: 'Administration',
         linkNewProject: '+ New Project',
         linkDirectory: 'Employee Directory',
+        linkVendors: 'Vendor Directory',
         logoutConfirm: 'Are you sure you want to sign out of Prayosha ERP?'
     },
     gu: {
@@ -83,6 +90,12 @@ const I18N_DICTIONARY = {
         actionRaiseIssue: 'સમસ્યા નોંધો',
         actionLogTask: 'કાર્ય ઉમેરો',
         actionDailyReport: 'દૈનિક અહેવાલ',
+        sectionSiteMap: 'સાઇટ મેપ અને ઝોન સૂટ',
+        navSiteMap: 'સાઇટ મેપ (ઝોન)',
+        linkInteractiveMap: 'ઇન્ટરેક્ટિવ 3D મેપ',
+        linkCadDrawings: 'ઓરિજિનલ 2D ડ્રોઇંગ્સ',
+        linkZoneGrid: 'ઝોન વિહંગાવલોકન',
+        linkFloorManager: 'ફ્લોર પ્લાન મેનેજર',
         sectionCivilTasks: 'સિવિલ કાર્યો સૂટ',
         taskActive: 'સક્રિય કાર્યો',
         taskPending: 'બાકી કાર્યો',
@@ -112,6 +125,7 @@ const I18N_DICTIONARY = {
         sectionAdmin: 'વહીવટ / એડમિન',
         linkNewProject: '+ નવો પ્રોજેક્ટ',
         linkDirectory: 'કર્મચારી ડિરેક્ટરી',
+        linkVendors: 'વેન્ડર ડિરેક્ટરી',
         logoutConfirm: 'શું તમે ખરેખર પ્રયોશા ERP માંથી લોગઆઉટ કરવા માંગો છો?'
     },
     hi: {
@@ -130,6 +144,12 @@ const I18N_DICTIONARY = {
         actionRaiseIssue: 'समस्या दर्ज करें',
         actionLogTask: 'कार्य जोड़ें',
         actionDailyReport: 'दैनिक रिपोर्ट',
+        sectionSiteMap: 'साइट मैप एवं ज़ोन सूट',
+        navSiteMap: 'साइट मैप (ज़ोन)',
+        linkInteractiveMap: 'इंटरैक्टिव 3D मैप',
+        linkCadDrawings: 'मूल 2D ड्रॉइंग्स',
+        linkZoneGrid: 'ज़ोन अवलोकन एवं ग्रिड',
+        linkFloorManager: 'फ्लोर प्लान प्रबंधक',
         sectionCivilTasks: 'सिविल कार्य सूट',
         taskActive: 'सक्रिय कार्य',
         taskPending: 'लंबित कार्य',
@@ -159,6 +179,7 @@ const I18N_DICTIONARY = {
         sectionAdmin: 'प्रशासन / एडमिन',
         linkNewProject: '+ नया प्रोजेक्ट',
         linkDirectory: 'कर्मचारी निर्देशिका',
+        linkVendors: 'वेंडर निर्देशिका',
         logoutConfirm: 'क्या आप वास्तव में प्रयोशा ERP से लॉगआउट करना चाहते हैं?'
     }
 };
@@ -174,6 +195,8 @@ function getRootPrefix() {
         path.includes('/inventory/') ||
         path.includes('/purchase/') ||
         path.includes('/users/') ||
+        path.includes('/vendors/') ||
+        path.includes('/site-map/') ||
         path.includes('/common/')
     ) {
         return '../';
@@ -205,6 +228,10 @@ export async function initShell(options = {}) {
             activeModule = 'pre-dev';
         } else if (currentPath.includes('/users/')) {
             activeModule = 'users';
+        } else if (currentPath.includes('/vendors/')) {
+            activeModule = 'vendors';
+        } else if (currentPath.includes('/site-map/')) {
+            activeModule = 'site-map';
         }
     }
 
@@ -330,6 +357,7 @@ function injectShellHTML(data) {
     const isPurchase = data.activeModule === 'purchase';
     const isWorkforce = data.activeModule === 'workforce';
     const isPreDev = data.activeModule === 'pre-dev';
+    const isSiteMap = data.activeModule === 'site-map';
 
     const dashColorClass = isDashboard ? 'text-[#1E3A5F]' : 'text-slate-400 hover:text-slate-600';
     const dashFontClass = isDashboard ? 'font-bold text-[#1E3A5F]' : 'font-medium';
@@ -495,7 +523,29 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 2. Civil Tasks Suite -->
+                    <!-- 2. SITE MAP & SPATIAL BLUEPRINTS SUITE -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span data-i18n="sectionSiteMap" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Site Map & Spatial Suite</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-[#1E3A5F] border border-amber-300">Live 3D & CAD</span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <a href="${ROOT_PATH}site-map/site-map.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition ${isSiteMap ? 'ring-2 ring-[#1E3A5F] bg-blue-50/50 font-bold text-[#1E3A5F]' : ''}">
+                                <span class="w-2 h-2 rounded-full bg-[#FFBF00]"></span> <span data-i18n="linkInteractiveMap">Interactive 3D Map</span>
+                            </a>
+                            <a href="${ROOT_PATH}site-map/site-map.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span> <span data-i18n="linkCadDrawings">Original 2D Drawings</span>
+                            </a>
+                            <a href="${ROOT_PATH}site-map/site-map.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span data-i18n="linkZoneGrid">Zone KPIs & Grid</span>
+                            </a>
+                            <a href="${ROOT_PATH}site-map/site-map.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span> <span data-i18n="linkFloorManager">Floor Plan Manager</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 3. Civil Tasks Suite -->
                     <div>
                         <span data-i18n="sectionCivilTasks" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Civil Tasks Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -520,7 +570,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 3. INVENTORY & MATERIALS SUITE -->
+                    <!-- 4. INVENTORY & MATERIALS SUITE -->
                     <div>
                         <span data-i18n="sectionInventory" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Inventory & Materials Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -545,7 +595,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 4. PURCHASE & INDENTS SUITE (Newly Added) -->
+                    <!-- 5. PURCHASE & INDENTS SUITE -->
                     <div>
                         <span data-i18n="sectionPurchase" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Purchase & Indents Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -573,7 +623,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 5. Pre-Development & Workforce -->
+                    <!-- 6. Pre-Development & Workforce -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-white p-3.5 rounded-2xl border border-slate-200">
                             <span data-i18n="sectionPreDev" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Pre-Development</span>
@@ -594,7 +644,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 6. Administration & Masters -->
+                    <!-- 7. Administration & Masters -->
                     <div class="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
                         <span data-i18n="sectionAdmin" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Administration</span>
                         <div class="flex items-center gap-3">
@@ -604,6 +654,10 @@ function injectShellHTML(data) {
                             <span class="text-slate-300">|</span>
                             <a href="${ROOT_PATH}users/employee-directory.html" class="text-xs font-semibold text-[#1E3A5F] hover:underline">
                                 <span data-i18n="linkDirectory">Employee Directory</span>
+                            </a>
+                            <span class="text-slate-300">|</span>
+                            <a href="${ROOT_PATH}vendors/vendors.html" class="text-xs font-semibold text-[#1E3A5F] hover:underline">
+                                <span data-i18n="linkVendors">Vendor Directory</span>
                             </a>
                         </div>
                     </div>

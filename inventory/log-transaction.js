@@ -4,22 +4,28 @@
  * 
  * Features:
  * 1. Dual Mode Toggle: Seamless switching between INWARD (Receive) and OUTWARD (Issue).
- * 2. Real-Time Project SKU Lookup: Dynamically loads materials for the active workspace.
- * 3. Inward Receipt Execution:
+ * 2. Real-Time Project SKU Lookup: Dynamically loads materials with UUID-safe project queries.
+ * 3. Dynamic Vendor & Agency Master Integration:
+ *    - Inward: Populates Material Suppliers with live Vendor Code & GSTIN inspection.
+ *    - Outward: Populates Sub-Contractors & Agencies with classification badges.
+ * 4. Inward Receipt Execution:
  *    - Records Delivery Challan Number and Tax Invoice Number.
  *    - Uploads document proof directly to Cloudflare R2 bucket.
  *    - Automatically increments `current_stock` in `inventory_items`.
- * 4. Outward Issue Execution:
+ * 5. Outward Issue Execution:
  *    - Links material issues to Sub-Contractors, Towers, Floors, and Granular Zone IDs.
  *    - Verifies available on-site balances to prevent accidental deficits.
  *    - Automatically deducts `current_stock` and increments `consumed_till_date`.
- * 5. Automatic User & Date Attribution: Auto-populates logged-in user credentials and current date.
+ * 6. Automatic User & Date Attribution: Auto-populates logged-in user credentials and current date.
  */
 
 import { supabase, uploadToR2 } from '../config.js';
 
 // Central Supabase Client
 const client = supabase || window.supabaseClient;
+
+// Standard RFC4122 UUID Regular Expression
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // DOM Elements - Mode Switcher & Workspace Badges
 const btnToggleInward = document.getElementById('btnToggleInward');
@@ -34,7 +40,11 @@ const formOutward = document.getElementById('formOutward');
 const inwardItemSelect = document.getElementById('inwardItemSelect');
 const inwardStockBadge = document.getElementById('inwardStockBadge');
 const inwardQty = document.getElementById('inwardQty');
+const inwardSupplierSelect = document.getElementById('inwardSupplierSelect');
 const inwardSupplier = document.getElementById('inwardSupplier');
+const inwardSupplierMeta = document.getElementById('inwardSupplierMeta');
+const inwardSupplierCode = document.getElementById('inwardSupplierCode');
+const inwardSupplierGstin = document.getElementById('inwardSupplierGstin');
 const inwardDate = document.getElementById('inwardDate');
 const inwardChallanNo = document.getElementById('inwardChallanNo');
 const inwardInvoiceNo = document.getElementById('inwardInvoiceNo');
@@ -48,7 +58,11 @@ const btnSaveInward = document.getElementById('btnSaveInward');
 const outwardItemSelect = document.getElementById('outwardItemSelect');
 const outwardStockBadge = document.getElementById('outwardStockBadge');
 const outwardQty = document.getElementById('outwardQty');
+const outwardAgencySelect = document.getElementById('outwardAgencySelect');
 const outwardAgency = document.getElementById('outwardAgency');
+const outwardAgencyMeta = document.getElementById('outwardAgencyMeta');
+const outwardAgencyCode = document.getElementById('outwardAgencyCode');
+const outwardAgencyCategory = document.getElementById('outwardAgencyCategory');
 const outwardDate = document.getElementById('outwardDate');
 const outwardTowerSelect = document.getElementById('outwardTowerSelect');
 const outwardFloorSelect = document.getElementById('outwardFloorSelect');
@@ -58,49 +72,62 @@ const outwardHandledBy = document.getElementById('outwardHandledBy');
 const outwardRemarks = document.getElementById('outwardRemarks');
 const btnSaveOutward = document.getElementById('btnSaveOutward');
 
-// In-Memory SKU Cache & Active Session State
+// In-Memory State & SKU Cache
 let projectItems = [];
+let cachedVendors = [];
 let currentProjectId = null;
 let currentUserName = 'Engineer';
 
 /**
- * 1. Resolve Active Workspace & User Session
+ * 1. Resolve Active Workspace & User Session (With Strict UUID Validation)
  */
 async function resolveWorkspaceAndSession() {
     let projectId = localStorage.getItem('activeProjectId');
     const projectName = localStorage.getItem('activeProjectName') || '';
-    const projectCode = localStorage.getItem('activeProjectCode') || '';
 
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!projectId || !uuidRegex.test(projectId)) {
+    // If activeProjectId is null, empty, or an invalid UUID (e.g. "All Projects")
+    if (!projectId || !UUID_REGEX.test(projectId)) {
         if (client) {
             try {
                 let query = client.from('projects').select('id, project_name, project_code');
-                if (projectName) {
+
+                // If user stored a real project name (and not a generic label)
+                if (projectName && projectName !== 'All Projects' && projectName !== 'Select Site Project') {
                     query = query.ilike('project_name', `%${projectName}%`);
                 }
-                const { data: projects, error } = await query.limit(1);
 
-                if (!error && projects && projects.length > 0) {
+                let { data: projects, error } = await query.limit(1);
+
+                // Fallback: If no matching name, fetch first project in system
+                if ((error || !projects || projects.length === 0) && client) {
+                    const fallback = await client.from('projects').select('id, project_name, project_code').limit(1);
+                    projects = fallback.data;
+                    error = fallback.error;
+                }
+
+                if (!error && projects && projects.length > 0 && UUID_REGEX.test(projects[0].id)) {
                     projectId = projects[0].id;
                     localStorage.setItem('activeProjectId', projectId);
                     localStorage.setItem('activeProjectName', projects[0].project_name || projectName);
                     if (projects[0].project_code) {
                         localStorage.setItem('activeProjectCode', projects[0].project_code);
                     }
+                } else {
+                    projectId = null;
                 }
             } catch (err) {
-                console.warn('[LogTransaction] Project resolution warning:', err);
+                console.warn('[LogTransaction] Project resolution fallback notice:', err);
+                projectId = null;
             }
+        } else {
+            projectId = null;
         }
     }
 
-    currentProjectId = projectId;
+    currentProjectId = (projectId && UUID_REGEX.test(projectId)) ? projectId : null;
 
     if (activeProjectBadge) {
-        const displayName = localStorage.getItem('activeProjectName') || 'Active Project';
+        const displayName = localStorage.getItem('activeProjectName') || (currentProjectId ? 'Active Project' : 'All Sites');
         const displayCode = localStorage.getItem('activeProjectCode') || '';
         activeProjectBadge.textContent = displayCode ? `[${displayCode}] ${displayName}` : displayName;
     }
@@ -132,19 +159,24 @@ async function resolveWorkspaceAndSession() {
 }
 
 /**
- * 2. Load Project Materials / SKUs into Dropdowns
+ * 2. Load Project Materials / SKUs into Dropdowns (UUID-Guarded)
  */
 async function loadProjectMaterials() {
     await resolveWorkspaceAndSession();
 
-    if (!client || !currentProjectId) return;
+    if (!client) return;
 
     try {
-        const { data: items, error } = await client
+        let query = client
             .from('inventory_items')
-            .select('id, item_code, item_name, current_stock, unit, rate')
-            .eq('project_id', currentProjectId)
-            .order('item_name', { ascending: true });
+            .select('id, item_code, item_name, current_stock, unit, rate, project_id');
+
+        // Strictly apply filter ONLY when currentProjectId is a valid 36-char UUID
+        if (currentProjectId && UUID_REGEX.test(currentProjectId)) {
+            query = query.eq('project_id', currentProjectId);
+        }
+
+        const { data: items, error } = await query.order('item_name', { ascending: true });
 
         if (error) throw error;
 
@@ -178,38 +210,161 @@ async function loadProjectMaterials() {
 }
 
 /**
- * 3. Mode Toggling Logic (Inward vs Outward)
+ * 3. Dynamic Vendor & Agency Master Integration
+ */
+async function loadVendorsAndAgencies() {
+    if (!client) return;
+
+    try {
+        const { data: vendors, error } = await client
+            .from('vendors')
+            .select('id, vendor_code, name, trade_name, category, gstin, status')
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        cachedVendors = vendors || [];
+
+        // --- POPULATE INWARD SUPPLIERS ---
+        if (inwardSupplierSelect) {
+            inwardSupplierSelect.innerHTML = '<option value="">Select Material Supplier...</option>';
+
+            const suppliers = cachedVendors.filter(v => v.category === 'Material Supplier');
+            const otherVendors = cachedVendors.filter(v => v.category !== 'Material Supplier');
+
+            if (suppliers.length > 0) {
+                const groupSuppliers = document.createElement('optgroup');
+                groupSuppliers.label = 'Material Suppliers';
+                suppliers.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
+                    opt.textContent = `${v.name}${codeSuffix}`;
+                    if (v.status === 'Blacklisted') opt.disabled = true;
+                    groupSuppliers.appendChild(opt);
+                });
+                inwardSupplierSelect.appendChild(groupSuppliers);
+            }
+
+            if (otherVendors.length > 0) {
+                const groupOthers = document.createElement('optgroup');
+                groupOthers.label = 'Other Agencies & Vendors';
+                otherVendors.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
+                    opt.textContent = `${v.name} (${v.category})${codeSuffix}`;
+                    if (v.status === 'Blacklisted') opt.disabled = true;
+                    groupOthers.appendChild(opt);
+                });
+                inwardSupplierSelect.appendChild(groupOthers);
+            }
+        }
+
+        // --- POPULATE OUTWARD CONTRACTORS / AGENCIES ---
+        if (outwardAgencySelect) {
+            outwardAgencySelect.innerHTML = '<option value="">Select Sub-Contractor / Agency...</option>';
+
+            const contractors = cachedVendors.filter(v => v.category === 'Labor Contractor' || v.category === 'Equipment Rental');
+            const otherAgencies = cachedVendors.filter(v => v.category !== 'Labor Contractor' && v.category !== 'Equipment Rental');
+
+            if (contractors.length > 0) {
+                const groupContractors = document.createElement('optgroup');
+                groupContractors.label = 'Labor Contractors & Rental Agencies';
+                contractors.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
+                    opt.textContent = `${v.name} (${v.category})${codeSuffix}`;
+                    if (v.status === 'Blacklisted') opt.disabled = true;
+                    groupContractors.appendChild(opt);
+                });
+                outwardAgencySelect.appendChild(groupContractors);
+            }
+
+            if (otherAgencies.length > 0) {
+                const groupAgencies = document.createElement('optgroup');
+                groupAgencies.label = 'All Registered Vendors / Suppliers';
+                otherAgencies.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v.id;
+                    const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
+                    opt.textContent = `${v.name} (${v.category})${codeSuffix}`;
+                    if (v.status === 'Blacklisted') opt.disabled = true;
+                    groupAgencies.appendChild(opt);
+                });
+                outwardAgencySelect.appendChild(groupAgencies);
+            }
+        }
+
+    } catch (err) {
+        console.error('[LogTransaction] Failed to load vendors & agencies:', err);
+    }
+}
+
+// Inward Supplier Change Handler
+if (inwardSupplierSelect) {
+    inwardSupplierSelect.addEventListener('change', () => {
+        const selectedId = inwardSupplierSelect.value;
+        const vendor = cachedVendors.find(v => v.id === selectedId);
+
+        if (vendor) {
+            inwardSupplier.value = vendor.name;
+            if (inwardSupplierCode) inwardSupplierCode.textContent = vendor.vendor_code || 'VEND';
+            if (inwardSupplierGstin) inwardSupplierGstin.textContent = vendor.gstin ? `GST: ${vendor.gstin}` : 'GST: Unregistered';
+            if (inwardSupplierMeta) inwardSupplierMeta.classList.remove('hidden');
+        } else {
+            inwardSupplier.value = '';
+            if (inwardSupplierMeta) inwardSupplierMeta.classList.add('hidden');
+        }
+    });
+}
+
+// Outward Agency Change Handler
+if (outwardAgencySelect) {
+    outwardAgencySelect.addEventListener('change', () => {
+        const selectedId = outwardAgencySelect.value;
+        const agency = cachedVendors.find(v => v.id === selectedId);
+
+        if (agency) {
+            outwardAgency.value = agency.name;
+            if (outwardAgencyCode) outwardAgencyCode.textContent = agency.vendor_code || 'AG';
+            if (outwardAgencyCategory) outwardAgencyCategory.textContent = agency.category || 'Contractor';
+            if (outwardAgencyMeta) outwardAgencyMeta.classList.remove('hidden');
+        } else {
+            outwardAgency.value = '';
+            if (outwardAgencyMeta) outwardAgencyMeta.classList.add('hidden');
+        }
+    });
+}
+
+/**
+ * 4. Mode Toggling Logic (Inward vs Outward)
  */
 function setMode(mode) {
     if (mode === 'inward') {
-        // Button Styles
         btnToggleInward.className = 'py-3 px-5 rounded-2xl border-2 border-brand-emerald bg-emerald-50 text-brand-emerald font-bold text-sm flex items-center justify-center gap-2 transition shadow-sm cursor-pointer';
         btnToggleOutward.className = 'py-3 px-5 rounded-2xl border-2 border-transparent bg-slate-100 text-slate-600 font-bold text-sm flex items-center justify-center gap-2 transition hover:bg-slate-200 cursor-pointer';
 
-        // Visibility
         formInward.classList.remove('hidden');
         formOutward.classList.add('hidden');
 
-        // Label
         activeModeLabel.textContent = 'Mode: Material Inward Receipt';
         activeModeLabel.className = 'text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200';
     } else {
-        // Button Styles
         btnToggleOutward.className = 'py-3 px-5 rounded-2xl border-2 border-brand-navy bg-slate-100 text-brand-navy font-bold text-sm flex items-center justify-center gap-2 transition shadow-sm cursor-pointer';
         btnToggleInward.className = 'py-3 px-5 rounded-2xl border-2 border-transparent bg-slate-100 text-slate-600 font-bold text-sm flex items-center justify-center gap-2 transition hover:bg-slate-200 cursor-pointer';
 
-        // Visibility
         formOutward.classList.remove('hidden');
         formInward.classList.add('hidden');
 
-        // Label
         activeModeLabel.textContent = 'Mode: Site Material Outward Issue';
         activeModeLabel.className = 'text-xs font-semibold text-brand-navy bg-brand-navy/10 px-2.5 py-1 rounded-lg border border-brand-navy/20';
     }
 }
 
 /**
- * 4. Real-Time Stock Indicators on SKU Selection
+ * 5. Real-Time Stock Indicators on SKU Selection
  */
 if (inwardItemSelect) {
     inwardItemSelect.addEventListener('change', () => {
@@ -236,20 +391,16 @@ if (outwardItemSelect) {
 }
 
 /**
- * 5. Handle Inward Form Submission (Receive Goods)
+ * 6. Handle Inward Form Submission (Receive Goods)
  */
 async function handleInwardSubmit(e) {
     e.preventDefault();
 
     await resolveWorkspaceAndSession();
-    if (!currentProjectId) {
-        alert('Active project context not detected. Please choose a project in the navigation.');
-        return;
-    }
 
     const itemId = inwardItemSelect.value;
     const qtyReceived = parseFloat(inwardQty.value) || 0;
-    const supplier = inwardSupplier.value.trim();
+    const supplier = (inwardSupplier.value || inwardSupplierSelect.options[inwardSupplierSelect.selectedIndex]?.text || '').trim();
     const receiptDate = inwardDate.value;
     const challanNo = inwardChallanNo.value.trim();
     const invoiceNo = inwardInvoiceNo.value.trim();
@@ -258,6 +409,16 @@ async function handleInwardSubmit(e) {
 
     if (!itemId || qtyReceived <= 0 || !supplier || !challanNo || !invoiceNo) {
         alert('Please complete all required fields (*)');
+        return;
+    }
+
+    const itemRecord = projectItems.find(i => i.id === itemId);
+    const targetProjectId = (currentProjectId && UUID_REGEX.test(currentProjectId)) 
+        ? currentProjectId 
+        : (itemRecord?.project_id && UUID_REGEX.test(itemRecord.project_id) ? itemRecord.project_id : null);
+
+    if (!targetProjectId) {
+        alert('Please select a specific Site Project from the navigation top bar before recording a receipt.');
         return;
     }
 
@@ -286,7 +447,7 @@ async function handleInwardSubmit(e) {
 
         // 1. Insert Inward Receipt Record
         const receiptPayload = {
-            project_id: currentProjectId,
+            project_id: targetProjectId,
             receipt_code: receiptCode,
             item_id: itemId,
             qty_received: qtyReceived,
@@ -306,7 +467,6 @@ async function handleInwardSubmit(e) {
         if (insertError) throw insertError;
 
         // 2. Increment Stock Level in Master Register
-        const itemRecord = projectItems.find(i => i.id === itemId);
         const currentStock = Number(itemRecord?.current_stock) || 0;
         const newStock = currentStock + qtyReceived;
 
@@ -324,6 +484,8 @@ async function handleInwardSubmit(e) {
 
         // Reset Form & Reload Materials
         formInward.reset();
+        inwardSupplier.value = '';
+        if (inwardSupplierMeta) inwardSupplierMeta.classList.add('hidden');
         inwardHandledBy.value = currentUserName;
         inwardDate.value = new Date().toISOString().split('T')[0];
         if (inwardFileStatus) inwardFileStatus.textContent = 'Optional camera proof or PDF receipt';
@@ -342,20 +504,16 @@ async function handleInwardSubmit(e) {
 }
 
 /**
- * 6. Handle Outward Form Submission (Issue Goods to Site)
+ * 7. Handle Outward Form Submission (Issue Goods to Site)
  */
 async function handleOutwardSubmit(e) {
     e.preventDefault();
 
     await resolveWorkspaceAndSession();
-    if (!currentProjectId) {
-        alert('Active project context not detected. Please choose a project in the navigation.');
-        return;
-    }
 
     const itemId = outwardItemSelect.value;
     const qtyToIssue = parseFloat(outwardQty.value) || 0;
-    const agency = outwardAgency.value.trim();
+    const agency = (outwardAgency.value || outwardAgencySelect.options[outwardAgencySelect.selectedIndex]?.text || '').trim();
     const issueDate = outwardDate.value;
     const tower = outwardTowerSelect.value;
     const floor = outwardFloorSelect.value;
@@ -368,11 +526,20 @@ async function handleOutwardSubmit(e) {
         return;
     }
 
+    const itemRecord = projectItems.find(i => i.id === itemId);
+    const targetProjectId = (currentProjectId && UUID_REGEX.test(currentProjectId)) 
+        ? currentProjectId 
+        : (itemRecord?.project_id && UUID_REGEX.test(itemRecord.project_id) ? itemRecord.project_id : null);
+
+    if (!targetProjectId) {
+        alert('Please select a specific Site Project from the navigation top bar before issuing materials.');
+        return;
+    }
+
     // Split Zones into Array
     const zoneIds = rawZones.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
 
     // Balance Verification
-    const itemRecord = projectItems.find(i => i.id === itemId);
     const availableStock = Number(itemRecord?.current_stock) || 0;
     const currentConsumed = Number(itemRecord?.consumed_till_date) || 0;
 
@@ -396,7 +563,7 @@ async function handleOutwardSubmit(e) {
 
         // 1. Insert Outward Issue Record
         const issuePayload = {
-            project_id: currentProjectId,
+            project_id: targetProjectId,
             issue_code: issueCode,
             item_id: itemId,
             qty_issued: qtyToIssue,
@@ -435,6 +602,8 @@ async function handleOutwardSubmit(e) {
 
         // Reset Form & Reload Materials
         formOutward.reset();
+        outwardAgency.value = '';
+        if (outwardAgencyMeta) outwardAgencyMeta.classList.add('hidden');
         outwardHandledBy.value = currentUserName;
         outwardDate.value = new Date().toISOString().split('T')[0];
         await loadProjectMaterials();
@@ -452,7 +621,7 @@ async function handleOutwardSubmit(e) {
 }
 
 /**
- * 7. Event Listeners & Bootstrapping
+ * 8. Event Listeners & Bootstrapping
  */
 if (btnToggleInward) btnToggleInward.addEventListener('click', () => setMode('inward'));
 if (btnToggleOutward) btnToggleOutward.addEventListener('click', () => setMode('outward'));
@@ -463,10 +632,12 @@ if (formOutward) formOutward.addEventListener('submit', handleOutwardSubmit);
 // Re-load on workspace switch
 window.addEventListener('projectChanged', () => {
     loadProjectMaterials();
+    loadVendorsAndAgencies();
 });
 
 // Initial Bootstrap on Page Load
 document.addEventListener('DOMContentLoaded', () => {
     setMode('inward');
     loadProjectMaterials();
+    loadVendorsAndAgencies();
 });

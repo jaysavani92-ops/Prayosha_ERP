@@ -116,10 +116,28 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <!-- Vendor Name -->
+                    <!-- Dynamic Vendor Selection with Directory Linking -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Vendor Name *</label>
-                        <input type="text" id="vendorName" required placeholder="e.g. Shreeji Building Materials" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-medium outline-none">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-semibold text-slate-600 uppercase">Vendor / Supplier *</label>
+                            <a href="../vendors/vendors.html" target="_blank" class="text-[10px] font-semibold text-[#1E3A5F] hover:text-[#FFBF00] transition flex items-center gap-0.5" title="Register New Vendor in Directory">
+                                + New Vendor
+                            </a>
+                        </div>
+                        <select id="vendorSelect" required class="glass-input w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-700 outline-none cursor-pointer">
+                            <option value="">Loading active vendors...</option>
+                        </select>
+                        <!-- Hidden inputs for backward-compatible pipeline execution -->
+                        <input type="hidden" id="vendorName">
+                        <input type="hidden" id="vendorId">
+
+                        <!-- Real-Time Vendor Metadata Strip -->
+                        <div id="vendorMetaBadge" class="hidden flex flex-wrap items-center gap-1.5 pt-1.5 text-[10px]">
+                            <span id="vendorCodeBadge" class="px-2 py-0.5 rounded font-mono font-bold bg-slate-100 text-slate-700"></span>
+                            <span id="vendorGstinBadge" class="px-2 py-0.5 rounded font-mono bg-blue-50 text-blue-700 border border-blue-200/60"></span>
+                            <span id="vendorCreditBadge" class="px-2 py-0.5 rounded font-medium bg-purple-50 text-purple-700 border border-purple-200/60"></span>
+                            <span id="vendorRokduBadge" class="px-2 py-0.5 rounded font-semibold"></span>
+                        </div>
                     </div>
 
                     <!-- Invoice Date -->

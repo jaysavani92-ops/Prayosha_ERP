@@ -17,6 +17,9 @@ import { supabase } from '../config.js';
 // Central Supabase Client
 const client = supabase || window.supabaseClient;
 
+// Standard RFC4122 UUID Regular Expression
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // DOM Elements - Table & Controls
 const stockTableBody = document.getElementById('stockTableBody');
 const activeProjectBadge = document.getElementById('activeProjectBadge');
@@ -52,43 +55,52 @@ let allStockItems = [];
 let currentProjectId = null;
 
 /**
- * 1. Initialize Active Project Context
+ * 1. Initialize Active Project Context (Strict UUID Validation)
  */
 async function resolveActiveProjectId() {
     let projectId = localStorage.getItem('activeProjectId');
     const projectName = localStorage.getItem('activeProjectName') || '';
-    const projectCode = localStorage.getItem('activeProjectCode') || '';
 
-    // Validate UUID format (8-4-4-4-12)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-    if (!projectId || !uuidRegex.test(projectId)) {
+    // If activeProjectId is missing or not a valid UUID (e.g. "All Projects")
+    if (!projectId || !UUID_REGEX.test(projectId)) {
         if (client) {
             try {
                 let query = client.from('projects').select('id, project_name, project_code');
-                if (projectName) {
+                if (projectName && projectName !== 'All Projects' && projectName !== 'Select Site Project') {
                     query = query.ilike('project_name', `%${projectName}%`);
                 }
-                const { data: projects, error } = await query.limit(1);
+                let { data: projects, error } = await query.limit(1);
 
-                if (!error && projects && projects.length > 0) {
+                // Fallback: If project matching by name returns nothing, grab the first available project
+                if ((error || !projects || projects.length === 0) && client) {
+                    const fallback = await client.from('projects').select('id, project_name, project_code').limit(1);
+                    projects = fallback.data;
+                    error = fallback.error;
+                }
+
+                if (!error && projects && projects.length > 0 && UUID_REGEX.test(projects[0].id)) {
                     projectId = projects[0].id;
                     localStorage.setItem('activeProjectId', projectId);
                     localStorage.setItem('activeProjectName', projects[0].project_name || projectName);
                     if (projects[0].project_code) {
                         localStorage.setItem('activeProjectCode', projects[0].project_code);
                     }
+                } else {
+                    projectId = null;
                 }
             } catch (err) {
                 console.warn('[StockOverview] Project resolution warning:', err);
+                projectId = null;
             }
+        } else {
+            projectId = null;
         }
     }
 
-    currentProjectId = projectId;
+    currentProjectId = (projectId && UUID_REGEX.test(projectId)) ? projectId : null;
 
     if (activeProjectBadge) {
-        const displayName = localStorage.getItem('activeProjectName') || 'Active Project';
+        const displayName = localStorage.getItem('activeProjectName') || (currentProjectId ? 'Active Project' : 'All Sites');
         const displayCode = localStorage.getItem('activeProjectCode') || '';
         activeProjectBadge.textContent = displayCode ? `[${displayCode}] ${displayName}` : displayName;
     }
@@ -97,7 +109,7 @@ async function resolveActiveProjectId() {
 }
 
 /**
- * 2. Fetch and Load Stock Items from Supabase
+ * 2. Fetch and Load Stock Items from Supabase (UUID-Guarded)
  */
 async function loadStockRegister() {
     await resolveActiveProjectId();
@@ -130,8 +142,8 @@ async function loadStockRegister() {
             .select('*')
             .order('item_code', { ascending: true });
 
-        // Scope to active project if present
-        if (currentProjectId) {
+        // Scope to active project ONLY when currentProjectId is a verified UUID
+        if (currentProjectId && UUID_REGEX.test(currentProjectId)) {
             query = query.eq('project_id', currentProjectId);
         }
 
@@ -402,7 +414,7 @@ async function handleAddSkuSubmit(e) {
 
     await resolveActiveProjectId();
 
-    if (!currentProjectId) {
+    if (!currentProjectId || !UUID_REGEX.test(currentProjectId)) {
         alert('Please select an active project in the header navigation before adding inventory.');
         return;
     }
