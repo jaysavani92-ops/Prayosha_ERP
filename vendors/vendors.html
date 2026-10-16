@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vendor Management | Prayosha ERP</title>
+  <title>Vendors &amp; Site Agencies | Prayosha ERP</title>
 
   <!-- Google Poppins Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -82,7 +82,7 @@
 
     <!-- Top Hero Banner / Module Header Card -->
     <section class="glass-card rounded-2xl shadow-glass p-5 sm:p-6 mb-6">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div class="flex items-center gap-3">
           <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-navy to-brand-navyLight flex items-center justify-center text-brand-amber shadow-md">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,33 +91,39 @@
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h1 class="text-2xl font-bold text-brand-navy tracking-tight">Vendor Management</h1>
+              <h1 class="text-2xl font-bold text-brand-navy tracking-tight">Vendors &amp; Site Agencies</h1>
               <span id="totalVendorsBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-200/80 text-slate-700">0</span>
             </div>
-            <p class="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider mt-0.5">Agencies, Suppliers &amp; Contractors Master</p>
+            <p class="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider mt-0.5">Material Suppliers (Inward) &amp; Site Contractors / Agencies (Outward)</p>
           </div>
         </div>
 
         <!-- View Navigation Pill Switches -->
-        <div class="flex items-center p-1.5 bg-slate-200/60 rounded-xl backdrop-blur-md self-start md:self-auto shadow-inner">
-          <button id="tabDirectoryBtn" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 bg-brand-navy text-white shadow-sm">
+        <div class="flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-200/60 rounded-xl backdrop-blur-md self-start lg:self-auto shadow-inner">
+          <button id="tabDirectoryBtn" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 bg-brand-navy text-white shadow-sm cursor-pointer">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
             </svg>
             <span>Directory</span>
           </button>
-          <button id="tabAddVendorBtn" type="button" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-brand-navy">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          <button id="tabAddVendorBtn" type="button" class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-brand-navy cursor-pointer">
+            <svg class="w-4 h-4 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
             </svg>
-            <span>Add Vendor</span>
+            <span>Add Material Vendor</span>
+          </button>
+          <button id="tabAddAgencyBtn" type="button" class="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-brand-navy cursor-pointer">
+            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Add Site Agency</span>
           </button>
         </div>
       </div>
     </section>
 
     <!-- ============================================================= -->
-    <!-- VIEW 1: VENDOR DIRECTORY                                      -->
+    <!-- VIEW 1: VENDOR & AGENCY DIRECTORY                             -->
     <!-- ============================================================= -->
     <section id="directoryView" class="space-y-6">
 
@@ -132,16 +138,18 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
-            <input id="searchInput" type="text" placeholder="Search by name, GSTIN, material, phone or city..." class="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm placeholder-slate-400 font-medium" />
+            <input id="searchInput" type="text" placeholder="Search by name, code (VEND/AGNC), GSTIN, work trade, or mobile..." class="glass-input w-full pl-10 pr-4 py-2.5 rounded-xl text-sm placeholder-slate-400 font-medium" />
           </div>
 
           <!-- Category Filter -->
           <div class="lg:col-span-3">
-            <select id="categoryFilter" class="glass-input w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700">
-              <option value="ALL">All Categories</option>
+            <select id="categoryFilter" class="glass-input w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 cursor-pointer">
+              <option value="ALL">All Categories (Vendors &amp; Agencies)</option>
+              <option value="GROUP_SUPPLIERS">All Material Suppliers (Inward)</option>
+              <option value="GROUP_AGENCIES">All Site Agencies &amp; Contractors (Outward)</option>
               <option value="Material Supplier">Material Supplier</option>
-              <option value="Labor Contractor">Labor Contractor</option>
-              <option value="Equipment Rental">Equipment Rental</option>
+              <option value="Labor Contractor">Labor Contractor (Site Agency)</option>
+              <option value="Equipment Rental">Equipment Rental Agency</option>
               <option value="Consultant Agency">Consultant Agency</option>
               <option value="Transporter">Transporter</option>
               <option value="Other">Other</option>
@@ -150,7 +158,7 @@
 
           <!-- Status Filter -->
           <div class="lg:col-span-2">
-            <select id="statusFilter" class="glass-input w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700">
+            <select id="statusFilter" class="glass-input w-full px-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 cursor-pointer">
               <option value="ALL">All Status</option>
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -160,13 +168,13 @@
 
           <!-- Action Buttons -->
           <div class="lg:col-span-2 flex items-center gap-2">
-            <button id="refreshBtn" type="button" title="Refresh Directory" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm transition-all duration-150">
+            <button id="refreshBtn" type="button" title="Refresh Directory" class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm transition-all duration-150 cursor-pointer">
               <svg id="refreshIcon" class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
               <span>Sync</span>
             </button>
-            <button id="exportCsvBtn" type="button" title="Export CSV" class="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm transition-all duration-150">
+            <button id="exportCsvBtn" type="button" title="Export CSV" class="p-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-sm transition-all duration-150 cursor-pointer">
               <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -175,13 +183,21 @@
 
         </div>
 
-        <!-- Quick Filter Metrics / Tags Strip -->
+        <!-- Quick Filter Metrics / Interactive Tags Strip -->
         <div class="mt-3 pt-3 border-t border-slate-200/60 flex flex-wrap items-center gap-2 text-xs">
-          <span class="text-slate-400 font-medium">Quick Summary:</span>
-          <span id="statActive" class="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">Active: 0</span>
-          <span id="statMaterial" class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200 font-medium">Material: 0</span>
-          <span id="statContractor" class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 border border-purple-200 font-medium">Contractors: 0</span>
-          <span id="statCashAllowed" class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-medium">Rokdu Allowed: 0</span>
+          <span class="text-slate-400 font-medium">Quick Filter:</span>
+          <button id="statActive" type="button" class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold transition cursor-pointer">
+            Active: 0
+          </button>
+          <button id="statMaterial" type="button" class="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-semibold transition cursor-pointer">
+            Material Vendors: 0
+          </button>
+          <button id="statContractor" type="button" class="px-2.5 py-1 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-semibold transition cursor-pointer">
+            Site Agencies / Contractors: 0
+          </button>
+          <button id="statCashAllowed" type="button" class="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold transition cursor-pointer">
+            Rokdu Allowed: 0
+          </button>
         </div>
       </div>
 
@@ -197,11 +213,19 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
         </div>
-        <h3 class="text-base font-bold text-slate-700 mb-1">No Vendors Found</h3>
-        <p class="text-xs text-slate-500 mb-4">No vendor records match your active search and filter criteria.</p>
-        <button id="resetFilterBtn" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-brand-navy text-white hover:bg-brand-navyDark transition-colors">
-          Clear Filters
-        </button>
+        <h3 class="text-base font-bold text-slate-700 mb-1">No Records Found</h3>
+        <p class="text-xs text-slate-500 mb-4">No material vendors or site agencies match your active search and filter criteria.</p>
+        <div class="flex flex-wrap items-center justify-center gap-2">
+          <button id="resetFilterBtn" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer">
+            Clear Filters
+          </button>
+          <button id="emptyAddVendorBtn" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-brand-navy text-white hover:bg-brand-navyDark transition-colors cursor-pointer">
+            + Add Material Vendor
+          </button>
+          <button id="emptyAddAgencyBtn" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-purple-700 text-white hover:bg-purple-800 transition-colors cursor-pointer">
+            + Add Site Agency
+          </button>
+        </div>
       </div>
 
       <!-- Loading Skeleton Container -->
@@ -256,7 +280,7 @@
     </section>
 
     <!-- ============================================================= -->
-    <!-- VIEW 2: ADD / EDIT VENDOR FORM                                -->
+    <!-- VIEW 2: ADD / EDIT VENDOR OR SITE AGENCY FORM                 -->
     <!-- ============================================================= -->
     <section id="formView" class="hidden">
       <form id="vendorForm" novalidate class="space-y-6">
@@ -264,14 +288,14 @@
         <!-- Form Action Header Card -->
         <div class="glass-card rounded-2xl shadow-glass p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 id="formTitle" class="text-xl font-bold text-brand-navy">Add New Vendor Profile</h2>
-            <p class="text-xs text-slate-500 font-medium">Register official firm credentials, GSTIN, and supply parameters</p>
+            <h2 id="formTitle" class="text-xl font-bold text-brand-navy">Add New Material Vendor Profile</h2>
+            <p id="formSubtitle" class="text-xs text-slate-500 font-medium">Register official supplier credentials, GSTIN, and inward supply parameters</p>
           </div>
           <div class="flex items-center gap-2">
-            <button id="cancelFormBtn" type="button" class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm transition-all duration-150">
+            <button id="cancelFormBtn" type="button" class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-sm transition-all duration-150 cursor-pointer">
               Discard
             </button>
-            <button id="saveVendorSubmitBtn" type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-brand-amber hover:bg-brand-amberHover text-brand-navyDark shadow-md transition-all duration-150">
+            <button id="saveVendorSubmitBtn" type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-brand-amber hover:bg-brand-amberHover text-brand-navyDark shadow-md transition-all duration-150 cursor-pointer">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
               </svg>
@@ -282,28 +306,46 @@
 
         <input type="hidden" id="editingVendorId" value="" />
 
+        <!-- Profile Type Switcher Card (Material Supplier vs Site Agency) -->
+        <div class="glass-card rounded-2xl shadow-glass p-4 sm:p-5 border-l-4 border-l-brand-amber">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Select Registration Type</span>
+              <p class="text-xs font-semibold text-slate-700 mt-0.5">Choose whether you are onboarding an Inward Material Supplier or an Outward Site Agency / Sub-Contractor</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-200/70 rounded-xl sm:w-auto w-full">
+              <button id="partnerTypeVendorBtn" type="button" class="px-4 py-2 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm transition cursor-pointer">
+                Material Supplier (VEND)
+              </button>
+              <button id="partnerTypeAgencyBtn" type="button" class="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-brand-navy transition cursor-pointer">
+                Site Agency / Contractor (AGNC)
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- Form Section 1: Firm & Basic Details -->
         <div class="glass-card rounded-2xl shadow-glass p-6">
           <div class="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
             <span class="w-7 h-7 rounded-lg bg-blue-50 text-brand-navy flex items-center justify-center font-bold text-xs">01</span>
-            <h3 class="text-sm font-bold text-brand-navy uppercase tracking-wider">Firm &amp; Classification Details</h3>
+            <h3 id="section01Title" class="text-sm font-bold text-brand-navy uppercase tracking-wider">Firm &amp; Classification Details</h3>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
             
-            <!-- Vendor Code -->
+            <!-- Vendor / Agency Code -->
             <div class="lg:col-span-3">
               <label for="vendor_code" class="block text-xs font-semibold text-slate-600 mb-1">
-                Vendor Code <span class="text-rose-500">*</span>
+                <span id="labelVendorCode">Vendor Code</span> <span class="text-rose-500">*</span>
               </label>
-              <input id="vendor_code" name="vendor_code" type="text" required placeholder="e.g. VEND-1005" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold text-brand-navy uppercase" />
+              <input id="vendor_code" name="vendor_code" type="text" required placeholder="e.g. VEND-1001" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold text-brand-navy uppercase" />
               <p class="text-[10px] text-slate-400 mt-0.5">Unique identifier (Auto-suggested)</p>
             </div>
 
-            <!-- Business / Firm Name -->
+            <!-- Business / Firm / Agency Name -->
             <div class="lg:col-span-6">
               <label for="name" class="block text-xs font-semibold text-slate-600 mb-1">
-                Firm / Registered Name <span class="text-rose-500">*</span>
+                <span id="labelFirmName">Firm / Registered Name</span> <span class="text-rose-500">*</span>
               </label>
               <input id="name" name="name" type="text" required placeholder="e.g. Haresh Steel and Pipes" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-800" />
             </div>
@@ -311,7 +353,7 @@
             <!-- Trade / Brand Name -->
             <div class="lg:col-span-3">
               <label for="trade_name" class="block text-xs font-semibold text-slate-600 mb-1">
-                Trade / Display Name
+                <span id="labelTradeName">Trade / Display Name</span>
               </label>
               <input id="trade_name" name="trade_name" type="text" placeholder="e.g. Haresh Steel" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-800" />
             </div>
@@ -321,12 +363,12 @@
               <label for="category" class="block text-xs font-semibold text-slate-600 mb-1">
                 Category <span class="text-rose-500">*</span>
               </label>
-              <select id="category" name="category" required class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-800">
-                <option value="Material Supplier">Material Supplier</option>
-                <option value="Labor Contractor">Labor Contractor</option>
-                <option value="Equipment Rental">Equipment Rental</option>
+              <select id="category" name="category" required class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-800 cursor-pointer">
+                <option value="Material Supplier">Material Supplier (Inward Store)</option>
+                <option value="Labor Contractor">Labor Contractor (Site Agency)</option>
+                <option value="Equipment Rental">Equipment Rental Agency</option>
                 <option value="Consultant Agency">Consultant Agency</option>
-                <option value="Transporter">Transporter</option>
+                <option value="Transporter">Transporter / Logistics</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -336,7 +378,7 @@
               <label for="status" class="block text-xs font-semibold text-slate-600 mb-1">
                 Operational Status <span class="text-rose-500">*</span>
               </label>
-              <select id="status" name="status" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-800">
+              <select id="status" name="status" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-800 cursor-pointer">
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
                 <option value="Blacklisted">Blacklisted</option>
@@ -347,7 +389,7 @@
             <div class="lg:col-span-4 flex items-center pt-6">
               <label class="relative flex items-center cursor-pointer select-none">
                 <input id="allows_cash_rokdu" name="allows_cash_rokdu" type="checkbox" class="sr-only peer" />
-                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:width-5 after:transition-all peer-checked:bg-amber-500"></div>
+                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
                 <span class="ml-3 text-xs font-semibold text-slate-700">Allow Rokdu (Cash) Payments</span>
               </label>
             </div>
@@ -407,7 +449,7 @@
             <!-- Contact Person -->
             <div class="lg:col-span-4">
               <label for="contact_person" class="block text-xs font-semibold text-slate-600 mb-1">
-                Contact Person (Key Executive)
+                <span id="labelContactPerson">Contact Person (Key Executive)</span>
               </label>
               <input id="contact_person" name="contact_person" type="text" placeholder="e.g. Hareshbhai Patel" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium" />
             </div>
@@ -447,7 +489,7 @@
             <!-- Area / GIDC Zone -->
             <div class="lg:col-span-4">
               <label for="area_gidc" class="block text-xs font-semibold text-slate-600 mb-1">
-                Industrial Area / GIDC
+                Industrial Area / GIDC / Locality
               </label>
               <input id="area_gidc" name="area_gidc" type="text" placeholder="e.g. Sachin GIDC / Katargam" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium" />
             </div>
@@ -487,33 +529,33 @@
           </div>
         </div>
 
-        <!-- Form Section 4: Supply Scope & Banking Details -->
+        <!-- Form Section 4: Supply Scope / Work Trade & Banking Details -->
         <div class="glass-card rounded-2xl shadow-glass p-6">
           <div class="flex items-center gap-2 mb-4 pb-2 border-b border-slate-100">
             <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs">04</span>
-            <h3 class="text-sm font-bold text-brand-navy uppercase tracking-wider">Supply Scope &amp; Banking Parameters</h3>
+            <h3 id="section04Title" class="text-sm font-bold text-brand-navy uppercase tracking-wider">Supply Scope &amp; Banking Parameters</h3>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4">
             
-            <!-- Materials / Services Provided -->
+            <!-- Materials / Work Trade Provided -->
             <div class="lg:col-span-8">
               <label for="speciality_items_input" class="block text-xs font-semibold text-slate-600 mb-1">
-                Supplied Items / Services (Comma Separated)
+                <span id="labelSpecialityItems">Supplied Items / Materials (Comma Separated)</span>
               </label>
               <input id="speciality_items_input" name="speciality_items_input" type="text" placeholder="e.g. Lokhand Pipe, MS Angles, Binding Wire, TMT Bars" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium" />
-              <p class="text-[10px] text-slate-400 mt-0.5">Add multiple items separated by commas</p>
+              <p id="hintSpecialityItems" class="text-[10px] text-slate-400 mt-0.5">Add multiple supplied materials or work trades separated by commas</p>
             </div>
 
             <!-- Credit Period -->
             <div class="lg:col-span-4">
               <label for="credit_period_days" class="block text-xs font-semibold text-slate-600 mb-1">
-                Payment Terms (Credit Days)
+                Payment / Billing Cycle (Credit Days)
               </label>
-              <select id="credit_period_days" name="credit_period_days" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-800">
+              <select id="credit_period_days" name="credit_period_days" class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium text-slate-800 cursor-pointer">
                 <option value="0">Immediate / Advance</option>
-                <option value="7">7 Days</option>
-                <option value="15">15 Days</option>
+                <option value="7">7 Days (Weekly Measurement)</option>
+                <option value="15">15 Days (Fortnightly Bill)</option>
                 <option value="30" selected>30 Days</option>
                 <option value="45">45 Days</option>
                 <option value="60">60 Days</option>
@@ -555,9 +597,9 @@
             <!-- Remarks -->
             <div class="lg:col-span-8">
               <label for="remarks" class="block text-xs font-semibold text-slate-600 mb-1">
-                Internal Remarks / Pricing Notes
+                Internal Remarks / Rate &amp; Contract Notes
               </label>
-              <input id="remarks" name="remarks" type="text" placeholder="Special payment arrangements, site delivery terms, etc." class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium" />
+              <input id="remarks" name="remarks" type="text" placeholder="Special payment arrangements, retention terms, site delivery notes, etc." class="glass-input w-full px-3.5 py-2.5 rounded-xl text-sm font-medium" />
             </div>
 
           </div>
@@ -565,11 +607,11 @@
 
         <!-- Form Action Footer -->
         <div class="flex items-center justify-end gap-3 pt-2">
-          <button id="cancelFormBottomBtn" type="button" class="px-5 py-2.5 rounded-xl text-sm font-medium bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors">
+          <button id="cancelFormBottomBtn" type="button" class="px-5 py-2.5 rounded-xl text-sm font-medium bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer">
             Cancel
           </button>
-          <button type="submit" class="inline-flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-semibold bg-brand-amber hover:bg-brand-amberHover text-brand-navyDark shadow-md transition-colors">
-            <span>Save Vendor Profile</span>
+          <button type="submit" class="inline-flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-semibold bg-brand-amber hover:bg-brand-amberHover text-brand-navyDark shadow-md transition-colors cursor-pointer">
+            <span id="saveBtnBottomText">Save Vendor Profile</span>
           </button>
         </div>
 
@@ -577,12 +619,12 @@
     </section>
 
     <!-- ============================================================= -->
-    <!-- VIEW MODAL: VENDOR DETAILS INSPECTOR                          -->
+    <!-- VIEW MODAL: VENDOR / AGENCY DETAILS INSPECTOR                 -->
     <!-- ============================================================= -->
     <div id="vendorDetailModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="glass-card rounded-2xl shadow-2xl max-w-2xl w-full p-6 relative border border-white/60">
         
-        <button id="closeDetailModalBtn" type="button" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded-lg">
+        <button id="closeDetailModalBtn" type="button" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>

@@ -1,8 +1,9 @@
 /**
- * Prayosha ERP - Vendor Management Sub-Module
+ * Prayosha ERP - Vendors & Site Agencies Master Controller
  * File: /vendors/vendors.js
- * Description: Client-side controller for Vendor Directory, CRUD operations,
- *              Supabase real-time queries, GSTIN/PAN auto-sync, and export utilities.
+ * Description: Client-side controller for Material Suppliers (Inward) and Site Agencies /
+ *              Contractors (Outward) Directory, dual-mode onboarding (VEND / AGNC),
+ *              Supabase CRUD operations, GSTIN/PAN auto-sync, and CSV export utilities.
  */
 
 (function () {
@@ -33,18 +34,26 @@
   }
 
   // =========================================================================
-  // 2. STATE REPOSITORY
+  // 2. STATE REPOSITORY & CONSTANTS
   // =========================================================================
+  const AGENCY_CATEGORIES = ['Labor Contractor', 'Equipment Rental', 'Consultant Agency'];
+
+  function isAgencyCategory(category) {
+    return AGENCY_CATEGORIES.includes(category);
+  }
+
   const state = {
     vendors: [],
     filteredVendors: [],
     currentView: 'directory', // 'directory' | 'form'
+    partnerMode: 'vendor', // 'vendor' | 'agency'
     editingVendorId: null,
     isLoading: false,
     filters: {
       search: '',
       category: 'ALL',
       status: 'ALL',
+      rokduOnly: false,
     },
   };
 
@@ -94,6 +103,9 @@
     // Navigation Tabs & Views
     tabDirectoryBtn: document.getElementById('tabDirectoryBtn'),
     tabAddVendorBtn: document.getElementById('tabAddVendorBtn'),
+    tabAddAgencyBtn: document.getElementById('tabAddAgencyBtn'),
+    emptyAddVendorBtn: document.getElementById('emptyAddVendorBtn'),
+    emptyAddAgencyBtn: document.getElementById('emptyAddAgencyBtn'),
     directoryView: document.getElementById('directoryView'),
     formView: document.getElementById('formView'),
     totalVendorsBadge: document.getElementById('totalVendorsBadge'),
@@ -110,18 +122,31 @@
     resetFilterBtn: document.getElementById('resetFilterBtn'),
     loadingSkeleton: document.getElementById('loadingSkeleton'),
 
-    // Quick Stats
+    // Quick Stats (Interactive Filter Pills)
     statActive: document.getElementById('statActive'),
     statMaterial: document.getElementById('statMaterial'),
     statContractor: document.getElementById('statContractor'),
     statCashAllowed: document.getElementById('statCashAllowed'),
 
-    // Form Elements
+    // Form Elements & Mode Switchers
     vendorForm: document.getElementById('vendorForm'),
     formTitle: document.getElementById('formTitle'),
+    formSubtitle: document.getElementById('formSubtitle'),
+    partnerTypeVendorBtn: document.getElementById('partnerTypeVendorBtn'),
+    partnerTypeAgencyBtn: document.getElementById('partnerTypeAgencyBtn'),
+    section01Title: document.getElementById('section01Title'),
+    labelVendorCode: document.getElementById('labelVendorCode'),
+    labelFirmName: document.getElementById('labelFirmName'),
+    labelTradeName: document.getElementById('labelTradeName'),
+    labelContactPerson: document.getElementById('labelContactPerson'),
+    section04Title: document.getElementById('section04Title'),
+    labelSpecialityItems: document.getElementById('labelSpecialityItems'),
+    hintSpecialityItems: document.getElementById('hintSpecialityItems'),
+
     editingVendorId: document.getElementById('editingVendorId'),
     saveVendorSubmitBtn: document.getElementById('saveVendorSubmitBtn'),
     saveBtnText: document.getElementById('saveBtnText'),
+    saveBtnBottomText: document.getElementById('saveBtnBottomText'),
     cancelFormBtn: document.getElementById('cancelFormBtn'),
     cancelFormBottomBtn: document.getElementById('cancelFormBottomBtn'),
 
@@ -217,53 +242,145 @@
   }
 
   // =========================================================================
-  // 5. VIEW SWITCHING & CODE GENERATION
+  // 5. VIEW SWITCHING, PARTNER MODE & CODE GENERATION
   // =========================================================================
+  function updateTopTabStyles() {
+    const activeClass = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 bg-brand-navy text-white shadow-sm cursor-pointer';
+    const inactiveClass = 'flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-brand-navy cursor-pointer';
+
+    if (state.currentView === 'directory') {
+      if (DOM.tabDirectoryBtn) DOM.tabDirectoryBtn.className = activeClass;
+      if (DOM.tabAddVendorBtn) DOM.tabAddVendorBtn.className = inactiveClass;
+      if (DOM.tabAddAgencyBtn) DOM.tabAddAgencyBtn.className = inactiveClass;
+    } else {
+      if (DOM.tabDirectoryBtn) DOM.tabDirectoryBtn.className = inactiveClass;
+      if (state.partnerMode === 'agency') {
+        if (DOM.tabAddAgencyBtn) DOM.tabAddAgencyBtn.className = activeClass;
+        if (DOM.tabAddVendorBtn) DOM.tabAddVendorBtn.className = inactiveClass;
+      } else {
+        if (DOM.tabAddVendorBtn) DOM.tabAddVendorBtn.className = activeClass;
+        if (DOM.tabAddAgencyBtn) DOM.tabAddAgencyBtn.className = inactiveClass;
+      }
+    }
+  }
+
   function switchView(viewName) {
     state.currentView = viewName;
     if (viewName === 'directory') {
       DOM.directoryView.classList.remove('hidden');
       DOM.formView.classList.add('hidden');
-
-      DOM.tabDirectoryBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 bg-brand-navy text-white shadow-sm';
-      DOM.tabAddVendorBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-brand-navy';
     } else {
       DOM.directoryView.classList.add('hidden');
       DOM.formView.classList.remove('hidden');
-
-      DOM.tabAddVendorBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 bg-brand-navy text-white shadow-sm';
-      DOM.tabDirectoryBtn.className = 'flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 text-slate-600 hover:text-brand-navy';
     }
+    updateTopTabStyles();
   }
 
-  function suggestNextVendorCode() {
+  function suggestNextPartnerCode(mode = 'vendor') {
+    const prefix = mode === 'agency' ? 'AGNC' : 'VEND';
+    const regex = new RegExp(`^${prefix}-(\\d+)$`, 'i');
     let maxNum = 1000;
+
     state.vendors.forEach((v) => {
-      if (v.vendor_code && /^VEND-\d+$/i.test(v.vendor_code)) {
+      if (v.vendor_code && regex.test(v.vendor_code)) {
         const num = parseInt(v.vendor_code.replace(/\D/g, ''), 10);
         if (num > maxNum) maxNum = num;
       }
     });
-    return `VEND-${maxNum + 1}`;
+    return `${prefix}-${maxNum + 1}`;
   }
 
-  function openAddVendorView() {
+  /**
+   * Adapts form labels, placeholders, and code prefixes between
+   * Material Supplier ('vendor') and Site Agency / Contractor ('agency')
+   */
+  function applyPartnerModeUI(mode, isEdit = false) {
+    state.partnerMode = mode === 'agency' ? 'agency' : 'vendor';
+    const isAgency = state.partnerMode === 'agency';
+
+    // Update Mode Toggle Pill inside Form
+    if (DOM.partnerTypeVendorBtn && DOM.partnerTypeAgencyBtn) {
+      if (isAgency) {
+        DOM.partnerTypeAgencyBtn.className = 'px-4 py-2 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm transition cursor-pointer';
+        DOM.partnerTypeVendorBtn.className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-brand-navy transition cursor-pointer';
+      } else {
+        DOM.partnerTypeVendorBtn.className = 'px-4 py-2 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm transition cursor-pointer';
+        DOM.partnerTypeAgencyBtn.className = 'px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:text-brand-navy transition cursor-pointer';
+      }
+    }
+
+    if (isAgency) {
+      if (!isEdit) {
+        if (DOM.formTitle) DOM.formTitle.textContent = 'Add New Site Agency / Contractor';
+        if (DOM.saveBtnText) DOM.saveBtnText.textContent = 'Save Site Agency';
+        if (DOM.saveBtnBottomText) DOM.saveBtnBottomText.textContent = 'Save Site Agency';
+        if (!isAgencyCategory(DOM.category.value)) {
+          DOM.category.value = 'Labor Contractor';
+        }
+        if (!DOM.vendor_code.value || /^VEND-\d+$/i.test(DOM.vendor_code.value)) {
+          DOM.vendor_code.value = suggestNextPartnerCode('agency');
+        }
+      }
+      if (DOM.formSubtitle) DOM.formSubtitle.textContent = 'Register civil, RCC, masonry, plumbing, or labor sub-contractor for outward site issues';
+      if (DOM.section01Title) DOM.section01Title.textContent = 'Site Agency & Classification Details';
+      if (DOM.labelVendorCode) DOM.labelVendorCode.textContent = 'Agency Code';
+      if (DOM.vendor_code) DOM.vendor_code.placeholder = 'e.g. AGNC-1001';
+      if (DOM.labelFirmName) DOM.labelFirmName.textContent = 'Site Agency / Contractor Firm Name';
+      if (DOM.name) DOM.name.placeholder = 'e.g. Khodiyar RCC & Shuttering Agency';
+      if (DOM.labelTradeName) DOM.labelTradeName.textContent = 'Short / Display Name';
+      if (DOM.trade_name) DOM.trade_name.placeholder = 'e.g. Khodiyar Construction';
+      if (DOM.labelContactPerson) DOM.labelContactPerson.textContent = 'Contractor / Thekedar Name';
+      if (DOM.contact_person) DOM.contact_person.placeholder = 'e.g. Rameshbhai Patel';
+      if (DOM.section04Title) DOM.section04Title.textContent = 'Work Trade Scope & Banking Parameters';
+      if (DOM.labelSpecialityItems) DOM.labelSpecialityItems.textContent = 'Work Trade / Site Scope (Comma Separated)';
+      if (DOM.speciality_items_input) DOM.speciality_items_input.placeholder = 'e.g. Slab Shuttering, Steel Binding, Brickwork, Plastering';
+      if (DOM.hintSpecialityItems) DOM.hintSpecialityItems.textContent = 'Specify civil or MEP work trades handled by this site agency';
+    } else {
+      if (!isEdit) {
+        if (DOM.formTitle) DOM.formTitle.textContent = 'Add New Material Vendor Profile';
+        if (DOM.saveBtnText) DOM.saveBtnText.textContent = 'Save Vendor Profile';
+        if (DOM.saveBtnBottomText) DOM.saveBtnBottomText.textContent = 'Save Vendor Profile';
+        if (isAgencyCategory(DOM.category.value)) {
+          DOM.category.value = 'Material Supplier';
+        }
+        if (!DOM.vendor_code.value || /^AGNC-\d+$/i.test(DOM.vendor_code.value)) {
+          DOM.vendor_code.value = suggestNextPartnerCode('vendor');
+        }
+      }
+      if (DOM.formSubtitle) DOM.formSubtitle.textContent = 'Register official supplier credentials, GSTIN, and inward supply parameters';
+      if (DOM.section01Title) DOM.section01Title.textContent = 'Firm & Classification Details';
+      if (DOM.labelVendorCode) DOM.labelVendorCode.textContent = 'Vendor Code';
+      if (DOM.vendor_code) DOM.vendor_code.placeholder = 'e.g. VEND-1001';
+      if (DOM.labelFirmName) DOM.labelFirmName.textContent = 'Firm / Registered Name';
+      if (DOM.name) DOM.name.placeholder = 'e.g. Haresh Steel and Pipes';
+      if (DOM.labelTradeName) DOM.labelTradeName.textContent = 'Trade / Display Name';
+      if (DOM.trade_name) DOM.trade_name.placeholder = 'e.g. Haresh Steel';
+      if (DOM.labelContactPerson) DOM.labelContactPerson.textContent = 'Contact Person (Key Executive)';
+      if (DOM.contact_person) DOM.contact_person.placeholder = 'e.g. Hareshbhai Patel';
+      if (DOM.section04Title) DOM.section04Title.textContent = 'Supply Scope & Banking Parameters';
+      if (DOM.labelSpecialityItems) DOM.labelSpecialityItems.textContent = 'Supplied Items / Materials (Comma Separated)';
+      if (DOM.speciality_items_input) DOM.speciality_items_input.placeholder = 'e.g. Lokhand Pipe, MS Angles, Binding Wire, TMT Bars';
+      if (DOM.hintSpecialityItems) DOM.hintSpecialityItems.textContent = 'Add multiple supplied materials separated by commas';
+    }
+
+    updateTopTabStyles();
+  }
+
+  function openAddPartnerView(mode = 'vendor') {
     state.editingVendorId = null;
     DOM.editingVendorId.value = '';
     DOM.vendorForm.reset();
-    DOM.formTitle.textContent = 'Add New Vendor Profile';
-    DOM.saveBtnText.textContent = 'Save Vendor Profile';
 
     DOM.city.value = 'Surat';
     DOM.state.value = 'Gujarat';
     DOM.status.value = 'Active';
-    DOM.category.value = 'Material Supplier';
-    DOM.credit_period_days.value = '30';
+    DOM.category.value = mode === 'agency' ? 'Labor Contractor' : 'Material Supplier';
+    DOM.credit_period_days.value = mode === 'agency' ? '15' : '30';
     DOM.allows_cash_rokdu.checked = false;
-
-    DOM.vendor_code.value = suggestNextVendorCode();
+    DOM.vendor_code.value = suggestNextPartnerCode(mode);
     DOM.gstStateBadge.classList.add('hidden');
 
+    applyPartnerModeUI(mode, false);
     switchView('form');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -271,8 +388,18 @@
   function openEditVendorView(vendor) {
     state.editingVendorId = vendor.id;
     DOM.editingVendorId.value = vendor.id;
-    DOM.formTitle.textContent = `Edit Vendor: ${vendor.name}`;
-    DOM.saveBtnText.textContent = 'Update Vendor Profile';
+
+    const detectedMode = isAgencyCategory(vendor.category) || /^AGNC-/i.test(vendor.vendor_code || '')
+      ? 'agency'
+      : 'vendor';
+
+    applyPartnerModeUI(detectedMode, true);
+
+    DOM.formTitle.textContent = detectedMode === 'agency'
+      ? `Edit Site Agency: ${vendor.name}`
+      : `Edit Material Vendor: ${vendor.name}`;
+    if (DOM.saveBtnText) DOM.saveBtnText.textContent = 'Update Profile';
+    if (DOM.saveBtnBottomText) DOM.saveBtnBottomText.textContent = 'Update Profile';
 
     DOM.vendor_code.value = vendor.vendor_code || '';
     DOM.name.value = vendor.name || '';
@@ -368,7 +495,7 @@
       updateMetricBadges();
     } catch (err) {
       console.error('Prayosha ERP Vendor fetch error:', err);
-      showToast(`Error fetching vendors: ${err.message || 'Database connection error'}`, 'error');
+      showToast(`Error fetching records: ${err.message || 'Database connection error'}`, 'error');
     } finally {
       state.isLoading = false;
       DOM.loadingSkeleton.classList.add('hidden');
@@ -383,13 +510,23 @@
     const query = state.filters.search.toLowerCase().trim();
     const cat = state.filters.category;
     const stat = state.filters.status;
+    const rokduOnly = state.filters.rokduOnly;
 
     state.filteredVendors = state.vendors.filter((v) => {
-      // Category Match
-      if (cat !== 'ALL' && v.category !== cat) return false;
+      // Category or Group Match
+      if (cat === 'GROUP_SUPPLIERS') {
+        if (isAgencyCategory(v.category)) return false;
+      } else if (cat === 'GROUP_AGENCIES') {
+        if (!isAgencyCategory(v.category)) return false;
+      } else if (cat !== 'ALL' && v.category !== cat) {
+        return false;
+      }
 
       // Status Match
       if (stat !== 'ALL' && v.status !== stat) return false;
+
+      // Rokdu Only Match
+      if (rokduOnly && !v.allows_cash_rokdu) return false;
 
       // Search Query Match
       if (query) {
@@ -422,19 +559,19 @@
     const all = state.vendors;
     const total = all.length;
     const activeCount = all.filter((v) => v.status === 'Active').length;
-    const matCount = all.filter((v) => v.category === 'Material Supplier').length;
-    const contCount = all.filter((v) => v.category === 'Labor Contractor').length;
+    const matCount = all.filter((v) => !isAgencyCategory(v.category)).length;
+    const agencyCount = all.filter((v) => isAgencyCategory(v.category)).length;
     const cashCount = all.filter((v) => Boolean(v.allows_cash_rokdu)).length;
 
-    DOM.totalVendorsBadge.textContent = total;
-    DOM.statActive.textContent = `Active: ${activeCount}`;
-    DOM.statMaterial.textContent = `Material: ${matCount}`;
-    DOM.statContractor.textContent = `Contractors: ${contCount}`;
-    DOM.statCashAllowed.textContent = `Rokdu Allowed: ${cashCount}`;
+    if (DOM.totalVendorsBadge) DOM.totalVendorsBadge.textContent = total;
+    if (DOM.statActive) DOM.statActive.textContent = `Active: ${activeCount}`;
+    if (DOM.statMaterial) DOM.statMaterial.textContent = `Material Vendors: ${matCount}`;
+    if (DOM.statContractor) DOM.statContractor.textContent = `Site Agencies / Contractors: ${agencyCount}`;
+    if (DOM.statCashAllowed) DOM.statCashAllowed.textContent = `Rokdu Allowed: ${cashCount}`;
   }
 
   // =========================================================================
-  // 9. VENDOR CARD RENDERING
+  // 9. VENDOR & AGENCY CARD RENDERING
   // =========================================================================
   function renderCards() {
     DOM.vendorCardsContainer.innerHTML = '';
@@ -453,6 +590,13 @@
     state.filteredVendors.forEach((vendor) => {
       const card = document.createElement('div');
       card.className = 'glass-card rounded-2xl shadow-glass hover:shadow-glassHover transition-all duration-300 p-5 flex flex-col justify-between border border-white/80 group';
+
+      const isAgency = isAgencyCategory(vendor.category);
+
+      // Category Badge Styling (Purple for Site Agency, Blue for Material Supplier)
+      const categoryBadgeClass = isAgency
+        ? 'bg-purple-50 text-purple-800 border-purple-200/80'
+        : 'bg-blue-50 text-brand-navy border-blue-200/60';
 
       // Status pill styling
       let statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Active</span>';
@@ -478,7 +622,7 @@
           itemsHtml += `<span class="px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded text-[10px]">+${vendor.speciality_items.length - 3}</span>`;
         }
       } else {
-        itemsHtml = '<span class="text-xs text-slate-400 italic">No supply scope specified</span>';
+        itemsHtml = `<span class="text-xs text-slate-400 italic">${isAgency ? 'No work trade specified' : 'No supply scope specified'}</span>`;
       }
 
       const primaryPhoneClean = cleanPhone(vendor.mobile_primary);
@@ -489,18 +633,18 @@
           <!-- Header Row -->
           <div class="flex items-start justify-between gap-2 mb-2.5">
             <div class="flex flex-wrap items-center gap-1.5">
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-brand-navy border border-blue-200/60">
+              <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${categoryBadgeClass}">
                 ${escapeHtml(vendor.category || 'Supplier')}
               </span>
               ${statusBadge}
               ${rokduBadge}
             </div>
-            <span class="font-mono text-[11px] font-bold text-slate-400 bg-slate-100/80 px-2 py-0.5 rounded-md">
-              ${escapeHtml(vendor.vendor_code || 'VEND')}
+            <span class="font-mono text-[11px] font-bold text-slate-500 bg-slate-100/90 px-2 py-0.5 rounded-md">
+              ${escapeHtml(vendor.vendor_code || (isAgency ? 'AGNC' : 'VEND'))}
             </span>
           </div>
 
-          <!-- Vendor Name -->
+          <!-- Vendor / Agency Name -->
           <h3 class="text-base font-bold text-brand-navy group-hover:text-brand-navyLight transition-colors leading-tight mb-0.5">
             ${escapeHtml(vendor.name)}
           </h3>
@@ -510,22 +654,24 @@
               : '<div class="h-2"></div>'
           }
 
-          <!-- Supplied Materials / Services -->
+          <!-- Supplied Materials / Work Trade -->
           <div class="mb-3.5">
-            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Scope &amp; Materials</div>
+            <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
+              ${isAgency ? 'Work Trade &amp; Site Scope' : 'Supplied Materials &amp; Scope'}
+            </div>
             <div class="flex flex-wrap items-center gap-1">
               ${itemsHtml}
             </div>
           </div>
 
-          <!-- GSTIN / PAN Strip -->
+          <!-- GSTIN / Credit Strip -->
           <div class="bg-slate-50/80 rounded-xl p-2.5 mb-3 border border-slate-100 text-xs space-y-1">
             <div class="flex justify-between items-center">
               <span class="text-slate-400 font-medium text-[11px]">GSTIN:</span>
               <span class="font-mono font-semibold text-slate-700 text-[11px]">${escapeHtml(vendor.gstin || 'Unregistered')}</span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="text-slate-400 font-medium text-[11px]">Credit Terms:</span>
+              <span class="text-slate-400 font-medium text-[11px]">${isAgency ? 'Billing Cycle:' : 'Credit Terms:'}</span>
               <span class="font-semibold text-slate-700 text-[11px]">${vendor.credit_period_days ? vendor.credit_period_days + ' Days' : 'Immediate / Cash'}</span>
             </div>
             ${
@@ -599,7 +745,7 @@
 
         <!-- Footer Actions Bar -->
         <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2 mt-auto">
-          <button type="button" data-action="view" data-id="${vendor.id}" class="text-xs font-semibold text-brand-navy hover:text-brand-navyLight flex items-center gap-1 transition-colors">
+          <button type="button" data-action="view" data-id="${vendor.id}" class="text-xs font-semibold text-brand-navy hover:text-brand-navyLight flex items-center gap-1 transition-colors cursor-pointer">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
@@ -608,12 +754,12 @@
           </button>
 
           <div class="flex items-center gap-1">
-            <button type="button" data-action="edit" data-id="${vendor.id}" title="Edit Vendor" class="p-1.5 rounded-lg text-slate-500 hover:text-brand-navy hover:bg-slate-100 transition-colors">
+            <button type="button" data-action="edit" data-id="${vendor.id}" title="Edit Record" class="p-1.5 rounded-lg text-slate-500 hover:text-brand-navy hover:bg-slate-100 transition-colors cursor-pointer">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
               </svg>
             </button>
-            <button type="button" data-action="delete" data-id="${vendor.id}" title="Delete Vendor" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors">
+            <button type="button" data-action="delete" data-id="${vendor.id}" title="Delete Record" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
@@ -635,6 +781,8 @@
     const vendor = state.vendors.find((v) => v.id === vendorId);
     if (!vendor) return;
 
+    const isAgency = isAgencyCategory(vendor.category);
+
     let itemsList = 'None specified';
     if (Array.isArray(vendor.speciality_items) && vendor.speciality_items.length > 0) {
       itemsList = vendor.speciality_items.map((it) => `<span class="px-2 py-0.5 bg-slate-100 rounded text-xs">${escapeHtml(it)}</span>`).join(' ');
@@ -647,13 +795,13 @@
         <!-- Title and Code -->
         <div class="border-b border-slate-100 pb-3">
           <div class="flex items-center gap-2">
-            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-brand-navy text-white">${escapeHtml(vendor.vendor_code || 'VEND')}</span>
-            <span class="text-xs font-semibold px-2 py-0.5 rounded bg-blue-50 text-brand-navy">${escapeHtml(vendor.category)}</span>
+            <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-brand-navy text-white">${escapeHtml(vendor.vendor_code || (isAgency ? 'AGNC' : 'VEND'))}</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded ${isAgency ? 'bg-purple-100 text-purple-800' : 'bg-blue-50 text-brand-navy'}">${escapeHtml(vendor.category)}</span>
             <span class="text-xs font-semibold px-2 py-0.5 rounded ${vendor.status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">${escapeHtml(vendor.status)}</span>
             ${vendor.allows_cash_rokdu ? '<span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">Rokdu Enabled</span>' : ''}
           </div>
           <h2 class="text-xl font-bold text-brand-navy mt-1.5">${escapeHtml(vendor.name)}</h2>
-          ${vendor.trade_name ? `<p class="text-xs text-slate-500 font-medium">Trade Name: ${escapeHtml(vendor.trade_name)}</p>` : ''}
+          ${vendor.trade_name ? `<p class="text-xs text-slate-500 font-medium">Trade / Display Name: ${escapeHtml(vendor.trade_name)}</p>` : ''}
         </div>
 
         <!-- 2-Column Info Grid -->
@@ -666,8 +814,8 @@
               <div><span class="text-slate-400">GSTIN:</span> <span class="font-mono font-bold text-slate-800">${escapeHtml(vendor.gstin || 'Unregistered')}</span></div>
               <div><span class="text-slate-400">PAN:</span> <span class="font-mono font-bold text-slate-800">${escapeHtml(vendor.pan || 'N/A')}</span></div>
               <div><span class="text-slate-400">MSME Reg:</span> <span class="font-mono text-slate-800">${escapeHtml(vendor.msme_reg_no || 'N/A')}</span></div>
-              <div><span class="text-slate-400">Credit Days:</span> <span class="font-bold text-slate-800">${vendor.credit_period_days || 0} Days</span></div>
-              <div class="pt-1"><span class="text-slate-400 block mb-1">Supplied Scope:</span> <div class="flex flex-wrap gap-1">${itemsList}</div></div>
+              <div><span class="text-slate-400">Credit / Billing Cycle:</span> <span class="font-bold text-slate-800">${vendor.credit_period_days || 0} Days</span></div>
+              <div class="pt-1"><span class="text-slate-400 block mb-1">${isAgency ? 'Work Trade Scope:' : 'Supplied Scope:'}</span> <div class="flex flex-wrap gap-1">${itemsList}</div></div>
             </div>
           </div>
 
@@ -688,7 +836,7 @@
         <div class="bg-slate-50/70 p-3.5 rounded-xl border border-slate-100 text-xs space-y-2">
           <h4 class="font-bold text-brand-navy uppercase tracking-wider text-[11px]">Contact &amp; Premises</h4>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div><span class="text-slate-400">Executive:</span> <span class="font-semibold text-slate-700">${escapeHtml(vendor.contact_person || 'N/A')}</span></div>
+            <div><span class="text-slate-400">${isAgency ? 'Contractor / Thekedar:' : 'Executive:'}</span> <span class="font-semibold text-slate-700">${escapeHtml(vendor.contact_person || 'N/A')}</span></div>
             <div><span class="text-slate-400">Primary Mobile:</span> <span class="font-mono font-semibold text-slate-700">${escapeHtml(vendor.mobile_primary || 'N/A')}</span></div>
             <div><span class="text-slate-400">Secondary Mobile:</span> <span class="font-mono text-slate-700">${escapeHtml(vendor.mobile_secondary || 'N/A')}</span></div>
             <div><span class="text-slate-400">Landline:</span> <span class="font-mono text-slate-700">${escapeHtml(vendor.office_phone || 'N/A')}</span></div>
@@ -710,7 +858,7 @@
 
         <!-- Modal Footer Actions -->
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" id="modalEditBtn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-brand-navy text-white hover:bg-brand-navyDark transition-colors">
+          <button type="button" id="modalEditBtn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-brand-navy text-white hover:bg-brand-navyDark transition-colors cursor-pointer">
             Edit Profile
           </button>
         </div>
@@ -744,6 +892,8 @@
     }
 
     const isEdit = Boolean(state.editingVendorId);
+    const isAgency = state.partnerMode === 'agency';
+    const labelType = isAgency ? 'Site Agency' : 'Material Vendor';
 
     // Basic Validations
     const code = DOM.vendor_code.value.trim().toUpperCase();
@@ -751,12 +901,12 @@
     const primaryPhone = DOM.mobile_primary.value.trim();
 
     if (!code) {
-      showToast('Vendor Code is required', 'warning');
+      showToast(`${labelType} Code is required`, 'warning');
       DOM.vendor_code.focus();
       return;
     }
     if (!firmName) {
-      showToast('Firm / Business Name is required', 'warning');
+      showToast(`${labelType} Name is required`, 'warning');
       DOM.name.focus();
       return;
     }
@@ -802,7 +952,7 @@
     };
 
     DOM.saveVendorSubmitBtn.disabled = true;
-    DOM.saveBtnText.textContent = isEdit ? 'Updating...' : 'Saving...';
+    if (DOM.saveBtnText) DOM.saveBtnText.textContent = isEdit ? 'Updating...' : 'Saving...';
 
     try {
       if (isEdit) {
@@ -812,14 +962,14 @@
           .eq('id', state.editingVendorId);
 
         if (error) throw error;
-        showToast(`Vendor ${firmName} updated successfully`, 'success');
+        showToast(`${labelType} "${firmName}" updated successfully`, 'success');
       } else {
         const { error } = await supabase
           .from('vendors')
           .insert([payload]);
 
         if (error) throw error;
-        showToast(`New Vendor ${firmName} created successfully`, 'success');
+        showToast(`New ${labelType} "${firmName}" registered successfully`, 'success');
       }
 
       DOM.vendorForm.reset();
@@ -832,13 +982,17 @@
       showToast(`Save failed: ${err.message || 'Check database permissions'}`, 'error');
     } finally {
       DOM.saveVendorSubmitBtn.disabled = false;
-      DOM.saveBtnText.textContent = isEdit ? 'Update Vendor Profile' : 'Save Vendor Profile';
+      const defaultSaveLabel = isEdit
+        ? 'Update Profile'
+        : (state.partnerMode === 'agency' ? 'Save Site Agency' : 'Save Vendor Profile');
+      if (DOM.saveBtnText) DOM.saveBtnText.textContent = defaultSaveLabel;
+      if (DOM.saveBtnBottomText) DOM.saveBtnBottomText.textContent = defaultSaveLabel;
     }
   }
 
   async function deleteVendor(vendorId) {
     const vendor = state.vendors.find((v) => v.id === vendorId);
-    const vendorName = vendor ? vendor.name : 'this vendor';
+    const vendorName = vendor ? vendor.name : 'this record';
 
     if (!confirm(`Are you sure you want to permanently remove "${vendorName}" from Prayosha ERP?`)) {
       return;
@@ -856,7 +1010,7 @@
 
       if (error) throw error;
 
-      showToast(`Vendor "${vendorName}" deleted successfully`, 'success');
+      showToast(`"${vendorName}" deleted successfully`, 'success');
       state.vendors = state.vendors.filter((v) => v.id !== vendorId);
       applyFilters();
       updateMetricBadges();
@@ -876,14 +1030,14 @@
     }
 
     const headers = [
-      'Vendor Code',
-      'Firm Name',
+      'Code',
+      'Firm / Agency Name',
       'Trade Name',
       'Category',
       'Status',
       'GSTIN',
       'PAN',
-      'Contact Person',
+      'Contact / Thekedar',
       'Primary Mobile',
       'Office Phone',
       'Email',
@@ -894,7 +1048,7 @@
       'Account Number',
       'IFSC Code',
       'Rokdu Allowed',
-      'Supplied Scope',
+      'Scope / Work Trades',
     ];
 
     const rows = state.filteredVendors.map((v) => [
@@ -926,122 +1080,216 @@
     const dateStr = new Date().toISOString().split('T')[0];
 
     link.setAttribute('href', url);
-    link.setAttribute('download', `Prayosha_Vendors_${dateStr}.csv`);
+    link.setAttribute('download', `Prayosha_Vendors_And_Agencies_${dateStr}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    showToast('Vendors exported to CSV successfully', 'success');
+    showToast('Directory exported to CSV successfully', 'success');
   }
 
   // =========================================================================
   // 13. EVENT LISTENERS INITIALIZATION
   // =========================================================================
   function bindEvents() {
-    // Top Tabs
-    DOM.tabDirectoryBtn.addEventListener('click', () => switchView('directory'));
-    DOM.tabAddVendorBtn.addEventListener('click', openAddVendorView);
+    // Top Navigation Tabs
+    if (DOM.tabDirectoryBtn) DOM.tabDirectoryBtn.addEventListener('click', () => switchView('directory'));
+    if (DOM.tabAddVendorBtn) DOM.tabAddVendorBtn.addEventListener('click', () => openAddPartnerView('vendor'));
+    if (DOM.tabAddAgencyBtn) DOM.tabAddAgencyBtn.addEventListener('click', () => openAddPartnerView('agency'));
+
+    // Empty State Shortcuts
+    if (DOM.emptyAddVendorBtn) DOM.emptyAddVendorBtn.addEventListener('click', () => openAddPartnerView('vendor'));
+    if (DOM.emptyAddAgencyBtn) DOM.emptyAddAgencyBtn.addEventListener('click', () => openAddPartnerView('agency'));
+
+    // In-Form Mode Switcher Buttons
+    if (DOM.partnerTypeVendorBtn) {
+      DOM.partnerTypeVendorBtn.addEventListener('click', () => {
+        applyPartnerModeUI('vendor', Boolean(state.editingVendorId));
+      });
+    }
+    if (DOM.partnerTypeAgencyBtn) {
+      DOM.partnerTypeAgencyBtn.addEventListener('click', () => {
+        applyPartnerModeUI('agency', Boolean(state.editingVendorId));
+      });
+    }
+
+    // Auto-adapt Form Mode if Category Dropdown is changed
+    if (DOM.category) {
+      DOM.category.addEventListener('change', (e) => {
+        const selectedCat = e.target.value;
+        const targetMode = isAgencyCategory(selectedCat) ? 'agency' : 'vendor';
+        if (targetMode !== state.partnerMode) {
+          applyPartnerModeUI(targetMode, Boolean(state.editingVendorId));
+        }
+      });
+    }
 
     // Form Cancel Buttons
-    DOM.cancelFormBtn.addEventListener('click', () => switchView('directory'));
-    DOM.cancelFormBottomBtn.addEventListener('click', () => switchView('directory'));
+    if (DOM.cancelFormBtn) DOM.cancelFormBtn.addEventListener('click', () => switchView('directory'));
+    if (DOM.cancelFormBottomBtn) DOM.cancelFormBottomBtn.addEventListener('click', () => switchView('directory'));
 
     // Form Submit
-    DOM.vendorForm.addEventListener('submit', handleFormSubmit);
+    if (DOM.vendorForm) DOM.vendorForm.addEventListener('submit', handleFormSubmit);
 
     // GSTIN Input Listener for PAN extraction and state badge
-    DOM.gstin.addEventListener('input', (e) => handleGstinInputLogic(e.target.value));
+    if (DOM.gstin) DOM.gstin.addEventListener('input', (e) => handleGstinInputLogic(e.target.value));
 
     // IFSC Code auto-capitalize
-    DOM.ifsc_code.addEventListener('input', (e) => {
-      e.target.value = e.target.value.toUpperCase();
-    });
+    if (DOM.ifsc_code) {
+      DOM.ifsc_code.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+      });
+    }
 
     // PAN Code auto-capitalize
-    DOM.pan.addEventListener('input', (e) => {
-      e.target.value = e.target.value.toUpperCase();
-    });
+    if (DOM.pan) {
+      DOM.pan.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+      });
+    }
 
     // Vendor Code auto-capitalize
-    DOM.vendor_code.addEventListener('input', (e) => {
-      e.target.value = e.target.value.toUpperCase();
-    });
+    if (DOM.vendor_code) {
+      DOM.vendor_code.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+      });
+    }
 
     // Search and Filters
     let searchDebounceTimer = null;
-    DOM.searchInput.addEventListener('input', (e) => {
-      clearTimeout(searchDebounceTimer);
-      searchDebounceTimer = setTimeout(() => {
-        state.filters.search = e.target.value;
+    if (DOM.searchInput) {
+      DOM.searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+          state.filters.search = e.target.value;
+          applyFilters();
+        }, 250);
+      });
+    }
+
+    if (DOM.categoryFilter) {
+      DOM.categoryFilter.addEventListener('change', (e) => {
+        state.filters.category = e.target.value;
+        state.filters.rokduOnly = false;
         applyFilters();
-      }, 250);
-    });
+      });
+    }
 
-    DOM.categoryFilter.addEventListener('change', (e) => {
-      state.filters.category = e.target.value;
-      applyFilters();
-    });
+    if (DOM.statusFilter) {
+      DOM.statusFilter.addEventListener('change', (e) => {
+        state.filters.status = e.target.value;
+        applyFilters();
+      });
+    }
 
-    DOM.statusFilter.addEventListener('change', (e) => {
-      state.filters.status = e.target.value;
-      applyFilters();
-    });
+    // Interactive Quick Filter Badges
+    if (DOM.statActive) {
+      DOM.statActive.addEventListener('click', () => {
+        state.filters.category = 'ALL';
+        state.filters.status = 'Active';
+        state.filters.rokduOnly = false;
+        if (DOM.categoryFilter) DOM.categoryFilter.value = 'ALL';
+        if (DOM.statusFilter) DOM.statusFilter.value = 'Active';
+        applyFilters();
+      });
+    }
 
-    DOM.refreshBtn.addEventListener('click', fetchVendors);
-    DOM.exportCsvBtn.addEventListener('click', exportToCsv);
+    if (DOM.statMaterial) {
+      DOM.statMaterial.addEventListener('click', () => {
+        state.filters.category = 'GROUP_SUPPLIERS';
+        state.filters.rokduOnly = false;
+        if (DOM.categoryFilter) DOM.categoryFilter.value = 'GROUP_SUPPLIERS';
+        applyFilters();
+      });
+    }
 
-    DOM.resetFilterBtn.addEventListener('click', () => {
-      DOM.searchInput.value = '';
-      DOM.categoryFilter.value = 'ALL';
-      DOM.statusFilter.value = 'ALL';
-      state.filters.search = '';
-      state.filters.category = 'ALL';
-      state.filters.status = 'ALL';
-      applyFilters();
-    });
+    if (DOM.statContractor) {
+      DOM.statContractor.addEventListener('click', () => {
+        state.filters.category = 'GROUP_AGENCIES';
+        state.filters.rokduOnly = false;
+        if (DOM.categoryFilter) DOM.categoryFilter.value = 'GROUP_AGENCIES';
+        applyFilters();
+      });
+    }
+
+    if (DOM.statCashAllowed) {
+      DOM.statCashAllowed.addEventListener('click', () => {
+        state.filters.rokduOnly = !state.filters.rokduOnly;
+        applyFilters();
+      });
+    }
+
+    if (DOM.refreshBtn) DOM.refreshBtn.addEventListener('click', fetchVendors);
+    if (DOM.exportCsvBtn) DOM.exportCsvBtn.addEventListener('click', exportToCsv);
+
+    if (DOM.resetFilterBtn) {
+      DOM.resetFilterBtn.addEventListener('click', () => {
+        if (DOM.searchInput) DOM.searchInput.value = '';
+        if (DOM.categoryFilter) DOM.categoryFilter.value = 'ALL';
+        if (DOM.statusFilter) DOM.statusFilter.value = 'ALL';
+        state.filters.search = '';
+        state.filters.category = 'ALL';
+        state.filters.status = 'ALL';
+        state.filters.rokduOnly = false;
+        applyFilters();
+      });
+    }
 
     // Delegated actions on vendor cards container (View, Edit, Delete)
-    DOM.vendorCardsContainer.addEventListener('click', (e) => {
-      const actionBtn = e.target.closest('[data-action]');
-      if (!actionBtn) return;
+    if (DOM.vendorCardsContainer) {
+      DOM.vendorCardsContainer.addEventListener('click', (e) => {
+        const actionBtn = e.target.closest('[data-action]');
+        if (!actionBtn) return;
 
-      const action = actionBtn.getAttribute('data-action');
-      const vendorId = actionBtn.getAttribute('data-id');
+        const action = actionBtn.getAttribute('data-action');
+        const vendorId = actionBtn.getAttribute('data-id');
 
-      if (action === 'view') {
-        showVendorDetails(vendorId);
-      } else if (action === 'edit') {
-        const vendor = state.vendors.find((v) => v.id === vendorId);
-        if (vendor) openEditVendorView(vendor);
-      } else if (action === 'delete') {
-        deleteVendor(vendorId);
-      }
-    });
+        if (action === 'view') {
+          showVendorDetails(vendorId);
+        } else if (action === 'edit') {
+          const vendor = state.vendors.find((v) => v.id === vendorId);
+          if (vendor) openEditVendorView(vendor);
+        } else if (action === 'delete') {
+          deleteVendor(vendorId);
+        }
+      });
+    }
 
     // Modal Close
-    DOM.closeDetailModalBtn.addEventListener('click', closeDetailModal);
-    DOM.vendorDetailModal.addEventListener('click', (e) => {
-      if (e.target === DOM.vendorDetailModal) {
-        closeDetailModal();
-      }
-    });
+    if (DOM.closeDetailModalBtn) DOM.closeDetailModalBtn.addEventListener('click', closeDetailModal);
+    if (DOM.vendorDetailModal) {
+      DOM.vendorDetailModal.addEventListener('click', (e) => {
+        if (e.target === DOM.vendorDetailModal) {
+          closeDetailModal();
+        }
+      });
+    }
 
     // Keyboard Escape to dismiss modal
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !DOM.vendorDetailModal.classList.contains('hidden')) {
+      if (e.key === 'Escape' && DOM.vendorDetailModal && !DOM.vendorDetailModal.classList.contains('hidden')) {
         closeDetailModal();
       }
     });
   }
 
   // =========================================================================
-  // 14. BOOTSTRAP ENTRY POINT
+  // 14. BOOTSTRAP ENTRY POINT (WITH URL MODE ROUTING)
   // =========================================================================
-  function init() {
+  async function init() {
     initSupabase();
     bindEvents();
-    fetchVendors();
+    await fetchVendors();
+
+    // Check URL params for deep-link onboarding (e.g. ?mode=agency or ?mode=vendor)
+    const params = new URLSearchParams(window.location.search);
+    const requestedMode = (params.get('mode') || '').toLowerCase();
+    if (requestedMode === 'agency') {
+      openAddPartnerView('agency');
+    } else if (requestedMode === 'vendor' || requestedMode === 'supplier') {
+      openAddPartnerView('vendor');
+    }
   }
 
   if (document.readyState === 'loading') {

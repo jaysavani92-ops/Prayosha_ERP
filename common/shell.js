@@ -3,7 +3,7 @@
  * File: /common/shell.js
  * 
  * Features:
- * 1. Complete Action Hub Drawer: All 7 suites intact (Tasks, Inventory, Purchase, Workforce, Pre-Dev, Admin, Site Map).
+ * 1. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Workforce, Pre-Dev, Admin, Site Map).
  * 2. Case-Insensitive Deep DOM Scanner: Automatically translates visible text, labels, and placeholders on any page.
  * 3. Bidirectional Caching: Remembers original English strings in a WeakMap for seamless EN <-> GU <-> HI toggles.
  * 4. Live MutationObserver: Automatically translates dynamically rendered cards, tables, and floor accordions.
@@ -35,7 +35,7 @@ const RAW_DICTIONARY = {
     "raise issue": { gu: "સમસ્યા નોંધો", hi: "समस्या दर्ज करें" },
     "log task": { gu: "કાર્ય ઉમેરો", hi: "कार्य जोड़ें" },
     "log invoice": { gu: "ઇન્વોઇસ લોગ કરો", hi: "चालान लॉग करें" },
-    "daily report": { gu: "દૈનિક અહેવાલ", hi: "दैनिक रिपोर्ट" },
+    "daily report": { gu: "દૈનિક અહેવાલ", hi: "દૈનિક રિપોર્ટ" },
     "site map & spatial suite": { gu: "સાઇટ મેપ અને ઝોન સૂટ", hi: "साइट मैप एवं ज़ोन सूट" },
     "site map (zones)": { gu: "સાઇટ મેપ (ઝોન)", hi: "साइट मैप (ज़ोन)" },
     "interactive 3d map": { gu: "ઇન્ટરેક્ટિવ 3D મેપ", hi: "इंटरैक्टिव 3D मैप" },
@@ -43,18 +43,18 @@ const RAW_DICTIONARY = {
     "zone kpis & grid": { gu: "ઝોન વિહંગાવલોકન અને ગ્રીડ", hi: "ज़ोन अवलोकन एवं ग्रिड" },
     "floor plan manager": { gu: "ફ્લોર પ્લાન મેનેજર", hi: "फ्लोर प्लान प्रबंधक" },
     "civil tasks suite": { gu: "સિવિલ કાર્યો સૂટ", hi: "सिविल कार्य सूट" },
-    "active tasks": { gu: "સક્રિય કાર્યો", hi: "सक्रिय कार्य" },
+    "active tasks": { gu: "સક્રિય કાર્યો", hi: "સક્રિય કાર્ય" },
     "pending tasks": { gu: "બાકી કાર્યો", hi: "लंबित कार्य" },
     "delayed tasks": { gu: "વિલંબિત કાર્યો", hi: "विलंबित कार्य" },
-    "issue logs": { gu: "સમસ્યા લોગ", hi: "समस्या लॉग" },
+    "issue logs": { gu: "સમસ્યા લોગ", hi: "સમસ્યા લોગ" },
     "zone timeline": { gu: "ઝોન સમયરેખા", hi: "ज़ोन समयरेखा" },
     "tasks history": { gu: "કાર્ય ઇતિહાસ", hi: "कार्य इतिहास" },
     "inventory & materials suite": { gu: "ઇન્વેન્ટરી અને સામગ્રી સૂટ", hi: "इन्वेंट्री एवं सामग्री सूट" },
     "stock overview": { gu: "સ્ટોક વિહંગાવલોકન", hi: "स्टॉक अवलोकन" },
     "log transaction": { gu: "ટ્રાન્ઝેક્શન લોગ", hi: "लेन-देन लॉग" },
-    "civil issue logs": { gu: "ઇશ્યુ લોગ્સ", hi: "इश्यू लॉग्स" },
+    "civil issue logs": { gu: "ઇશ્યુ લોગ્સ", hi: "ઇશ્યુ લોગ્સ" },
     "request indent": { gu: "ઇન્ડેન્ટ વિનંતી", hi: "इंडेंट अनुरोध" },
-    "damage & returns": { gu: "નુકસાન અને વળતર", hi: "क्षति एवं वापसी" },
+    "damage & returns": { gu: "નુકસાન અને વળતર", hi: "ક્ષતિ તેમજ વાપસી" },
     "generate report": { gu: "અહેવાલ બનાવો", hi: "रिपोर्ट बनाएं" },
     "purchase & indents suite": { gu: "ખરીદી અને ઇન્ડેન્ટ સૂટ", hi: "खरीद और इंडेंट सूट" },
     "purchase ledger": { gu: "ખરીદી લેજર", hi: "खरीद लेज़र" },
@@ -62,201 +62,211 @@ const RAW_DICTIONARY = {
     "pending payments": { gu: "બાકી ચૂકવણી", hi: "लंबित भुगतान" },
     "cash ledger": { gu: "રોકડ લેજર", hi: "नकद लेज़र" },
     "bank ledger": { gu: "બેંક લેજર", hi: "बैंक लेज़र" },
+
+    // --- Petty Cash Suite Translations ---
+    "petty cash suite": { gu: "પેટ્ટી કેશ સૂટ", hi: "पेट्टी कैश सूट" },
+    "petty cash": { gu: "પેટ્ટી કેશ", hi: "पेट्टी कैश" },
+    "petty cash ledger": { gu: "પેટ્ટી કેશ લેજર", hi: "पेट्टी कैश लेज़र" },
+    "log expense": { gu: "ખર્ચ નોંધો", hi: "ખર્ચ નોંધો" },
+    "record site expense": { gu: "સાઇટ ખર્ચ નોંધણી", hi: "साइट खर्च दर्ज करें" },
+    "reconciliation & audit": { gu: "હિસાબ ચકાસણી અને ઓડિટ", hi: "मिलान एवं ऑडिट" },
+    "monthly reconciliation": { gu: "માસિક હિસાબ / ઓડિટ", hi: "માસિક હિસાબ / ઓડિટ" },
+
     "pre-development": { gu: "પ્રી-ડેવલપમેન્ટ (આયોજન)", hi: "प्री-डेवलपमेंट (आयोजन)" },
     "liasoning & boq master": { gu: "લાયઝનિંગ અને BOQ માસ્ટર", hi: "लायजनिंग एवं BOQ मास्टर" },
     "• liasoning & boq master": { gu: "• લાયઝનિંગ અને BOQ માસ્ટર", hi: "• लायजनિંગ एवं BOQ मास्टर" },
     "workforce & equipment": { gu: "શ્રમિક અને સાધન સામગ્રી", hi: "श्रमिक एवं उपकरण" },
-    "daily labor & equipment diary": { gu: "દૈનિક મજૂર અને સાધન ડાયરી", hi: "दैनिक श्रमिक व उपकरण डायरी" },
-    "• daily labor & equipment diary": { gu: "• દૈનિક મજૂર અને સાધન ડાયરી", hi: "• दैनिक श्रमिक व उपकरण डायरी" },
-    "administration": { gu: "વહીવટ / એડમિન", hi: "प्रशासन / एडमिन" },
-    "+ new project": { gu: "+ નવો પ્રોજેક્ટ", hi: "+ नया प्रोजेक्ट" },
-    "new project": { gu: "નવો પ્રોજેક્ટ", hi: "नया प्रोजेक्ट" },
-    "employee directory": { gu: "કર્મચારી ડિરેક્ટરી", hi: "कर्मचारी निर्देशिका" },
-    "vendor directory": { gu: "વેન્ડર ડિરેક્ટરી", hi: "वेंडर निर्देशिका" },
-    "logout": { gu: "લોગઆઉટ", hi: "लॉगआउट" },
+    "daily labor & equipment diary": { gu: "દૈનિક મજૂર અને સાધન ડાયરી", hi: "દૈનિક શ્રમિક વ ઉપકરણ ડાયરી" },
+    "• daily labor & equipment diary": { gu: "• દૈનિક મજૂર અને સાધન ડાયરી", hi: "• દૈનિક શ્રમિક વ ઉપકરણ ડાયરી" },
+    "administration": { gu: "વહીવટ / એડમિન", hi: "પ્રશાસન / એડમિન" },
+    "+ new project": { gu: "+ નવો પ્રોજેક્ટ", hi: "+ નયા પ્રોજેક્ટ" },
+    "new project": { gu: "નવો પ્રોજેક્ટ", hi: "નયા પ્રોજેક્ટ" },
+    "employee directory": { gu: "કર્મચારી ડિરેક્ટરી", hi: "કર્મચારી નિર્દેશિકા" },
+    "vendor directory": { gu: "વેન્ડર ડિરેક્ટરી", hi: "વેન્ડર નિર્દેશિકા" },
+    "logout": { gu: "લોગઆઉટ", hi: "લોગઆઉટ" },
 
     // --- Project Directory Dashboard & Cards ---
-    "project directory": { gu: "પ્રોજેક્ટ ડિરેક્ટરી", hi: "प्रोजेक्ट निर्देशिका" },
+    "project directory": { gu: "પ્રોજેક્ટ ડિરેક્ટરી", hi: "પ્રોજેક્ટ નિર્દેશિકા" },
     "multi-site portfolio, structural zones, and live progress tracking": { gu: "સાઇટ પોર્ટફોલિયો, માળખાકીય ઝોન અને લાઈવ પ્રગતિ ટ્રેકિંગ", hi: "मल्टी-साइट पोर्टफोलियो, संरचनात्मक ज़ोन और लाइव प्रगति ट्रैकिंग" },
-    "active workspace": { gu: "સક્રિય કાર્યક્ષેત્ર", hi: "सक्रिय कार्यक्षेत्र" },
+    "active workspace": { gu: "સક્રિય કાર્યક્ષેત્ર", hi: "સક્રિય કાર્યક્ષેત્ર" },
     "quick access to operational suites for this site project": { gu: "આ સાઇટ પ્રોજેક્ટ માટે કાર્યકારી સ્યુટ્સની ઝડપી ઍક્સેસ", hi: "इस साइट प्रोजेक्ट के लिए परिचालन सुइट्स तक त्वरित पहुंच" },
-    "civil tasks": { gu: "સિવિલ કાર્યો", hi: "सिविल कार्य" },
-    "live site execution": { gu: "લાઈવ સાઇટ અમલીકરણ", hi: "लाइव साइट निष्पादन" },
-    "inventory & stock": { gu: "ઇન્વેન્ટરી અને સ્ટોક", hi: "इन्वेंट्री एवं स्टॉक" },
-    "store & receipts": { gu: "સ્ટોર અને પહોંચ", hi: "स्टोर एवं रसीदें" },
-    "workforce roll": { gu: "શ્રમિક રોલ", hi: "श्रमिक रोल" },
-    "labor & contractors": { gu: "મજૂરો અને કોન્ટ્રાક્ટરો", hi: "श्रमिक एवं ठेकेदार" },
-    "approvals & liasoning": { gu: "મંજૂરીઓ અને લાયઝનિંગ", hi: "स्वीकृतियां एवं लायजनिंग" },
-    "create project": { gu: "+ પ્રોજેક્ટ બનાવો", hi: "+ प्रोजेक्ट बनाएं" },
-    "+ create project": { gu: "+ પ્રોજેક્ટ બનાવો", hi: "+ प्रोजेक्ट बनाएं" },
-    "refresh": { gu: "રીફ્રેશ", hi: "ताज़ा करें" },
-    "all statuses": { gu: "તમામ સ્થિતિઓ", hi: "सभी स्थितियां" },
-    "total area": { gu: "કુલ ક્ષેત્રફળ", hi: "कुल क्षेत्रफल" },
-    "est. budget": { gu: "અંદાજિત બજેટ", hi: "अनुमानित बजट" },
-    "type": { gu: "પ્રકાર", hi: "प्रकार" },
-    "contract": { gu: "કરાર", hi: "अनुबंध" },
-    "residential": { gu: "રહેણાંક", hi: "आवासीय" },
-    "commercial": { gu: "વ્યાપારી", hi: "व्यावसायिक" },
-    "residential+commercial": { gu: "રહેણાંક + વ્યાપારી", hi: "आवासीय + व्यावसायिक" },
-    "residential + commercial": { gu: "રહેણાંક + વ્યાપારી", hi: "आवासीय + व्यावसायिक" },
-    "material only": { gu: "માત્ર મટિરિયલ", hi: "केवल सामग्री" },
-    "with material": { gu: "મટિરિયલ સાથે", hi: "सामग्री सहित" },
-    "labor contract": { gu: "મજૂરી કરાર (લેબર)", hi: "मजदूरी अनुबंध" },
-    "planning": { gu: "આયોજન", hi: "योजना" },
+    "civil tasks": { gu: "સિવિલ કાર્યો", hi: "સિવિલ કાર્ય" },
+    "live site execution": { gu: "લાઈવ સાઇટ અમલીકરણ", hi: "લાઈવ સાઇટ નિષ્પાદન" },
+    "inventory & stock": { gu: "ઇન્વેન્ટરી અને સ્ટોક", hi: "ઇન્વેન્ટ્રી તેમજ સ્ટોક" },
+    "store & receipts": { gu: "સ્ટોર અને પહોંચ", hi: "સ્ટોર તેમજ રસીદ" },
+    "workforce roll": { gu: "શ્રમિક રોલ", hi: "શ્રમિક રોલ" },
+    "labor & contractors": { gu: "મજૂરો અને કોન્ટ્રાક્ટરો", hi: "શ્રમિક તેમજ ઠેકેદાર" },
+    "approvals & liasoning": { gu: "મંજૂરીઓ અને લાયઝનિંગ", hi: "સ્વીકૃતિયાં તેમજ લાયઝનિંગ" },
+    "create project": { gu: "+ પ્રોજેક્ટ બનાવો", hi: "+ પ્રોજેક્ટ બનાવો" },
+    "+ create project": { gu: "+ પ્રોજેક્ટ બનાવો", hi: "+ પ્રોજેક્ટ બનાવો" },
+    "refresh": { gu: "રીફ્રેશ", hi: "તાઝા કરેં" },
+    "all statuses": { gu: "તમામ સ્થિતિઓ", hi: "સભી સ્થિતિયાં" },
+    "total area": { gu: "કુલ ક્ષેત્રફળ", hi: "કુલ ક્ષેત્રફળ" },
+    "est. budget": { gu: "અંદાજિત બજેટ", hi: "અનુમાનિત બજેટ" },
+    "type": { gu: "પ્રકાર", hi: "પ્રકાર" },
+    "contract": { gu: "કરાર", hi: "અનુબંધ" },
+    "residential": { gu: "રહેણાંક", hi: "આવાસીય" },
+    "commercial": { gu: "વ્યાપારી", hi: "વ્યવસાયિક" },
+    "residential+commercial": { gu: "રહેણાંક + વ્યાપારી", hi: "આવાસીય + વ્યવસાયિક" },
+    "residential + commercial": { gu: "રહેણાંક + વ્યાપારી", hi: "આવાસીય + વ્યવસાયિક" },
+    "material only": { gu: "માત્ર મટિરિયલ", hi: "કેવલ સામગ્રી" },
+    "with material": { gu: "મટિરિયલ સાથે", hi: "સામગ્રી સહિત" },
+    "labor contract": { gu: "મજૂરી કરાર (લેબર)", hi: "મજદૂરી અનુબંધ" },
+    "planning": { gu: "આયોજન", hi: "યોજના" },
     "active": { gu: "સક્રિય", hi: "સક્રિય" },
     "completed": { gu: "પૂર્ણ", hi: "પૂર્ણ" },
-    "on hold": { gu: "મોકૂફ", hi: "रोका गया" },
+    "on hold": { gu: "મોકૂફ", hi: "રોકા ગયા" },
 
     // --- Create Project Architecture View ---
-    "create project architecture": { gu: "નવી પ્રોજેક્ટ રચના બનાવો", hi: "नया प्रोजेक्ट ढांचा बनाएं" },
+    "create project architecture": { gu: "નવી પ્રોજેક્ટ રચના બનાવો", hi: "નયા પ્રોજેક્ટ ઢાંચા બનાયેં" },
     "define metadata, scope, financials, and multi-level floor & zone hierarchy": { gu: "પ્રોજેક્ટ વિગતો, સ્કોપ, બજેટ અને ફ્લોર/ઝોન માળખું વ્યાખ્યાયિત કરો", hi: "मेटाडेटा, दायरा, वित्तीय बजट और फ्लोर/ज़ोन पदानुक्रम को परिभाषित करें" },
-    "back to directory": { gu: "ડિરેક્ટરી પર પાછા જાઓ", hi: "निर्देशिका पर वापस जाएं" },
-    "new project setup": { gu: "નવો પ્રોજેક્ટ સેટઅપ", hi: "नया प्रोजेक्ट सेटअप" },
-    "basic project details": { gu: "મૂળભૂત પ્રોજેક્ટ વિગતો", hi: "मूल प्रोजेक्ट विवरण" },
-    "project code": { gu: "પ્રોજેક્ટ કોડ", hi: "प्रोजेक्ट कोड" },
-    "project name": { gu: "પ્રોજેક્ટનું નામ", hi: "प्रोजेक्ट का नाम" },
-    "project type": { gu: "પ્રોજેક્ટ પ્રકાર", hi: "प्रोजेक्ट का प्रकार" },
-    "contract type": { gu: "કરારનો પ્રકાર", hi: "अनुबंध का प्रकार" },
-    "current status": { gu: "વર્તમાન સ્થિતિ", hi: "वर्तमान स्थिति" },
-    "project description": { gu: "પ્રોજેક્ટ વર્ણન", hi: "प्रोजेक्ट विवरण" },
-    "rera number": { gu: "રેરા નંબર (RERA)", hi: "रेरा नंबर (RERA)" },
-    "project address": { gu: "પ્રોજેક્ટ સરનામું", hi: "प्रोजेक्ट का पता" },
-    "map link": { gu: "ગૂગલ મેપ લિંક", hi: "गूगल मैप लिंक" },
-    "scope, financials & media": { gu: "કાર્યક્ષેત્ર, નાણાકીય અને મીડિયા", hi: "दायरा, वित्तीय एवं मीडिया" },
+    "back to directory": { gu: "ડિરેક્ટરી પર પાછા જાઓ", hi: "નિર્દેશિકા પર વાપસ જાઓ" },
+    "new project setup": { gu: "નવો પ્રોજેક્ટ સેટઅપ", hi: "નયા પ્રોજેક્ટ સેટઅપ" },
+    "basic project details": { gu: "મૂળભૂત પ્રોજેક્ટ વિગતો", hi: "મૂલ પ્રોજેક્ટ વિવરણ" },
+    "project code": { gu: "પ્રોજેક્ટ કોડ", hi: "પ્રોજેક્ટ કોડ" },
+    "project name": { gu: "પ્રોજેક્ટનું નામ", hi: "પ્રોજેક્ટ કા નામ" },
+    "project type": { gu: "પ્રોજેક્ટ પ્રકાર", hi: "પ્રોજેક્ટ કા પ્રકાર" },
+    "contract type": { gu: "કરારનો પ્રકાર", hi: "અનુબંધ કા પ્રકાર" },
+    "current status": { gu: "વર્તમાન સ્થિતિ", hi: "વર્તમાન સ્થિતિ" },
+    "project description": { gu: "પ્રોજેક્ટ વર્ણન", hi: "પ્રોજેક્ટ વિવરણ" },
+    "rera number": { gu: "રેરા નંબર (RERA)", hi: "રેરા નંબર (RERA)" },
+    "project address": { gu: "પ્રોજેક્ટ સરનામું", hi: "પ્રોજેક્ટ કા પતા" },
+    "map link": { gu: "ગૂગલ મેપ લિંક", hi: "ગૂગલ મેપ લિંક" },
+    "scope, financials & media": { gu: "કાર્યક્ષેત્ર, નાણાકીય અને મીડિયા", hi: "દાયરા, વિત્તીય તેમજ મીડિયા" },
 
     // --- Pending Tasks & Zone Tree ---
-    "pending tasks & zone tree": { gu: "બાકી કાર્યો અને ઝોન ટ્રી", hi: "लंबित कार्य एवं ज़ोन ट्री" },
-    "floor-wise hierarchical zone registry and pending civil packages": { gu: "માળ-વાર વંશવેલો ઝોન રજિસ્ટ્રી અને બાકી સિવિલ પેકેજો", hi: "मंजिल-वार श्रेणीबद्ध ज़ोन रजिस्ट्री और लंबित सिविल पैकेज" },
-    "+ log new task": { gu: "+ નવું કાર્ય ઉમેરો", hi: "+ नया कार्य जोड़ें" },
-    "log new task": { gu: "નવું કાર્ય ઉમેરો", hi: "नया कार्य जोड़ें" },
-    "filtered project:": { gu: "પસંદ કરેલ પ્રોજેક્ટ:", hi: "चयनित प्रोजेक्ट:" },
-    "all towers / blocks": { gu: "તમામ ટાવર / બ્લોક્સ", hi: "सभी टावर / ब्लॉक" },
-    "expand all": { gu: "બધા ખોલો (Expand All)", hi: "सभी खोलें (Expand All)" },
-    "collapse all": { gu: "બધા બંધ કરો (Collapse All)", hi: "सभी बंद करें (Collapse All)" },
-    "basement 2": { gu: "બેઝમેન્ટ ૨", hi: "बेसमेंट 2" },
-    "basement 1": { gu: "બેઝમેન્ટ ૧", hi: "बेसमेंट 1" },
-    "ground floor": { gu: "ગ્રાઉન્ડ ફ્લોર", hi: "ग्राउंड फ्लोर" },
-    "1st floor": { gu: "પહેલો માળ (1st Floor)", hi: "पहली मंजिल (1st Floor)" },
-    "2nd floor": { gu: "બીજો માળ (2nd Floor)", hi: "दूसरी मंजिल (2nd Floor)" },
-    "3rd floor": { gu: "ત્રીજો માળ (3rd Floor)", hi: "तीसरी मंजिल (3rd Floor)" },
-    "4th floor": { gu: "ચોથો માળ (4th Floor)", hi: "चौथी मंजिल (4th Floor)" },
-    "5th floor": { gu: "પાંચમો માળ (5th Floor)", hi: "पाँचवीं मंजिल (5th Floor)" },
-    "floor level package": { gu: "માળ સ્તર પેકેજ", hi: "मंजिल स्तर पैकेज" },
-    "1 zone": { gu: "૧ ઝોન", hi: "1 ज़ोन" },
-    "4 zones": { gu: "૪ ઝોન", hi: "4 ज़ोन" },
-    "9 zones": { gu: "૯ ઝોન", hi: "9 ज़ोन" },
+    "pending tasks & zone tree": { gu: "બાકી કાર્યો અને ઝોન ટ્રી", hi: "લંબિત કાર્ય તેમજ ઝોન ટ્રી" },
+    "floor-wise hierarchical zone registry and pending civil packages": { gu: "માળ-વાર વંશવેલો ઝોન રજિસ્ટ્રી અને બાકી સિવિલ પેકેજો", hi: "મંજિલ-વાર શ્રેણીબદ્ધ ઝોન રજિસ્ટ્રી ઓર લંબિત સિવિલ પૈકેજ" },
+    "+ log new task": { gu: "+ નવું કાર્ય ઉમેરો", hi: "+ નયા કાર્ય જોડેં" },
+    "log new task": { gu: "નવું કાર્ય ઉમેરો", hi: "નયા કાર્ય જોડેં" },
+    "filtered project:": { gu: "પસંદ કરેલ પ્રોજેક્ટ:", hi: "ચયનિત પ્રોજેક્ટ:" },
+    "all towers / blocks": { gu: "તમામ ટાવર / બ્લોક્સ", hi: "સભી ટાવર / બ્લોક" },
+    "expand all": { gu: "બધા ખોલો (Expand All)", hi: "સભી ખોલેં (Expand All)" },
+    "collapse all": { gu: "બધા બંધ કરો (Collapse All)", hi: "સભી બંધ કરેં (Collapse All)" },
+    "basement 2": { gu: "બેઝમેન્ટ ૨", hi: "બેસમેન્ટ 2" },
+    "basement 1": { gu: "બેઝમેન્ટ ૧", hi: "બેસમેન્ટ 1" },
+    "ground floor": { gu: "ગ્રાઉન્ડ ફ્લોર", hi: "ગ્રાઉન્ડ ફ્લોર" },
+    "1st floor": { gu: "પહેલો માળ (1st Floor)", hi: "પહલી મંજિલ (1st Floor)" },
+    "2nd floor": { gu: "બીજો માળ (2nd Floor)", hi: "દૂસરી મંજિલ (2nd Floor)" },
+    "3rd floor": { gu: "ત્રીજો માળ (3rd Floor)", hi: "તીસરી મંજિલ (3rd Floor)" },
+    "4th floor": { gu: "ચોથો માળ (4th Floor)", hi: "ચૌથી મંજિલ (4th Floor)" },
+    "5th floor": { gu: "પાંચમો માળ (5th Floor)", hi: "પાંચવીં મંજિલ (5th Floor)" },
+    "floor level package": { gu: "માળ સ્તર પેકેજ", hi: "મંજિલ સ્તર પૈકેજ" },
+    "1 zone": { gu: "૧ ઝોન", hi: "1 ઝોન" },
+    "4 zones": { gu: "૪ ઝોન", hi: "4 ઝોન" },
+    "9 zones": { gu: "૯ ઝોન", hi: "9 ઝોન" },
 
     // --- Log Task Page ---
-    "+ નવું કાર્ય ઉમેરો": { gu: "+ નવું કાર્ય ઉમેરો", hi: "+ नया कार्य जोड़ें" },
-    "assign civil work packages, priority levels, and milestone dates to project zones": { gu: "પ્રોજેક્ટ ઝોનમાં સિવિલ કાર્ય, પ્રાથમિકતા અને સમયમર્યાદા સોંપો", hi: "प्रोजेक्ट ज़ोन में कार्य, प्राथमिकता और समय सीमा सौंपें" },
-    "view active tasks": { gu: "સક્રિય કાર્યો જુઓ", hi: "सक्रिय कार्य देखें" },
-    "project context": { gu: "પ્રોજેક્ટ સંદર્ભ", hi: "प्रोजेक्ट संदर्भ" },
-    "tower / block": { gu: "ટાવર / બ્લોક", hi: "टावर / ब्लॉक" },
-    "floor level": { gu: "માળ (Floor Level)", hi: "मंजिल (Floor Level)" },
-    "-- select floor --": { gu: "-- માળ પસંદ કરો --", hi: "-- मंजिल चुनें --" },
-    "work category": { gu: "કામનો પ્રકાર", hi: "कार्य श्रेणी" },
-    "-- select work category --": { gu: "-- કામનો પ્રકાર પસંદ કરો --", hi: "-- कार्य श्रेणी चुनें --" },
-    "zone id / target area": { gu: "ઝોન આઈડી / લક્ષિત વિસ્તાર", hi: "ज़ोन आईडी / लक्षित क्षेत्र" },
-    "-- select floor first --": { gu: "-- પહેલા માળ પસંદ કરો --", hi: "-- पहले मंजिल चुनें --" },
-    "assigned agency": { gu: "સોંપેલ એજન્સી / કોન્ટ્રાક્ટર", hi: "सौंपी गई एजेंसी / ठेकेदार" },
-    "-- select agency --": { gu: "-- એજન્સી પસંદ કરો --", hi: "-- एजेंसी चुनें --" },
-    "priority": { gu: "પ્રાથમિકતા", hi: "प्राथमिकता" },
-    "low": { gu: "સામાન્ય (Low)", hi: "सामान्य (Low)" },
-    "medium": { gu: "મધ્યમ (Medium)", hi: "मध्यम (Medium)" },
-    "high": { gu: "ઉચ્ચ (High)", hi: "उच्च (High)" },
-    "urgent": { gu: "તાકીદનું (Urgent)", hi: "अत्यावश्यक (Urgent)" },
-    "execution status": { gu: "કામની સ્થિતિ", hi: "कार्य स्थिति" },
-    "not started": { gu: "શરૂ થયેલ નથી", hi: "शुरू नहीं हुआ" },
-    "in progress": { gu: "ચાલુ કામગીરી", hi: "कार्य प्रगति पर" },
-    "ready for qc": { gu: "QC તપાસ માટે તૈયાર", hi: "QC जांच हेतु तैयार" },
-    "target date": { gu: "લક્ષ્ય તારીખ", hi: "लक्ष्य तिथि" },
-    "task description / scope notes": { gu: "કામની વિગતો / નોંધ", hi: "कार्य विवरण / नोट्स" },
-    "clear fields": { gu: "વિગતો સાફ કરો", hi: "विवरण साफ़ करें" },
-    "assign task to zone": { gu: "ઝોનમાં કાર્ય સોંપો", hi: "ज़ोन में कार्य सौंपें" },
+    "+ નવું કાર્ય ઉમેરો": { gu: "+ નવું કાર્ય ઉમેરો", hi: "+ નયા કાર્ય જોડેં" },
+    "assign civil work packages, priority levels, and milestone dates to project zones": { gu: "પ્રોજેક્ટ ઝોનમાં સિવિલ કાર્ય, પ્રાથમિકતા અને સમયમર્યાદા સોંપો", hi: "પ્રોજેક્ટ ઝોન મેં કાર્ય, પ્રાથમિકતા ઓર સમય સીમા સોંપેં" },
+    "view active tasks": { gu: "સક્રિય કાર્યો જુઓ", hi: "સક્રિય કાર્ય દેખેં" },
+    "project context": { gu: "પ્રોજેક્ટ સંદર્ભ", hi: "પ્રોજેક્ટ સંદર્ભ" },
+    "tower / block": { gu: "ટાવર / બ્લોક", hi: "ટાવર / બ્લોક" },
+    "floor level": { gu: "માળ (Floor Level)", hi: "મંજિલ (Floor Level)" },
+    "-- select floor --": { gu: "-- માળ પસંદ કરો --", hi: "-- મંજિલ ચુનેં --" },
+    "work category": { gu: "કામનો પ્રકાર", hi: "કાર્ય શ્રેણી" },
+    "-- select work category --": { gu: "-- કામનો પ્રકાર પસંદ કરો --", hi: "-- કાર્ય શ્રેણી ચુનેં --" },
+    "zone id / target area": { gu: "ઝોન આઈડી / લક્ષિત વિસ્તાર", hi: "ઝોન આઈડી / લક્ષિત ક્ષેત્ર" },
+    "-- select floor first --": { gu: "-- પહેલા માળ પસંદ કરો --", hi: "-- પહલે મંજિલ ચુનેં --" },
+    "assigned agency": { gu: "સોંપેલ એજન્સી / કોન્ટ્રાક્ટર", hi: "સૌંપી ગઈ એજન્સી / ઠેકેદાર" },
+    "-- select agency --": { gu: "-- એજન્સી પસંદ કરો --", hi: "-- એજન્સી ચુનેં --" },
+    "priority": { gu: "પ્રાથમિકતા", hi: "પ્રાથમિકતા" },
+    "low": { gu: "સામાન્ય (Low)", hi: "સામાન્ય (Low)" },
+    "medium": { gu: "મધ્યમ (Medium)", hi: "મધ્યમ (Medium)" },
+    "high": { gu: "ઉચ્ચ (High)", hi: "ઉચ્ચ (High)" },
+    "urgent": { gu: "તાકીદનું (Urgent)", hi: "અત્યાવશ્યક (Urgent)" },
+    "execution status": { gu: "કામની સ્થિતિ", hi: "કાર્ય સ્થિતિ" },
+    "not started": { gu: "શરૂ થયેલ નથી", hi: "શુરૂ નહીં હુઆ" },
+    "in progress": { gu: "ચાલુ કામગીરી", hi: "કાર્ય પ્રગતિ પર" },
+    "ready for qc": { gu: "QC તપાસ માટે તૈયાર", hi: "QC જાંચ હેતુ તૈયાર" },
+    "target date": { gu: "લક્ષ્ય તારીખ", hi: "લક્ષ્ય તિથિ" },
+    "task description / scope notes": { gu: "કામની વિગતો / નોંધ", hi: "કાર્ય વિવરણ / નોટ્સ" },
+    "clear fields": { gu: "વિગતો સાફ કરો", hi: "વિવરણ સાફ કરેં" },
+    "assign task to zone": { gu: "ઝોનમાં કાર્ય સોંપો", hi: "ઝોન મેં કાર્ય સોંપેં" },
 
     // --- Workforce & Equipment Page ---
-    "muster & plant": { gu: "મસ્ટર અને પ્લાન્ટ", hi: "मस्टर एवं प्लांट" },
-    "site operations / muster & plant": { gu: "સાઇટ કામગીરી / મસ્ટર અને પ્લાન્ટ", hi: "साइट परिचालन / मस्टर एवं प्लांट" },
-    "total workforce": { gu: "કુલ શ્રમિકો", hi: "कुल श्रमिक" },
-    "workers": { gu: "શ્રમિકો", hi: "श्रमिक" },
+    "muster & plant": { gu: "મસ્ટર અને પ્લાન્ટ", hi: "મસ્ટર તેમજ પ્લાન્ટ" },
+    "site operations / muster & plant": { gu: "સાઇટ કામગીરી / મસ્ટર અને પ્લાન્ટ", hi: "સાઇટ પરિચાલન / મસ્ટર તેમજ પ્લાન્ટ" },
+    "total workforce": { gu: "કુલ શ્રમિકો", hi: "કુલ શ્રમિક" },
+    "workers": { gu: "શ્રમિકો", hi: "શ્રમિક" },
     "active site muster": { gu: "સક્રિય સાઇટ મસ્ટર", hi: "સક્રિય સાઇટ મસ્ટર" },
-    "contractor labours": { gu: "કોન્ટ્રાક્ટર મજૂરો", hi: "ठेकेदार श्रमिक" },
-    "headcount": { gu: "કુલ સંખ્યા", hi: "कुल संख्या" },
-    "active agencies": { gu: "સક્રિય એજન્સીઓ", hi: "સક્રિય एजेंसियां" },
-    "in-house staff": { gu: "ઇન-હાઉસ સ્ટાફ", hi: "इन-हाउस स्टाफ" },
-    "direct site payroll": { gu: "ડાયરેક્ટ સાઇટ પેરોલ", hi: "प्रत्यक्ष साइट पेरोल" },
-    "machinery deployed": { gu: "સાધનો / મશીનરી તૈનાત", hi: "तैनात मशीनरी / उपकरण" },
-    "machines active": { gu: "સક્રિય મશીનો", hi: "सक्रिय मशीनें" },
-    "est. daily burn": { gu: "અંદાજિત દૈનિક ખર્ચ", hi: "अनुमानित दैनिक खर्च" },
-    "wages mode: off": { gu: "વેતન મોડ: બંધ", hi: "वेतन मोड: बंद" },
-    "log attendance": { gu: "હાજરી નોંધો", hi: "उपस्थिति दर्ज करें" },
+    "contractor labours": { gu: "કોન્ટ્રાક્ટર મજૂરો", hi: "ઠેકેદાર શ્રમિક" },
+    "headcount": { gu: "કુલ સંખ્યા", hi: "કુલ સંખ્યા" },
+    "active agencies": { gu: "સક્રિય એજન્સીઓ", hi: "સક્રિય એજન્સિયાં" },
+    "in-house staff": { gu: "ઇન-હાઉસ સ્ટાફ", hi: "ઇન-હાઉસ સ્ટાફ" },
+    "direct site payroll": { gu: "ડાયરેક્ટ સાઇટ પેરોલ", hi: "પ્રત્યક્ષ સાઇટ પેરોલ" },
+    "machinery deployed": { gu: "સાધનો / મશીનરી તૈનાત", hi: "તૈનાત મશીનરી / ઉપકરણ" },
+    "machines active": { gu: "સક્રિય મશીનો", hi: "સક્રિય મશીનેં" },
+    "est. daily burn": { gu: "અંદાજિત દૈનિક ખર્ચ", hi: "અનુમાનિત દૈનિક ખર્ચ" },
+    "wages mode: off": { gu: "વેતન મોડ: બંધ", hi: "વેતન મોડ: બંધ" },
+    "log attendance": { gu: "હાજરી નોંધો", hi: "ઉપસ્થિતિ દર્જ કરેં" },
     "daily logs": { gu: "દૈનિક લોગ", hi: "દૈનિક લોગ" },
-    "add wages": { gu: "વેતન ઉમેરો", hi: "वेतन जोड़ें" },
-    "whatsapp summary": { gu: "વોટ્સએપ સારાંશ", hi: "व्हाट्सएप सारांश" },
-    "select record type": { gu: "રેકોર્ડ પ્રકાર પસંદ કરો", hi: "रिकॉर्ड प्रकार चुनें" },
-    "1. labor log (agencies)": { gu: "૧. મજૂર લોગ (એજન્સીઓ)", hi: "1. श्रमिक लॉग (एजेंसियां)" },
-    "2. equipment log (machinery)": { gu: "૨. સાધન લોગ (મશીનરી)", hi: "2. उपकरण लॉग (मशीनरी)" },
-    "3. in-house labor log": { gu: "૩. ઇન-હાઉસ મજૂર લોગ", hi: "3. इन-हाउस श्रमिक लॉग" },
-    "site weather & work conditions": { gu: "સાઇટનું હવામાન અને કામની સ્થિતિ", hi: "साइट मौसम एवं कार्य स्थिति" },
-    "sunny": { gu: "તડકો (Sunny)", hi: "धूप (Sunny)" },
+    "add wages": { gu: "વેતન ઉમેરો", hi: "વેતન જોડેં" },
+    "whatsapp summary": { gu: "વોટ્સએપ સારાંશ", hi: "વ્હોટ્સએપ સારાંશ" },
+    "select record type": { gu: "રેકોર્ડ પ્રકાર પસંદ કરો", hi: "રિકોર્ડ પ્રકાર ચુનેં" },
+    "1. labor log (agencies)": { gu: "૧. મજૂર લોગ (એજન્સીઓ)", hi: "1. શ્રમિક લોગ (એજન્સિયાં)" },
+    "2. equipment log (machinery)": { gu: "૨. સાધન લોગ (મશીનરી)", hi: "2. ઉપકરણ લોગ (મશીનરી)" },
+    "3. in-house labor log": { gu: "૩. ઇન-હાઉસ મજૂર લોગ", hi: "3. ઇન-હાઉસ શ્રમિક લોગ" },
+    "site weather & work conditions": { gu: "સાઇટનું હવામાન અને કામની સ્થિતિ", hi: "સાઇટ મૌસમ તેમજ કાર્ય સ્થિતિ" },
+    "sunny": { gu: "તડકો (Sunny)", hi: "ધૂપ (Sunny)" },
     "extreme heat": { gu: "અતિશય ગરમી", hi: "અત્યધિક ગરમી" },
-    "rain / wet site": { gu: "વરસાદ / ભીની સાઇટ", hi: "बारिश / गीली साइट" },
-    "overcast": { gu: "વાદળછાયું વાતાવરણ", hi: "बादल छाए हुए" },
-    "strong winds": { gu: "તેજ પવન", hi: "તેજ હવાઓ" },
-    "legal site productivity context for rera documentation and contractor claims.": { gu: "રેરા દસ્તાવેજીકરણ અને કોન્ટ્રાક્ટર દાવાઓ માટે કાયદેસર સાઇટ ઉત્પાદકતા સંદર્ભ.", hi: "रेरा दस्तावेज़ीकरण और ठेकेदार के दावों के लिए कानूनी साइट उत्पादकता संदर्भ।" },
-    "project": { gu: "પ્રોજેક્ટ", hi: "प्रोजेक्ट" },
-    "1 project assigned (auto-selected)": { gu: "૧ પ્રોજેક્ટ સોંપેલ (ઓટો-પસંદ)", hi: "1 प्रोजेक्ट आवंटित (स्वतः चयनित)" },
-    "date": { gu: "તારીખ", hi: "तिथि" },
+    "rain / wet site": { gu: "વરસાદ / ભીની સાઇટ", hi: "બારિશ / ગીલી સાઇટ" },
+    "overcast": { gu: "વાદળછાયું વાતાવરણ", hi: "બાદલ છાએ હુએ" },
+    "strong winds": { gu: "તેજ પવન", hi: "તેજ હવાએં" },
+    "legal site productivity context for rera documentation and contractor claims.": { gu: "રેરા દસ્તાવેજીકરણ અને કોન્ટ્રાક્ટર દાવાઓ માટે કાયદેસર સાઇટ ઉત્પાદકતા સંદર્ભ.", hi: "રેરા દસ્તાવેઝીકરણ ઓર ઠેકેદાર કે દાવા કે લિએ કાનૂની સાઇટ ઉત્પાદકતા સંદર્ભ." },
+    "project": { gu: "પ્રોજેક્ટ", hi: "પ્રોજેક્ટ" },
+    "1 project assigned (auto-selected)": { gu: "૧ પ્રોજેક્ટ સોંપેલ (ઓટો-પસંદ)", hi: "1 પ્રોજેક્ટ આવંટિત (સ્વતઃ ચયનિત)" },
+    "date": { gu: "તારીખ", hi: "તિથિ" },
     "recorded by (auto)": { gu: "નોંધણી કરનાર (ઓટો)", hi: "દર્જકર્તા (ઓટો)" },
-    "site engineer": { gu: "સાઇટ એન્જિનિયર", hi: "साइट इंजीनियर" },
-    "agency attendance entries": { gu: "એજન્સી હાજરી નોંધણી", hi: "एजेंसी उपस्थिति प्रविष्टियां" },
-    "copy all yesterday": { gu: "ગઈકાલની નકલ કરો", hi: "कल की प्रतिलिपि बनाएं" },
-    "+ add agency row": { gu: "+ એજન્સી પંક્તિ ઉમેરો", hi: "+ एजेंसी पंक्ति जोड़ें" },
-    "contractor": { gu: "કોન્ટ્રાક્ટર", hi: "ठेकेदार" },
-    "senting (shuttering)": { gu: "સેન્ટિંગ (શટરિંગ)", hi: "सेंटिंग (शटरिंग)" },
+    "site engineer": { gu: "સાઇટ એન્જિનિયર", hi: "સાઇટ ઈજનેર" },
+    "agency attendance entries": { gu: "એજન્સી હાજરી નોંધણી", hi: "એજન્સી ઉપસ્થિતિ પ્રવિષ્ટિયાં" },
+    "copy all yesterday": { gu: "ગઈકાલની નકલ કરો", hi: "કલ કી પ્રતિલિપિ બનાયેં" },
+    "+ add agency row": { gu: "+ એજન્સી પંક્તિ ઉમેરો", hi: "+ એજન્સી પંક્તિ જોડેં" },
+    "contractor": { gu: "કોન્ટ્રાક્ટર", hi: "ઠેકેદાર" },
+    "senting (shuttering)": { gu: "સેન્ટિંગ (શટરિંગ)", hi: "સેન્ટિંગ (શટરિંગ)" },
     "steel (fitters)": { gu: "સ્ટીલ (ફિટર્સ)", hi: "સ્ટીલ (ફિટર્સ)" },
-    "masonary (kadia)": { gu: "કડિયાકામ (ચણતર)", hi: "चिनाई (कड़िया)" },
+    "masonary (kadia)": { gu: "કડિયાકામ (ચણતર)", hi: "ચિનાઈ (કડિયા)" },
     "plaster": { gu: "પ્લાસ્ટર", hi: "પ્લાસ્ટર" },
-    "casting (concrete)": { gu: "કાસ્ટિંગ (કોંક્રીટ)", hi: "કાસ્ટિંગ (ક્રોંક્રીટ)" },
+    "casting (concrete)": { gu: "કાસ્ટિંગ (કોંક્રીટ)", hi: "કાસ્ટિંગ (કોંક્રીટ)" },
 
     // --- Pre-Development Module ---
-    "pre-development master": { gu: "પ્રી-ડેવલપમેન્ટ માસ્ટર", hi: "प्री-डेवलपमेंट मास्टर" },
-    "statutory liasoning, comparative boq benchmarks, and site mobilization milestones": { gu: "સરકારી મંજૂરીઓ (લાયઝનિંગ), તુલનાત્મક BOQ અને સાઇટ તૈયારી માઇલસ્ટોન", hi: "सरकारी स्वीकृतियां (लायजनिंग), तुलनात्मक BOQ एवं साइट तैयारी माइलस्टोन" },
-    "pre-construction operations": { gu: "પ્રી-કન્સ્ટ્રક્શન કામગીરી", hi: "प्री-कंस्ट्रक्शन परिचालन" },
-    "audit logs": { gu: "ઓડિટ લોગ્સ", hi: "ऑડિટ લોગ્સ" },
+    "pre-development master": { gu: "પ્રી-ડેવલપમેન્ટ માસ્ટર", hi: "પ્રી-ડેવલપમેન્ટ માસ્ટર" },
+    "statutory liasoning, comparative boq benchmarks, and site mobilization milestones": { gu: "સરકારી મંજૂરીઓ (લાયઝનિંગ), તુલનાત્મક BOQ અને સાઇટ તૈયારી માઇલસ્ટોન", hi: "સરકારી સ્વીકૃતિયાં (લાયઝનિંગ), તુલનાત્મક BOQ તેમજ સાઇટ તૈયારી માઇલસ્ટોન" },
+    "pre-construction operations": { gu: "પ્રી-કન્સ્ટ્રક્શન કામગીરી", hi: "પ્રી-કન્સ્ટ્રક્શન પરિચાલન" },
+    "audit logs": { gu: "ઓડિટ લોગ્સ", hi: "ઓડિટ લોગ્સ" },
     "super engine": { gu: "સુપર એન્જિન", hi: "સુપર એન્જિન" },
-    "phase 1: liasoning": { gu: "તબક્કો ૧: લાયઝનિંગ", hi: "चरण 1: लायजनिंग" },
-    "phase 2: development cost": { gu: "તબક્કો ૨: પ્રોજેક્ટ ખર્ચ (BOQ)", hi: "चरण 2: निर्माण लागत (BOQ)" },
-    "phase 3: site readiness": { gu: "તબક્કો ૩: સાઇટ સજ્જતા", hi: "चरण 3: साइट तैयारी" },
-    "total boq budget": { gu: "કુલ BOQ બજેટ", hi: "कुल BOQ बजट" },
-    "benchmark variance": { gu: "બેન્ચમાર્ક તફાવત", hi: "बेंचमार्क अंतर" },
-    "calculated across line items": { gu: "તમામ આઇટમ્સ પર ગણતરી કરેલ", hi: "सभी मदों पर गणना की गई" },
-    "baseline setup": { gu: "બેઝલાઇન સેટઅપ", hi: "बेसलाइन सेटअप" },
-    "save phase 1": { gu: "તબક્કો ૧ સાચવો", hi: "चरण 1 सुरक्षित करें" },
-    "save phase 2 (boq)": { gu: "તબક્કો ૨ સાચવો", hi: "चरण 2 सुरक्षित करें" },
-    "save phase 3": { gu: "તબક્કો ૩ સાચવો", hi: "चरण 3 सुरक्षित करें" },
-    "track all required town planning, government permissions, and statutory approvals. saving dispatches notifications to owner, construction head & pm.": { gu: "તમામ જરૂરી ટાઉન પ્લાનિંગ, સરકારી મંજૂરીઓ અને કાયદાકીય પરવાનગીઓ ટ્રેક કરો. સાચવતી વખતે ઓનર, કન્સ્ટ્રક્શન હેડ અને PM ને સૂચનાઓ મોકલવામાં આવે છે.", hi: "सभी आवश्यक नगर नियोजन, सरकारी अनुमतियों और वैधानिक अनुमोदनों को ट्रैक करें।" },
-    "approved (yes)": { gu: "મંજૂર (હા)", hi: "स्वीकृत (हाँ)" },
+    "phase 1: liasoning": { gu: "તબક્કો ૧: લાયઝનિંગ", hi: "ચરણ 1: લાયઝનિંગ" },
+    "phase 2: development cost": { gu: "તબક્કો ૨: પ્રોજેક્ટ ખર્ચ (BOQ)", hi: "ચરણ 2: નિર્માણ લાગત (BOQ)" },
+    "phase 3: site readiness": { gu: "તબક્કો ૩: સાઇટ સજ્જતા", hi: "ચરણ 3: સાઇટ તૈયારી" },
+    "total boq budget": { gu: "કુલ BOQ બજેટ", hi: "કુલ BOQ બજેટ" },
+    "benchmark variance": { gu: "બેન્ચમાર્ક તફાવત", hi: "બેન્ચમાર્ક અંતર" },
+    "calculated across line items": { gu: "તમામ આઇટમ્સ પર ગણતરી કરેલ", hi: "સભી મદોં પર ગણના કી ગઈ" },
+    "baseline setup": { gu: "બેઝલાઇન સેટઅપ", hi: "બેઝલાઇન સેટઅપ" },
+    "save phase 1": { gu: "તબક્કો ૧ સાચવો", hi: "ચરણ 1 સુરક્ષિત કરેં" },
+    "save phase 2 (boq)": { gu: "તબક્કો ૨ સાચવો", hi: "ચરણ 2 સુરક્ષિત કરેં" },
+    "save phase 3": { gu: "તબક્કો ૩ સાચવો", hi: "ચરણ 3 સુરક્ષિત કરેં" },
+    "track all required town planning, government permissions, and statutory approvals. saving dispatches notifications to owner, construction head & pm.": { gu: "તમામ જરૂરી ટાઉન પ્લાનિંગ, સરકારી મંજૂરીઓ અને કાયદાકીય પરવાનગીઓ ટ્રેક કરો. સાચવતી વખતે ઓનર, કન્સ્ટ્રક્શન હેડ અને PM ને સૂચનાઓ મોકલવામાં આવે છે.", hi: "સભી આવશ્યક નગર નિયોજન, સરકારી અનુમતિયોં ઓર વૈધાનિક અનુમોદનોં કો ટ્રેક કરેં।" },
+    "approved (yes)": { gu: "મંજૂર (હા)", hi: "સ્વીકૃત (હાઁ)" },
     "pending (no)": { gu: "બાકી (ના)", hi: "લંબિત (નહીં)" },
-    "ready (yes)": { gu: "તૈયાર (હા)", hi: "તૈયાર (हाँ)" },
-    "clearance sub-category": { gu: "મંજૂરી પેટા-કેટેગરી", hi: "स्वीकृति उप-श्रेणी" },
-    "status": { gu: "સ્થિતિ", hi: "स्थिति" },
-    "ref / inward no.": { gu: "સંદર્ભ / આવક નં.", hi: "संदर्भ / आवक संख्या" },
-    "clearance date": { gu: "મંજૂરી તારીખ", hi: "स्वीकृति तिथि" },
+    "ready (yes)": { gu: "તૈયાર (હા)", hi: "તૈયાર (હાઁ)" },
+    "clearance sub-category": { gu: "મંજૂરી પેટા-કેટેગરી", hi: "સ્વીકૃતિ ઉપ-શ્રેણી" },
+    "status": { gu: "સ્થિતિ", hi: "સ્થિતિ" },
+    "ref / inward no.": { gu: "સંદર્ભ / આવક નં.", hi: "સંદર્ભ / આવક સંખ્યા" },
+    "clearance date": { gu: "મંજૂરી તારીખ", hi: "સ્વીકૃતિ તિથિ" },
     "document (r2)": { gu: "દસ્તાવેજ (R2)", hi: "દસ્તાવેઝ (R2)" },
-    "remark": { gu: "નોંધ / રીમાર્ક", hi: "टिप्पणी / रिमार्क" },
+    "remark": { gu: "નોંધ / રીમાર્ક", hi: "ટિપ્પણી / રિમાર્ક" },
     "action": { gu: "ક્રિયા", hi: "કાર્રવાઈ" },
-    "attach file": { gu: "ફાઇલ જોડો", hi: "फ़ाइल संलग्न करें" },
+    "attach file": { gu: "ફાઇલ જોડો", hi: "ફાઇલ સંલગ્ન કરેં" },
 
     // --- Placeholders ---
-    "search by project name, code, or location...": { gu: "પ્રોજેક્ટ નામ, કોડ અથવા સ્થાન દ્વારા શોધો...", hi: "प्रोजेक्ट नाम, कोड या स्थान से खोजें..." },
-    "search zone id or catego": { gu: "ઝોન આઈડી અથવા કેટેગરી શોધો...", hi: "ज़ोन आईडी या श्रेणी खोजें..." },
-    "search zone id or category...": { gu: "ઝોન આઈડી અથવા કેટેગરી શોધો...", hi: "ज़ोन आईडी या श्रेणी खोजें..." },
+    "search by project name, code, or location...": { gu: "પ્રોજેક્ટ નામ, કોડ અથવા સ્થાન દ્વારા શોધો...", hi: "પ્રોજેક્ટ નામ, કોડ યા સ્થાન સે ખોજેં..." },
+    "search zone id or catego": { gu: "ઝોન આઈડી અથવા કેટેગરી શોધો...", hi: "ઝોન આઈડી યા શ્રેણી ખોજેં..." },
+    "search zone id or category...": { gu: "ઝોન આઈડી અથવા કેટેગરી શોધો...", hi: "ઝોન આઈડી યા શ્રેણી ખોજેં..." },
     "search zone id or room...": { gu: "ઝોન અથવા રૂમ શોધો...", hi: "ઝોન અથવા રૂમ શોધો..." },
-    "brief summary of the project...": { gu: "પ્રોજેક્ટનો સંક્ષિપ્ત સારાંશ...", hi: "प्रोजेक्ट का संक्षिप्त विवरण..." },
-    "filter clearances...": { gu: "મંજૂરીઓ ફિલ્ટર કરો...", hi: "स्वीकृतियां फ़िल्टर करें..." },
-    "inward / sanction no.": { gu: "આવક / મંજૂરી નં.", hi: "आवक / स्वीकृति संख्या" },
-    "enter detailed work instructions, scope specifications, material details, or site guidelines...": { gu: "કામની વિગતો, સ્પેસિફિકેશન, મટિરિયલ અથવા સાઇટ માર્ગદર્શિકા દાખલ કરો...", hi: "विस्तृत कार्य निर्देश, विनिर्देश, सामग्री विवरण या साइट दिशानिर्देश दर्ज करें..." }
+    "brief summary of the project...": { gu: "પ્રોજેક્ટનો સંક્ષિપ્ત સારાંશ...", hi: "પ્રોજેક્ટ કા સંક્ષિપ્ત વિવરણ..." },
+    "filter clearances...": { gu: "મંજૂરીઓ ફિલ્ટર કરો...", hi: "સ્વીકૃતિયાં ફિલ્ટર કરેં..." },
+    "inward / sanction no.": { gu: "આવક / મંજૂરી નં.", hi: "આવક / સ્વીકૃતિ સંખ્યા" },
+    "enter detailed work instructions, scope specifications, material details, or site guidelines...": { gu: "કામની વિગતો, સ્પેસિફિકેશન, મટિરિયલ અથવા સાઇટ માર્ગદર્શિકા દાખલ કરો...", hi: "વિસ્તૃત કાર્ય નિર્દેશ, વિનિર્દેશ, સામગ્રી વિવરણ યા સાઇટ દિશાનિર્દેશ દર્જ કરેં..." }
 };
 
 // Internal cache for original node text values to allow clean toggling back to English
@@ -272,6 +282,7 @@ function getRootPrefix() {
         path.includes('/tasks/') ||
         path.includes('/inventory/') ||
         path.includes('/purchase/') ||
+        path.includes('/petty-cash/') ||
         path.includes('/users/') ||
         path.includes('/vendors/') ||
         path.includes('/site-map/') ||
@@ -460,6 +471,7 @@ export async function initShell(options = {}) {
         else if (currentPath.includes('/tasks/')) activeModule = 'tasks';
         else if (currentPath.includes('/inventory/')) activeModule = 'inventory';
         else if (currentPath.includes('/purchase/')) activeModule = 'purchase';
+        else if (currentPath.includes('/petty-cash/')) activeModule = 'petty-cash';
         else if (currentPath.includes('/workforce/')) activeModule = 'workforce';
         else if (currentPath.includes('/pre-development/')) activeModule = 'pre-dev';
         else if (currentPath.includes('/users/')) activeModule = 'users';
@@ -560,6 +572,7 @@ function injectShellHTML(data) {
     const isWorkforce = data.activeModule === 'workforce';
     const isPreDev = data.activeModule === 'pre-dev';
     const isSiteMap = data.activeModule === 'site-map';
+    const isPettyCash = data.activeModule === 'petty-cash';
 
     const dashColorClass = isDashboard ? 'text-[#1E3A5F]' : 'text-slate-400 hover:text-slate-600';
     const dashFontClass = isDashboard ? 'font-bold text-[#1E3A5F]' : 'font-medium';
@@ -772,7 +785,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 4. INVENTORY & MATERIALS SUITE (RESTORED) -->
+                    <!-- 4. INVENTORY & MATERIALS SUITE -->
                     <div>
                         <span data-i18n="inventory & materials suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Inventory & Materials Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -797,7 +810,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 5. PURCHASE & INDENTS SUITE (RESTORED) -->
+                    <!-- 5. PURCHASE & INDENTS SUITE -->
                     <div>
                         <span data-i18n="purchase & indents suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Purchase & Indents Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -825,7 +838,26 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 6. Pre-Development & Workforce (RESTORED) -->
+                    <!-- 6. PETTY CASH SUITE -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span data-i18n="petty cash suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Petty Cash Suite</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">Site Float & Expenses</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <a href="${ROOT_PATH}petty-cash/petty-cash.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition ${isPettyCash ? 'ring-2 ring-[#1E3A5F] bg-blue-50/50 font-bold text-[#1E3A5F]' : ''}">
+                                <span class="w-2 h-2 rounded-full bg-[#1E3A5F]"></span> <span data-i18n="petty cash ledger">Petty Cash Ledger</span>
+                            </a>
+                            <a href="${ROOT_PATH}petty-cash/log-expense.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-[#FFBF00]"></span> <span data-i18n="log expense">Log Expense</span>
+                            </a>
+                            <a href="${ROOT_PATH}petty-cash/monthly-report.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span data-i18n="reconciliation & audit">Reconciliation & Audit</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 7. Pre-Development & Workforce -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-white p-3.5 rounded-2xl border border-slate-200">
                             <span data-i18n="pre-development" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Pre-Development</span>
@@ -846,7 +878,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 7. Administration & Masters -->
+                    <!-- 8. Administration & Masters -->
                     <div class="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
                         <span data-i18n="administration" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Administration</span>
                         <div class="flex items-center gap-3">

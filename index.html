@@ -29,8 +29,6 @@
             }
         }
     </script>
-    <!-- Supabase JS Client v2 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-[#F8FAFC] font-sans antialiased text-slate-800 min-h-screen flex items-center justify-center p-4 selection:bg-brand-amber selection:text-brand-navy">
 
@@ -66,33 +64,22 @@
         <p class="mt-6 text-xs text-slate-400">Gujarat Construction Management Portal</p>
     </div>
 
-    <!-- Configuration Wrapper & Auth Gateway Script -->
-    <script src="config.js"></script>
-    <script>
+    <!-- ES Module Authentication Gateway -->
+    <script type="module">
+        import { supabase } from './config.js';
+
         (async function authenticateGateway() {
             const statusEl = document.getElementById('gateway-status');
-            
-            // Fallback endpoints in accordance with tech stack specs
-            const SUPABASE_PROJECT_URL = window.SUPABASE_URL || 'https://lmzowftkbjdzqmmgxcrf.supabase.co';
-            const SUPABASE_PUBLIC_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_ey0ZqXs2eGyaJ5y1ZWtrnA_Rul705D0';
+            const client = supabase || window.supabaseClient;
 
-            let client;
-            try {
-                if (window.supabaseClient) {
-                    client = window.supabaseClient;
-                } else if (window.supabase && typeof window.supabase.createClient === 'function') {
-                    client = window.supabase.createClient(SUPABASE_PROJECT_URL, SUPABASE_PUBLIC_KEY);
-                } else {
-                    throw new Error('Supabase client failed to load.');
-                }
-            } catch (initErr) {
-                console.error('[Gateway Init Error]:', initErr);
+            if (!client) {
+                console.error('[Gateway Init Error]: Supabase client failed to load.');
                 statusEl.textContent = 'Redirecting to sign-in...';
                 window.location.replace('login.html');
                 return;
             }
 
-            // Hard safety timeout of 3.5 seconds to prevent hanging on flaky network connections
+            // Hard safety timeout of 3.5 seconds to prevent hanging on flaky connections
             const gatewayTimeout = setTimeout(() => {
                 console.warn('[Gateway Timeout]: Auth verification exceeded 3.5s. Redirecting to login.');
                 window.location.replace('login.html');
@@ -104,7 +91,6 @@
 
                 if (sessionError || !session || !session.user) {
                     clearTimeout(gatewayTimeout);
-                    // Clear stale workspace artifacts
                     localStorage.removeItem('userId');
                     statusEl.textContent = 'Unauthenticated. Redirecting to login...';
                     window.location.replace('login.html');

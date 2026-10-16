@@ -47,7 +47,7 @@
                     <span class="text-brand-amber font-bold text-lg">⬢</span>
                     <h1 class="text-2xl font-bold text-brand-navy tracking-tight">Log Inventory Transaction</h1>
                 </div>
-                <p class="text-xs text-slate-500 font-medium">Record site central store inward receipts and civil zone outward issues</p>
+                <p class="text-xs text-slate-500 font-medium">Record site central store inward receipts from suppliers and outward issues to site agencies</p>
             </div>
             
             <div class="flex items-center gap-2.5 self-start sm:self-auto">
@@ -109,7 +109,7 @@
             </div>
 
             <!-- ================================================================= -->
-            <!-- FORM 1: INWARD (RECEIVE)                                         -->
+            <!-- FORM 1: INWARD (RECEIVE FROM MATERIAL SUPPLIER)                   -->
             <!-- ================================================================= -->
             <form id="formInward" class="space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -130,16 +130,21 @@
                         <input id="inwardQty" type="number" step="any" min="0.01" required placeholder="0.00" class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
                     </div>
 
-                    <!-- Supplier / Agency (Dynamic Vendor Master Dropdown) -->
+                    <!-- Material Supplier / Vendor (Dynamic Vendor Master Dropdown + Quick Add) -->
                     <div>
                         <div class="flex items-center justify-between mb-1">
-                            <label class="block text-[11px] font-semibold text-slate-600 uppercase">SUPPLIER / AGENCY NAME *</label>
-                            <a href="../vendors/vendors.html" target="_blank" class="text-[10px] font-semibold text-brand-navy hover:text-brand-amber transition flex items-center gap-0.5" title="Register New Vendor in Directory">
-                                + New Vendor
-                            </a>
+                            <label class="block text-[11px] font-semibold text-slate-600 uppercase">MATERIAL SUPPLIER / VENDOR *</label>
+                            <div class="flex items-center gap-2">
+                                <button id="btnQuickAddSupplier" type="button" class="text-[10px] font-bold text-brand-navy bg-brand-amber/25 hover:bg-brand-amber/40 px-2 py-0.5 rounded-md transition cursor-pointer">
+                                    + Quick Add Supplier
+                                </button>
+                                <a href="../vendors/vendors.html?mode=vendor" class="text-[10px] font-semibold text-slate-400 hover:text-brand-navy transition" title="Open Full Vendor & Agency Master">
+                                    Directory ↗
+                                </a>
+                            </div>
                         </div>
                         <select id="inwardSupplierSelect" required class="w-full px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none cursor-pointer">
-                            <option value="">Loading suppliers...</option>
+                            <option value="">Loading material suppliers...</option>
                         </select>
                         <input type="hidden" id="inwardSupplier" />
                         <!-- Live Vendor Identifier Strip -->
@@ -203,7 +208,7 @@
             </form>
 
             <!-- ================================================================= -->
-            <!-- FORM 2: OUTWARD (ISSUE)                                          -->
+            <!-- FORM 2: OUTWARD (ISSUE TO SITE AGENCY / SUB-CONTRACTOR)           -->
             <!-- ================================================================= -->
             <form id="formOutward" class="space-y-4 hidden">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -224,16 +229,21 @@
                         <input id="outwardQty" type="number" step="any" min="0.01" required placeholder="0.00" class="w-full px-3 py-2.5 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
                     </div>
 
-                    <!-- Sub-contractor Agency (Dynamic Vendor / Contractor Dropdown) -->
+                    <!-- Site Agency / Sub-contractor (Dynamic Agency Dropdown + Quick Add) -->
                     <div>
                         <div class="flex items-center justify-between mb-1">
-                            <label class="block text-[11px] font-semibold text-slate-600 uppercase">ISSUED TO / SUB-CONTRACTOR *</label>
-                            <a href="../vendors/vendors.html" target="_blank" class="text-[10px] font-semibold text-brand-navy hover:text-brand-amber transition flex items-center gap-0.5" title="Register New Agency / Contractor in Directory">
-                                + New Agency
-                            </a>
+                            <label class="block text-[11px] font-semibold text-slate-600 uppercase">ISSUED TO SITE AGENCY / CONTRACTOR *</label>
+                            <div class="flex items-center gap-2">
+                                <button id="btnQuickAddAgency" type="button" class="text-[10px] font-bold text-purple-800 bg-purple-100 hover:bg-purple-200 px-2 py-0.5 rounded-md transition cursor-pointer">
+                                    + Quick Add Agency
+                                </button>
+                                <a href="../vendors/vendors.html?mode=agency" class="text-[10px] font-semibold text-slate-400 hover:text-brand-navy transition" title="Open Full Vendor & Agency Master">
+                                    Directory ↗
+                                </a>
+                            </div>
                         </div>
                         <select id="outwardAgencySelect" required class="w-full px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-700 border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none cursor-pointer">
-                            <option value="">Loading contractor agencies...</option>
+                            <option value="">Loading site agencies & contractors...</option>
                         </select>
                         <input type="hidden" id="outwardAgency" />
                         <!-- Live Contractor Category Badge -->
@@ -321,11 +331,118 @@
         </div>
     </main>
 
+    <!-- ================================================================= -->
+    <!-- INLINE MODAL: QUICK-ADD MATERIAL SUPPLIER OR SITE AGENCY          -->
+    <!-- ================================================================= -->
+    <div id="modalQuickPartner" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div class="bg-white/95 backdrop-blur-md rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-brand-amber font-bold text-base">⬢</span>
+                    <div>
+                        <h3 id="quickPartnerModalTitle" class="text-sm font-bold text-brand-navy">Quick Register Material Supplier</h3>
+                        <p id="quickPartnerModalSubtitle" class="text-[10px] text-slate-500">Syncs directly with Master Vendor & Agency Directory</p>
+                    </div>
+                </div>
+                <button id="closeQuickPartnerBtn" type="button" class="text-slate-400 hover:text-slate-700 text-xl font-bold leading-none cursor-pointer">&times;</button>
+            </div>
+
+            <!-- Partner Type Switcher inside Modal -->
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl mb-4">
+                <button id="btnPartnerTypeSupplier" type="button" class="py-2 px-3 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm transition cursor-pointer">
+                    Material Supplier (VEND)
+                </button>
+                <button id="btnPartnerTypeAgency" type="button" class="py-2 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-brand-navy transition cursor-pointer">
+                    Site Agency / Contractor (AGNC)
+                </button>
+            </div>
+
+            <form id="formQuickPartner" class="space-y-3.5">
+                <input type="hidden" id="quickPartnerMode" value="supplier" />
+
+                <div class="grid grid-cols-3 gap-3">
+                    <!-- Code -->
+                    <div>
+                        <label id="quickCodeLabel" class="block text-[11px] font-semibold text-slate-600 mb-1">CODE *</label>
+                        <input id="quickPartnerCode" type="text" required placeholder="VEND-1001" class="w-full px-3 py-2 rounded-xl text-xs font-mono font-bold uppercase text-brand-navy border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
+                    </div>
+                    <!-- Name -->
+                    <div class="col-span-2">
+                        <label id="quickNameLabel" class="block text-[11px] font-semibold text-slate-600 mb-1">SUPPLIER / FIRM NAME *</label>
+                        <input id="quickPartnerName" type="text" required placeholder="e.g. Haresh Steel & Pipes" class="w-full px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">CLASSIFICATION / CATEGORY *</label>
+                        <select id="quickPartnerCategory" required class="w-full px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none">
+                            <option value="Material Supplier">Material Supplier</option>
+                            <option value="Labor Contractor">Labor Contractor (Site Agency)</option>
+                            <option value="Equipment Rental">Equipment Rental Agency</option>
+                            <option value="Consultant Agency">Consultant Agency</option>
+                            <option value="Transporter">Transporter</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <!-- Contact Person -->
+                    <div>
+                        <label id="quickPersonLabel" class="block text-[11px] font-semibold text-slate-600 mb-1">CONTACT PERSON / THEKEDAR</label>
+                        <input id="quickPartnerPerson" type="text" placeholder="e.g. Hareshbhai Patel" class="w-full px-3 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- Mobile -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">PRIMARY MOBILE / WHATSAPP *</label>
+                        <input id="quickPartnerMobile" type="tel" required placeholder="e.g. 9879122211" class="w-full px-3 py-2 rounded-xl text-xs font-mono font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
+                    </div>
+                    <!-- GSTIN -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">GSTIN (OPTIONAL)</label>
+                        <input id="quickPartnerGstin" type="text" maxlength="15" placeholder="24AAAAA0000A1Z5" class="w-full px-3 py-2 rounded-xl text-xs font-mono uppercase border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
+                    </div>
+                </div>
+
+                <!-- Scope / Trade / Items -->
+                <div>
+                    <label id="quickScopeLabel" class="block text-[11px] font-semibold text-slate-600 mb-1">SUPPLIED MATERIALS / WORK SCOPE (COMMA SEPARATED)</label>
+                    <input id="quickPartnerScope" type="text" placeholder="e.g. OPC Cement, TMT Steel Bars, River Sand" class="w-full px-3 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-navy outline-none" />
+                </div>
+
+                <!-- Rokdu Toggle -->
+                <div class="flex items-center justify-between pt-1">
+                    <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input id="quickPartnerRokdu" type="checkbox" class="rounded border-slate-300 text-brand-navy focus:ring-brand-navy w-4 h-4" />
+                        <span class="text-xs font-semibold text-slate-700">Allow Rokdu (Cash) Payments</span>
+                    </label>
+                    <span class="text-[10px] text-slate-400">Default City: Surat, GJ</span>
+                </div>
+
+                <!-- Actions -->
+                <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-200 mt-4">
+                    <button id="cancelQuickPartnerBtn" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                        Cancel
+                    </button>
+                    <button id="saveQuickPartnerBtn" type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold bg-brand-navy text-white hover:bg-brand-navyDark shadow-sm cursor-pointer flex items-center gap-1.5">
+                        <span>Save & Select</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script type="module" src="log-transaction.js"></script>
     <script type="module">
         import { initShell } from '../common/shell.js';
-        initShell({ activeModule: 'inventory' });
+        document.addEventListener('DOMContentLoaded', () => {
+            initShell({ activeModule: 'inventory' });
+        });
     </script>
 </body>
 </html>

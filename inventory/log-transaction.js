@@ -7,16 +7,19 @@
  * 2. Real-Time Project SKU Lookup: Dynamically loads materials with UUID-safe project queries.
  * 3. Dynamic Vendor & Agency Master Integration:
  *    - Inward: Populates Material Suppliers with live Vendor Code & GSTIN inspection.
- *    - Outward: Populates Sub-Contractors & Agencies with classification badges.
- * 4. Inward Receipt Execution:
+ *    - Outward: Populates Site Agencies & Sub-Contractors with classification badges.
+ * 4. Inline Quick-Add Partner Modal:
+ *    - Allows instant registration of a Material Supplier (VEND-xxxx) or Site Agency (AGNC-xxxx)
+ *      without leaving the transaction screen, auto-selecting the new record immediately.
+ * 5. Inward Receipt Execution:
  *    - Records Delivery Challan Number and Tax Invoice Number.
  *    - Uploads document proof directly to Cloudflare R2 bucket.
  *    - Automatically increments `current_stock` in `inventory_items`.
- * 5. Outward Issue Execution:
- *    - Links material issues to Sub-Contractors, Towers, Floors, and Granular Zone IDs.
+ * 6. Outward Issue Execution:
+ *    - Links material issues to Site Agencies, Towers, Floors, and Granular Zone IDs.
  *    - Verifies available on-site balances to prevent accidental deficits.
  *    - Automatically deducts `current_stock` and increments `consumed_till_date`.
- * 6. Automatic User & Date Attribution: Auto-populates logged-in user credentials and current date.
+ * 7. Automatic User & Date Attribution: Auto-populates logged-in user credentials and current date.
  */
 
 import { supabase, uploadToR2 } from '../config.js';
@@ -72,11 +75,37 @@ const outwardHandledBy = document.getElementById('outwardHandledBy');
 const outwardRemarks = document.getElementById('outwardRemarks');
 const btnSaveOutward = document.getElementById('btnSaveOutward');
 
+// DOM Elements - Inline Quick-Add Supplier / Agency Modal
+const btnQuickAddSupplier = document.getElementById('btnQuickAddSupplier');
+const btnQuickAddAgency = document.getElementById('btnQuickAddAgency');
+const modalQuickPartner = document.getElementById('modalQuickPartner');
+const closeQuickPartnerBtn = document.getElementById('closeQuickPartnerBtn');
+const cancelQuickPartnerBtn = document.getElementById('cancelQuickPartnerBtn');
+const quickPartnerModalTitle = document.getElementById('quickPartnerModalTitle');
+const quickPartnerModalSubtitle = document.getElementById('quickPartnerModalSubtitle');
+const btnPartnerTypeSupplier = document.getElementById('btnPartnerTypeSupplier');
+const btnPartnerTypeAgency = document.getElementById('btnPartnerTypeAgency');
+const formQuickPartner = document.getElementById('formQuickPartner');
+const quickPartnerMode = document.getElementById('quickPartnerMode');
+const quickCodeLabel = document.getElementById('quickCodeLabel');
+const quickPartnerCode = document.getElementById('quickPartnerCode');
+const quickNameLabel = document.getElementById('quickNameLabel');
+const quickPartnerName = document.getElementById('quickPartnerName');
+const quickPartnerCategory = document.getElementById('quickPartnerCategory');
+const quickPersonLabel = document.getElementById('quickPersonLabel');
+const quickPartnerPerson = document.getElementById('quickPartnerPerson');
+const quickPartnerMobile = document.getElementById('quickPartnerMobile');
+const quickPartnerGstin = document.getElementById('quickPartnerGstin');
+const quickScopeLabel = document.getElementById('quickScopeLabel');
+const quickPartnerScope = document.getElementById('quickPartnerScope');
+const quickPartnerRokdu = document.getElementById('quickPartnerRokdu');
+const saveQuickPartnerBtn = document.getElementById('saveQuickPartnerBtn');
+
 // In-Memory State & SKU Cache
 let projectItems = [];
 let cachedVendors = [];
 let currentProjectId = null;
-let currentUserName = 'Engineer';
+let currentUserName = 'Jay';
 
 /**
  * 1. Resolve Active Workspace & User Session (With Strict UUID Validation)
@@ -169,7 +198,7 @@ async function loadProjectMaterials() {
     try {
         let query = client
             .from('inventory_items')
-            .select('id, item_code, item_name, current_stock, unit, rate, project_id');
+            .select('id, item_code, item_name, current_stock, consumed_till_date, unit, rate, project_id');
 
         // Strictly apply filter ONLY when currentProjectId is a valid 36-char UUID
         if (currentProjectId && UUID_REGEX.test(currentProjectId)) {
@@ -182,6 +211,9 @@ async function loadProjectMaterials() {
 
         projectItems = items || [];
 
+        const prevInwardItem = inwardItemSelect ? inwardItemSelect.value : '';
+        const prevOutwardItem = outwardItemSelect ? outwardItemSelect.value : '';
+
         // Populate Inward Select
         if (inwardItemSelect) {
             inwardItemSelect.innerHTML = '<option value="">Select Material...</option>';
@@ -189,6 +221,7 @@ async function loadProjectMaterials() {
                 const opt = document.createElement('option');
                 opt.value = item.id;
                 opt.textContent = `${item.item_name} (${item.item_code}) [${item.unit}]`;
+                if (item.id === prevInwardItem) opt.selected = true;
                 inwardItemSelect.appendChild(opt);
             });
         }
@@ -200,6 +233,7 @@ async function loadProjectMaterials() {
                 const opt = document.createElement('option');
                 opt.value = item.id;
                 opt.textContent = `${item.item_name} (${item.item_code}) - Stock: ${item.current_stock} ${item.unit}`;
+                if (item.id === prevOutwardItem) opt.selected = true;
                 outwardItemSelect.appendChild(opt);
             });
         }
@@ -212,8 +246,16 @@ async function loadProjectMaterials() {
 /**
  * 3. Dynamic Vendor & Agency Master Integration
  */
-async function loadVendorsAndAgencies() {
+async function loadVendorsAndAgencies(selectedPartnerId = null, targetMode = null) {
     if (!client) return;
+
+    const prevInwardVal = (targetMode === 'supplier' && selectedPartnerId)
+        ? selectedPartnerId
+        : (inwardSupplierSelect ? inwardSupplierSelect.value : '');
+
+    const prevOutwardVal = (targetMode === 'agency' && selectedPartnerId)
+        ? selectedPartnerId
+        : (outwardAgencySelect ? outwardAgencySelect.value : '');
 
     try {
         const { data: vendors, error } = await client
@@ -225,75 +267,89 @@ async function loadVendorsAndAgencies() {
 
         cachedVendors = vendors || [];
 
-        // --- POPULATE INWARD SUPPLIERS ---
-        if (inwardSupplierSelect) {
-            inwardSupplierSelect.innerHTML = '<option value="">Select Material Supplier...</option>';
+        const isAgencyCategory = (cat) => ['Labor Contractor', 'Equipment Rental', 'Consultant Agency'].includes(cat);
 
-            const suppliers = cachedVendors.filter(v => v.category === 'Material Supplier');
-            const otherVendors = cachedVendors.filter(v => v.category !== 'Material Supplier');
+        // --- POPULATE INWARD MATERIAL SUPPLIERS ---
+        if (inwardSupplierSelect) {
+            inwardSupplierSelect.innerHTML = '<option value="">Select Material Supplier / Vendor...</option>';
+
+            const suppliers = cachedVendors.filter(v => !isAgencyCategory(v.category));
+            const agencies = cachedVendors.filter(v => isAgencyCategory(v.category));
 
             if (suppliers.length > 0) {
                 const groupSuppliers = document.createElement('optgroup');
-                groupSuppliers.label = 'Material Suppliers';
+                groupSuppliers.label = 'Material Suppliers & Vendors';
                 suppliers.forEach(v => {
                     const opt = document.createElement('option');
                     opt.value = v.id;
                     const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
                     opt.textContent = `${v.name}${codeSuffix}`;
                     if (v.status === 'Blacklisted') opt.disabled = true;
+                    if (v.id === prevInwardVal) opt.selected = true;
                     groupSuppliers.appendChild(opt);
                 });
                 inwardSupplierSelect.appendChild(groupSuppliers);
             }
 
-            if (otherVendors.length > 0) {
-                const groupOthers = document.createElement('optgroup');
-                groupOthers.label = 'Other Agencies & Vendors';
-                otherVendors.forEach(v => {
+            if (agencies.length > 0) {
+                const groupAgencies = document.createElement('optgroup');
+                groupAgencies.label = 'Site Agencies & Contractors';
+                agencies.forEach(v => {
                     const opt = document.createElement('option');
                     opt.value = v.id;
                     const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
                     opt.textContent = `${v.name} (${v.category})${codeSuffix}`;
                     if (v.status === 'Blacklisted') opt.disabled = true;
-                    groupOthers.appendChild(opt);
+                    if (v.id === prevInwardVal) opt.selected = true;
+                    groupAgencies.appendChild(opt);
                 });
-                inwardSupplierSelect.appendChild(groupOthers);
+                inwardSupplierSelect.appendChild(groupAgencies);
+            }
+
+            if (prevInwardVal) {
+                inwardSupplierSelect.dispatchEvent(new Event('change'));
             }
         }
 
-        // --- POPULATE OUTWARD CONTRACTORS / AGENCIES ---
+        // --- POPULATE OUTWARD SITE AGENCIES & CONTRACTORS ---
         if (outwardAgencySelect) {
-            outwardAgencySelect.innerHTML = '<option value="">Select Sub-Contractor / Agency...</option>';
+            outwardAgencySelect.innerHTML = '<option value="">Select Site Agency / Sub-Contractor...</option>';
 
-            const contractors = cachedVendors.filter(v => v.category === 'Labor Contractor' || v.category === 'Equipment Rental');
-            const otherAgencies = cachedVendors.filter(v => v.category !== 'Labor Contractor' && v.category !== 'Equipment Rental');
+            const agencies = cachedVendors.filter(v => isAgencyCategory(v.category));
+            const otherSuppliers = cachedVendors.filter(v => !isAgencyCategory(v.category));
 
-            if (contractors.length > 0) {
+            if (agencies.length > 0) {
                 const groupContractors = document.createElement('optgroup');
-                groupContractors.label = 'Labor Contractors & Rental Agencies';
-                contractors.forEach(v => {
+                groupContractors.label = 'Site Agencies & Sub-Contractors';
+                agencies.forEach(v => {
                     const opt = document.createElement('option');
                     opt.value = v.id;
                     const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
                     opt.textContent = `${v.name} (${v.category})${codeSuffix}`;
                     if (v.status === 'Blacklisted') opt.disabled = true;
+                    if (v.id === prevOutwardVal) opt.selected = true;
                     groupContractors.appendChild(opt);
                 });
                 outwardAgencySelect.appendChild(groupContractors);
             }
 
-            if (otherAgencies.length > 0) {
-                const groupAgencies = document.createElement('optgroup');
-                groupAgencies.label = 'All Registered Vendors / Suppliers';
-                otherAgencies.forEach(v => {
+            if (otherSuppliers.length > 0) {
+                const groupOthers = document.createElement('optgroup');
+                groupOthers.label = 'Material Suppliers & Other Vendors';
+                otherSuppliers.forEach(v => {
                     const opt = document.createElement('option');
                     opt.value = v.id;
                     const codeSuffix = v.vendor_code ? ` [${v.vendor_code}]` : '';
                     opt.textContent = `${v.name} (${v.category})${codeSuffix}`;
                     if (v.status === 'Blacklisted') opt.disabled = true;
-                    groupAgencies.appendChild(opt);
+                    if (v.id === prevOutwardVal) opt.selected = true;
+                    groupOthers.appendChild(opt);
                 });
-                outwardAgencySelect.appendChild(groupAgencies);
+                outwardAgencySelect.appendChild(groupOthers);
+            }
+
+            if (prevOutwardVal) {
+                outwardAgencySelect.dispatchEvent(new Event('change'));
             }
         }
 
@@ -328,8 +384,8 @@ if (outwardAgencySelect) {
 
         if (agency) {
             outwardAgency.value = agency.name;
-            if (outwardAgencyCode) outwardAgencyCode.textContent = agency.vendor_code || 'AG';
-            if (outwardAgencyCategory) outwardAgencyCategory.textContent = agency.category || 'Contractor';
+            if (outwardAgencyCode) outwardAgencyCode.textContent = agency.vendor_code || 'AGNC';
+            if (outwardAgencyCategory) outwardAgencyCategory.textContent = agency.category || 'Site Agency';
             if (outwardAgencyMeta) outwardAgencyMeta.classList.remove('hidden');
         } else {
             outwardAgency.value = '';
@@ -339,7 +395,171 @@ if (outwardAgencySelect) {
 }
 
 /**
- * 4. Mode Toggling Logic (Inward vs Outward)
+ * 4. Inline Quick-Add Partner (Supplier vs Site Agency) Logic
+ */
+function suggestNextPartnerCode(mode) {
+    const prefix = mode === 'agency' ? 'AGNC' : 'VEND';
+    const regex = new RegExp(`^${prefix}-(\\d+)$`, 'i');
+    let maxNum = 1000;
+
+    cachedVendors.forEach(v => {
+        if (v.vendor_code && regex.test(v.vendor_code)) {
+            const num = parseInt(v.vendor_code.replace(/\D/g, ''), 10);
+            if (num > maxNum) maxNum = num;
+        }
+    });
+
+    return `${prefix}-${maxNum + 1}`;
+}
+
+function configureQuickPartnerModal(mode) {
+    if (!modalQuickPartner) return;
+
+    const isAgency = mode === 'agency';
+    if (quickPartnerMode) quickPartnerMode.value = isAgency ? 'agency' : 'supplier';
+
+    if (isAgency) {
+        if (quickPartnerModalTitle) quickPartnerModalTitle.textContent = 'Quick Register Site Agency / Contractor';
+        if (quickPartnerModalSubtitle) quickPartnerModalSubtitle.textContent = 'Register civil, RCC, masonry, plumbing, or labor sub-contractor';
+        if (btnPartnerTypeAgency) {
+            btnPartnerTypeAgency.className = 'py-2 px-3 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm transition cursor-pointer';
+        }
+        if (btnPartnerTypeSupplier) {
+            btnPartnerTypeSupplier.className = 'py-2 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-brand-navy transition cursor-pointer';
+        }
+        if (quickCodeLabel) quickCodeLabel.textContent = 'AGENCY CODE *';
+        if (quickNameLabel) quickNameLabel.textContent = 'SITE AGENCY / CONTRACTOR NAME *';
+        if (quickPartnerName) quickPartnerName.placeholder = 'e.g. Khodiyar RCC & Shuttering Agency';
+        if (quickPartnerCategory) quickPartnerCategory.value = 'Labor Contractor';
+        if (quickPersonLabel) quickPersonLabel.textContent = 'CONTRACTOR / THEKEDAR NAME';
+        if (quickPartnerPerson) quickPartnerPerson.placeholder = 'e.g. Rameshbhai Patel';
+        if (quickScopeLabel) quickScopeLabel.textContent = 'WORK TRADE / SITE SCOPE (COMMA SEPARATED)';
+        if (quickPartnerScope) quickPartnerScope.placeholder = 'e.g. Slab Shuttering, Steel Binding, Brickwork, Plastering';
+    } else {
+        if (quickPartnerModalTitle) quickPartnerModalTitle.textContent = 'Quick Register Material Supplier';
+        if (quickPartnerModalSubtitle) quickPartnerModalSubtitle.textContent = 'Register cement, steel, sand, hardware, or electrical supplier';
+        if (btnPartnerTypeSupplier) {
+            btnPartnerTypeSupplier.className = 'py-2 px-3 rounded-lg text-xs font-bold bg-brand-navy text-white shadow-sm transition cursor-pointer';
+        }
+        if (btnPartnerTypeAgency) {
+            btnPartnerTypeAgency.className = 'py-2 px-3 rounded-lg text-xs font-bold text-slate-600 hover:text-brand-navy transition cursor-pointer';
+        }
+        if (quickCodeLabel) quickCodeLabel.textContent = 'VENDOR CODE *';
+        if (quickNameLabel) quickNameLabel.textContent = 'SUPPLIER / FIRM NAME *';
+        if (quickPartnerName) quickPartnerName.placeholder = 'e.g. Haresh Steel & Pipes';
+        if (quickPartnerCategory) quickPartnerCategory.value = 'Material Supplier';
+        if (quickPersonLabel) quickPersonLabel.textContent = 'CONTACT PERSON / EXECUTIVE';
+        if (quickPartnerPerson) quickPartnerPerson.placeholder = 'e.g. Hareshbhai Patel';
+        if (quickScopeLabel) quickScopeLabel.textContent = 'SUPPLIED MATERIALS (COMMA SEPARATED)';
+        if (quickPartnerScope) quickPartnerScope.placeholder = 'e.g. OPC Cement, TMT Steel Bars, River Sand';
+    }
+
+    if (quickPartnerCode) {
+        quickPartnerCode.value = suggestNextPartnerCode(isAgency ? 'agency' : 'supplier');
+    }
+}
+
+function openQuickPartnerModal(mode) {
+    if (!modalQuickPartner) return;
+    if (formQuickPartner) formQuickPartner.reset();
+    configureQuickPartnerModal(mode);
+    modalQuickPartner.classList.remove('hidden');
+    modalQuickPartner.classList.add('flex');
+    if (quickPartnerName) quickPartnerName.focus();
+}
+
+function closeQuickPartnerModal() {
+    if (!modalQuickPartner) return;
+    modalQuickPartner.classList.add('hidden');
+    modalQuickPartner.classList.remove('flex');
+    if (formQuickPartner) formQuickPartner.reset();
+}
+
+async function handleQuickPartnerSubmit(e) {
+    e.preventDefault();
+
+    if (!client) {
+        alert('Database connection unavailable.');
+        return;
+    }
+
+    const mode = quickPartnerMode ? quickPartnerMode.value : 'supplier';
+    const code = (quickPartnerCode?.value || '').trim().toUpperCase();
+    const name = (quickPartnerName?.value || '').trim();
+    const category = quickPartnerCategory?.value || (mode === 'agency' ? 'Labor Contractor' : 'Material Supplier');
+    const contactPerson = (quickPartnerPerson?.value || '').trim() || null;
+    const mobile = (quickPartnerMobile?.value || '').trim();
+    const gstin = (quickPartnerGstin?.value || '').trim().toUpperCase() || null;
+    const rawScope = (quickPartnerScope?.value || '').trim();
+    const allowsRokdu = Boolean(quickPartnerRokdu?.checked);
+
+    if (!code || !name || !mobile) {
+        alert('Please fill out Code, Name, and Primary Mobile number.');
+        return;
+    }
+
+    // Auto-derive PAN from 15-character GSTIN if valid
+    let derivedPan = null;
+    if (gstin && gstin.length >= 12) {
+        const candidatePan = gstin.substring(2, 12);
+        if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(candidatePan)) {
+            derivedPan = candidatePan;
+        }
+    }
+
+    const specialityArray = rawScope
+        ? rawScope.split(',').map(s => s.trim()).filter(Boolean)
+        : [];
+
+    const payload = {
+        vendor_code: code,
+        name: name,
+        trade_name: name,
+        category: category,
+        status: 'Active',
+        allows_cash_rokdu: allowsRokdu,
+        gstin: gstin,
+        pan: derivedPan,
+        contact_person: contactPerson,
+        mobile_primary: mobile,
+        city: 'Surat',
+        state: 'Gujarat',
+        speciality_items: specialityArray,
+        credit_period_days: mode === 'agency' ? 15 : 30
+    };
+
+    if (saveQuickPartnerBtn) {
+        saveQuickPartnerBtn.disabled = true;
+        saveQuickPartnerBtn.innerHTML = '<span>Saving...</span>';
+    }
+
+    try {
+        const { data: inserted, error } = await client
+            .from('vendors')
+            .insert([payload])
+            .select('id, name, vendor_code')
+            .single();
+
+        if (error) throw error;
+
+        closeQuickPartnerModal();
+
+        // Refresh dropdowns & auto-select the newly created record
+        await loadVendorsAndAgencies(inserted?.id, mode);
+
+    } catch (err) {
+        console.error('[QuickPartner Save Error]:', err);
+        alert(`Failed to register ${mode === 'agency' ? 'Agency' : 'Supplier'}: ${err.message || 'Database error'}`);
+    } finally {
+        if (saveQuickPartnerBtn) {
+            saveQuickPartnerBtn.disabled = false;
+            saveQuickPartnerBtn.innerHTML = '<span>Save & Select</span>';
+        }
+    }
+}
+
+/**
+ * 5. Mode Toggling Logic (Inward vs Outward)
  */
 function setMode(mode) {
     if (mode === 'inward') {
@@ -364,7 +584,7 @@ function setMode(mode) {
 }
 
 /**
- * 5. Real-Time Stock Indicators on SKU Selection
+ * 6. Real-Time Stock Indicators on SKU Selection
  */
 if (inwardItemSelect) {
     inwardItemSelect.addEventListener('change', () => {
@@ -391,7 +611,7 @@ if (outwardItemSelect) {
 }
 
 /**
- * 6. Handle Inward Form Submission (Receive Goods)
+ * 7. Handle Inward Form Submission (Receive Goods from Material Supplier)
  */
 async function handleInwardSubmit(e) {
     e.preventDefault();
@@ -504,7 +724,7 @@ async function handleInwardSubmit(e) {
 }
 
 /**
- * 7. Handle Outward Form Submission (Issue Goods to Site)
+ * 8. Handle Outward Form Submission (Issue Goods to Site Agency)
  */
 async function handleOutwardSubmit(e) {
     e.preventDefault();
@@ -621,7 +841,7 @@ async function handleOutwardSubmit(e) {
 }
 
 /**
- * 8. Event Listeners & Bootstrapping
+ * 9. Event Listeners & Bootstrapping
  */
 if (btnToggleInward) btnToggleInward.addEventListener('click', () => setMode('inward'));
 if (btnToggleOutward) btnToggleOutward.addEventListener('click', () => setMode('outward'));
@@ -629,9 +849,29 @@ if (btnToggleOutward) btnToggleOutward.addEventListener('click', () => setMode('
 if (formInward) formInward.addEventListener('submit', handleInwardSubmit);
 if (formOutward) formOutward.addEventListener('submit', handleOutwardSubmit);
 
+// Inline Quick-Add Partner Listeners
+if (btnQuickAddSupplier) btnQuickAddSupplier.addEventListener('click', () => openQuickPartnerModal('supplier'));
+if (btnQuickAddAgency) btnQuickAddAgency.addEventListener('click', () => openQuickPartnerModal('agency'));
+if (btnPartnerTypeSupplier) btnPartnerTypeSupplier.addEventListener('click', () => configureQuickPartnerModal('supplier'));
+if (btnPartnerTypeAgency) btnPartnerTypeAgency.addEventListener('click', () => configureQuickPartnerModal('agency'));
+if (closeQuickPartnerBtn) closeQuickPartnerBtn.addEventListener('click', closeQuickPartnerModal);
+if (cancelQuickPartnerBtn) cancelQuickPartnerBtn.addEventListener('click', closeQuickPartnerModal);
+if (formQuickPartner) formQuickPartner.addEventListener('submit', handleQuickPartnerSubmit);
+
+if (modalQuickPartner) {
+    modalQuickPartner.addEventListener('click', (e) => {
+        if (e.target === modalQuickPartner) closeQuickPartnerModal();
+    });
+}
+
 // Re-load on workspace switch
 window.addEventListener('projectChanged', () => {
     loadProjectMaterials();
+    loadVendorsAndAgencies();
+});
+
+// Auto-sync vendors/agencies if user returns to browser tab
+window.addEventListener('focus', () => {
     loadVendorsAndAgencies();
 });
 
