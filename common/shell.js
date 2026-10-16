@@ -3,7 +3,7 @@
  * File: /common/shell.js
  * 
  * Features:
- * 1. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Plan Change, Workforce, Pre-Dev, Admin, Site Map).
+ * 1. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Plan Change, Drawings, Workforce, Pre-Dev, Admin, Site Map).
  * 2. Case-Insensitive Deep DOM Scanner: Automatically translates visible text, labels, and placeholders on any page.
  * 3. Bidirectional Caching: Remembers original English strings in a WeakMap for seamless EN <-> GU <-> HI toggles.
  * 4. Live MutationObserver: Automatically translates dynamically rendered cards, tables, and floor accordions.
@@ -82,6 +82,16 @@ const RAW_DICTIONARY = {
     "record site expense": { gu: "સાઇટ ખર્ચ નોંધણી", hi: "સાઇટ ખર્ચ દર્જ કરેં" },
     "reconciliation & audit": { gu: "હિસાબ ચકાસણી અને ઓડિટ", hi: "મિલાન તેમજ ઓડિટ" },
     "monthly reconciliation": { gu: "માસિક હિસાબ / ઓડિટ", hi: "માસિક હિસાબ / ઓડિટ" },
+
+    // --- Drawing Issues & Agency Cases Suite Translations ---
+    "drawing issues & agency cases": { gu: "ડ્રોઇંગ અને કન્સલ્ટન્ટ કેસ સૂટ", hi: "ડ્રૉઇંગ તેમજ કન્સલ્ટન્ટ કેસ સૂટ" },
+    "drawing cases & agency register": { gu: "ડ્રોઇંગ કેસ અને એજન્સી રજિસ્ટર", hi: "ડ્રૉઇંગ કેસ તેમજ એજન્સી રજિસ્ટર" },
+    "drawing cases": { gu: "ડ્રોઇંગ કેસો", hi: "ડ્રૉઇંગ કેસ" },
+    "drawing cases register": { gu: "ડ્રોઇંગ કેસ રજિસ્ટર", hi: "ડ્રૉઇંગ કેસ રજિસ્ટર" },
+    "raise drawing request": { gu: "ડ્રોઇંગ વિનંતી નોંધો", hi: "ડ્રૉઇંગ અનુરોધ દર્જ કરેં" },
+    "+ raise drawing request": { gu: "+ ડ્રોઇંગ વિનંતી નોંધો", hi: "+ નયા ડ્રૉઇંગ અનુરોધ" },
+    "consultant cases": { gu: "કન્સલ્ટન્ટ કેસ", hi: "કન્સલ્ટન્ટ કેસ" },
+    "case workspace": { gu: "કેસ વર્કસ્પેસ", hi: "કેસ વર્કસ્પેસ" },
 
     "pre-development": { gu: "પ્રી-ડેવલપમેન્ટ (આયોજન)", hi: "પ્રી-ડેવલપમેન્ટ (આયોજન)" },
     "liasoning & boq master": { gu: "લાયઝનિંગ અને BOQ માસ્ટર", hi: "લાયઝનિંગ તેમજ BOQ માસ્ટર" },
@@ -295,6 +305,7 @@ function getRootPrefix() {
         path.includes('/purchase/') ||
         path.includes('/petty-cash/') ||
         path.includes('/plan-change/') ||
+        path.includes('/drawings/') ||
         path.includes('/users/') ||
         path.includes('/vendors/') ||
         path.includes('/site-map/') ||
@@ -480,6 +491,7 @@ export async function initShell(options = {}) {
     if (!activeModule) {
         const currentPath = window.location.pathname.toLowerCase().replace(/\\/g, '/');
         if (currentPath.includes('/projects/')) activeModule = 'dashboard';
+        else if (currentPath.includes('/drawings/')) activeModule = 'drawings';
         else if (currentPath.includes('/tasks/')) activeModule = 'tasks';
         else if (currentPath.includes('/inventory/')) activeModule = 'inventory';
         else if (currentPath.includes('/purchase/')) activeModule = 'purchase';
@@ -587,6 +599,7 @@ function injectShellHTML(data) {
     const isSiteMap = data.activeModule === 'site-map';
     const isPettyCash = data.activeModule === 'petty-cash';
     const isPlanChange = data.activeModule === 'plan-change';
+    const isDrawings = data.activeModule === 'drawings';
 
     const dashColorClass = isDashboard ? 'text-[#1E3A5F]' : 'text-slate-400 hover:text-slate-600';
     const dashFontClass = isDashboard ? 'font-bold text-[#1E3A5F]' : 'font-medium';
@@ -774,7 +787,23 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 3. PLAN CHANGE & CUSTOMIZATION SUITE -->
+                    <!-- 3. DRAWING ISSUES & AGENCY CASES SUITE -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span data-i18n="drawing issues & agency cases" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Drawing Issues & Agency Cases</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-[#1E3A5F] border border-blue-300">RFI & Revisions</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <a href="${ROOT_PATH}drawings/drawing-cases.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition ${isDrawings ? 'ring-2 ring-[#1E3A5F] bg-blue-50/50 font-bold text-[#1E3A5F]' : ''}">
+                                <span class="w-2 h-2 rounded-full bg-[#1E3A5F]"></span> <span data-i18n="drawing cases register">Drawing Cases Register</span>
+                            </a>
+                            <a href="${ROOT_PATH}drawings/raise-request.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-[#FFBF00]"></span> <span data-i18n="raise drawing request">Raise Drawing Request</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 4. PLAN CHANGE & CUSTOMIZATION SUITE -->
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <span data-i18n="plan change & customization suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Plan Change & Customization Suite</span>
@@ -790,7 +819,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 4. Civil Tasks Suite -->
+                    <!-- 5. Civil Tasks Suite -->
                     <div>
                         <span data-i18n="civil tasks suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Civil Tasks Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -815,7 +844,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 5. INVENTORY & MATERIALS SUITE -->
+                    <!-- 6. INVENTORY & MATERIALS SUITE -->
                     <div>
                         <span data-i18n="inventory & materials suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Inventory & Materials Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -840,7 +869,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 6. PURCHASE & INDENTS SUITE -->
+                    <!-- 7. PURCHASE & INDENTS SUITE -->
                     <div>
                         <span data-i18n="purchase & indents suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Purchase & Indents Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -868,7 +897,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 7. PETTY CASH SUITE -->
+                    <!-- 8. PETTY CASH SUITE -->
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <span data-i18n="petty cash suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Petty Cash Suite</span>
@@ -887,7 +916,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 8. Pre-Development & Workforce -->
+                    <!-- 9. Pre-Development & Workforce -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-white p-3.5 rounded-2xl border border-slate-200">
                             <span data-i18n="pre-development" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Pre-Development</span>
@@ -908,7 +937,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 9. Administration & Masters -->
+                    <!-- 10. Administration & Masters -->
                     <div class="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
                         <span data-i18n="administration" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Administration</span>
                         <div class="flex items-center gap-3">
