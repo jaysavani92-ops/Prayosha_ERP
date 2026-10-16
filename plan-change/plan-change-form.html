@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayosha ERP | Record Unit Plan Change</title>
+    
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            navy: '#1E3A5F',
+                            navyDark: '#152A45',
+                            amber: '#FFBF00',
+                            amberDark: '#D9A300',
+                            emerald: '#10B981',
+                            rose: '#F43F5E',
+                            indigo: '#4F46E5',
+                            canvas: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbar for dense data entry */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F5F9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+<body class="bg-brand-canvas text-slate-800 font-sans antialiased selection:bg-brand-amber selection:text-brand-navy min-h-screen flex flex-col">
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+        
+        <!-- Header & Action Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div class="flex items-center gap-3">
+                <a href="plan-change-list.html" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition border border-slate-200" title="View All Plan Changes">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                </a>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-brand-navy border border-amber-300">
+                            Customer Customization
+                        </span>
+                        <span id="active-project-badge" class="text-xs font-medium text-slate-500">
+                            Loading Project...
+                        </span>
+                    </div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-brand-navy mt-1">Record Unit Plan Change</h1>
+                    <p class="text-xs text-slate-500 font-medium">સાઇટ પ્લાન ફેરફાર નોંધણી (Customer Signed Mandate & Trade Redlines)</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <a href="plan-change-list.html" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 transition flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                    </svg>
+                    <span>View Change Registry</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Form Container -->
+        <form id="plan-change-form" class="space-y-6" novalidate>
+            
+            <!-- SECTION 1: UNIT SPATIAL CONTEXT & CUSTOMER METADATA -->
+            <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-5">
+                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-brand-navy"></span>
+                        <h2 class="text-sm font-bold text-brand-navy uppercase tracking-wider">1. Spatial Location & Customer Details</h2>
+                    </div>
+                    <span class="text-[11px] text-slate-400 font-medium">* All fields mandatory</span>
+                </div>
+
+                <!-- 4-Tier Cascading Structural Hierarchy -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Project Selector -->
+                    <div>
+                        <label for="project-select" class="block text-xs font-semibold text-slate-700 mb-1">
+                            Site Project / સાઇટ <span class="text-red-500">*</span>
+                        </label>
+                        <select id="project-select" required class="w-full bg-slate-50 focus:bg-white text-xs font-medium text-slate-800 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition">
+                            <option value="">-- Select Project --</option>
+                        </select>
+                    </div>
+
+                    <!-- Tower / Block Dropdown -->
+                    <div>
+                        <label for="tower-block" class="block text-xs font-semibold text-slate-700 mb-1">
+                            Tower / Block / વિંગ <span class="text-red-500">*</span>
+                        </label>
+                        <select id="tower-block" required class="w-full bg-white text-xs font-medium text-slate-800 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition">
+                            <option value="">-- Select Tower --</option>
+                        </select>
+                    </div>
+
+                    <!-- Floor Level Dropdown -->
+                    <div>
+                        <label for="floor-level" class="block text-xs font-semibold text-slate-700 mb-1">
+                            Floor Level / માળ <span class="text-red-500">*</span>
+                        </label>
+                        <select id="floor-level" required disabled class="w-full bg-slate-50 focus:bg-white text-xs font-medium text-slate-800 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
+                            <option value="">-- Select Tower First --</option>
+                        </select>
+                    </div>
+
+                    <!-- Zone ID / Unit Dropdown -->
+                    <div>
+                        <label for="zone-id" class="block text-xs font-semibold text-slate-700 mb-1">
+                            Zone ID / Flat / Shop / Plot <span class="text-red-500">*</span>
+                        </label>
+                        <select id="zone-id" required disabled class="w-full bg-amber-50/70 focus:bg-white text-xs font-bold text-brand-navy py-2.5 px-3 rounded-xl border border-amber-300 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-300 disabled:cursor-not-allowed">
+                            <option value="">-- Select Floor First --</option>
+                        </select>
+                        <span class="text-[10px] text-slate-400 mt-1 block">Filtered by project architecture</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                    <!-- Customer Name -->
+                    <div>
+                        <label for="customer-name" class="block text-xs font-semibold text-slate-700 mb-1">
+                            Customer Name / ગ્રાહકનું નામ <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="customer-name" required placeholder="e.g. Rajeshbhai Patel" class="w-full bg-slate-50 focus:bg-white text-xs font-medium text-slate-800 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition">
+                    </div>
+
+                    <!-- Customer Phone -->
+                    <div>
+                        <label for="customer-phone" class="block text-xs font-semibold text-slate-700 mb-1">
+                            Customer Phone / ફોન નંબર
+                        </label>
+                        <input type="tel" id="customer-phone" placeholder="e.g. +91 98980 12345" class="w-full bg-slate-50 focus:bg-white text-xs font-medium text-slate-800 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition">
+                    </div>
+
+                    <!-- Cost / Commercial Impact Type -->
+                    <div>
+                        <label for="cost-impact" class="block text-xs font-semibold text-slate-700 mb-1">
+                            Material / Cost Terms
+                        </label>
+                        <select id="cost-impact" class="w-full bg-slate-50 focus:bg-white text-xs font-medium text-slate-800 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition">
+                            <option value="Customer Provided Material">Customer Provided Material (ગ્રાહક પોતાની સામગ્રી લાવશે)</option>
+                            <option value="Extra Chargeable">Extra Chargeable to Client (વધારાનો ચાર્જ લાગુ)</option>
+                            <option value="No Cost Modification">No Cost Modification (માનક સ્કોપ ફેરફાર)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: SIGNED FLOOR PLAN DOCUMENT (CLOUDFLARE R2) -->
+            <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-brand-amber"></span>
+                        <h2 class="text-sm font-bold text-brand-navy uppercase tracking-wider">2. Signed Custom Drawing / Proof</h2>
+                    </div>
+                    <span class="text-[11px] font-semibold text-slate-500">Target Vault: Cloudflare R2</span>
+                </div>
+
+                <p class="text-xs text-slate-500">
+                    Upload the physical floor plan copy marked with modifications and signed by the customer. This document will pop up inside the task manager to prevent site execution errors.
+                </p>
+
+                <!-- File Upload Dropzone -->
+                <div id="dropzone-area" class="border-2 border-dashed border-slate-300 hover:border-brand-navy rounded-2xl p-6 text-center cursor-pointer transition bg-slate-50/60 hover:bg-blue-50/20 group">
+                    <input type="file" id="file-input" accept=".pdf,image/png,image/jpeg,image/webp" class="hidden">
+                    <div class="flex flex-col items-center justify-center space-y-2">
+                        <div class="w-12 h-12 rounded-xl bg-white shadow-sm border border-slate-200 flex items-center justify-center text-brand-navy group-hover:scale-110 transition">
+                            <svg class="w-6 h-6 text-brand-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                        </div>
+                        <div class="text-xs">
+                            <span class="font-bold text-brand-navy">Click to upload signed document</span> or drag & drop here
+                        </div>
+                        <p class="text-[11px] text-slate-400">PDF, JPG, PNG or WEBP (Max 15MB)</p>
+                    </div>
+                </div>
+
+                <!-- Upload Progress & File Preview Card -->
+                <div id="file-preview-card" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div id="file-icon" class="w-9 h-9 rounded-lg bg-blue-100 text-brand-navy flex items-center justify-center font-bold text-xs flex-shrink-0">
+                            DOC
+                        </div>
+                        <div class="min-w-0">
+                            <p id="file-name" class="text-xs font-semibold text-slate-800 truncate">drawing.pdf</p>
+                            <p id="file-size" class="text-[10px] text-slate-400">0 KB</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div id="upload-status-badge" class="text-[11px] font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                            Ready to upload
+                        </div>
+                        <button type="button" id="remove-file-btn" class="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-white transition" title="Remove File">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden Input for R2 URL -->
+                <input type="hidden" id="uploaded-r2-url" required>
+            </div>
+
+            <!-- SECTION 3: KEY CHANGE BULLET POINTS (TRADE-WISE) -->
+            <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                        <h2 class="text-sm font-bold text-brand-navy uppercase tracking-wider">3. Specific Requirements & Changes (Bullet Points)</h2>
+                    </div>
+                    <span class="text-[11px] font-semibold text-slate-500">Trade-Categorized Checkpoints</span>
+                </div>
+
+                <p class="text-xs text-slate-500">
+                    Add explicit, bulleted execution instructions (e.g. custom tile provision, plumbing point repositioning, additional electrical conduit). These will appear prominently in the alert popup.
+                </p>
+
+                <!-- Bullet Intake Controls with Dynamic Category Extension -->
+                <div class="bg-slate-50/80 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div class="sm:col-span-1">
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="bullet-category" class="block text-[11px] font-bold text-slate-600 uppercase">Trade Package</label>
+                                <button type="button" id="toggle-custom-category-btn" class="text-[10px] font-bold text-blue-600 hover:text-brand-navy hover:underline transition cursor-pointer">
+                                    + Add Category
+                                </button>
+                            </div>
+                            
+                            <select id="bullet-category" class="w-full bg-white text-xs font-semibold text-slate-700 py-2 px-2.5 rounded-lg border border-slate-300 focus:border-brand-navy outline-none">
+                                <option value="Flooring & Tiles">Flooring & Tiles (ટાઇલ્સ)</option>
+                                <option value="Plumbing & Sanitary">Plumbing & Sanitary (પ્લમ્બિંગ)</option>
+                                <option value="Electrical & Wiring">Electrical (ઇલેક્ટ્રિક)</option>
+                                <option value="Civil & Masonry">Civil & Masonry (ચણતર / પ્લાસ્ટર)</option>
+                                <option value="Doors & Windows">Doors & Windows (દરવાજા / બારી)</option>
+                                <option value="Kitchen & Platform">Kitchen Platform (રસોડું પ્લેટફોર્મ)</option>
+                                <option value="False Ceiling & POP">False Ceiling / POP</option>
+                                <option value="General & Scope">General / Other Specification</option>
+                            </select>
+
+                            <!-- Inline Custom Category Adder -->
+                            <div id="custom-category-box" class="hidden mt-2 p-2 bg-blue-50/80 border border-blue-200 rounded-lg space-y-1.5 shadow-sm">
+                                <span class="text-[10px] font-bold text-brand-navy block uppercase">New Trade Category</span>
+                                <div class="flex gap-1.5">
+                                    <input type="text" id="new-category-input" placeholder="e.g. HVAC / AC Piping" class="flex-grow bg-white text-xs font-medium py-1.5 px-2.5 rounded border border-blue-300 focus:border-brand-navy outline-none">
+                                    <button type="button" id="save-new-category-btn" class="px-2.5 py-1.5 bg-brand-navy text-[#FFBF00] text-xs font-bold rounded hover:bg-brand-navyDark transition cursor-pointer shadow-sm">Save</button>
+                                    <button type="button" id="cancel-new-category-btn" class="px-2 py-1.5 bg-slate-200 text-slate-600 text-xs font-semibold rounded hover:bg-slate-300 transition cursor-pointer">&times;</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-3">
+                            <label for="bullet-text" class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Requirement / Modification Description</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="bullet-text" placeholder="e.g. Do not lay standard 600x1200 tiles. Customer providing 800x1600 Italian finish tiles." class="flex-grow bg-white text-xs font-medium text-slate-800 py-2 px-3 rounded-lg border border-slate-300 focus:border-brand-navy outline-none">
+                                <button type="button" id="add-bullet-btn" class="px-4 py-2 bg-brand-navy hover:bg-brand-navyDark text-[#FFBF00] font-bold text-xs rounded-lg transition flex items-center gap-1 flex-shrink-0 cursor-pointer shadow-sm">
+                                    <span>+ Add Item</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Added Bullets Container / Table -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-xs font-semibold text-slate-500 px-1">
+                        <span>List of Defined Scope Changes:</span>
+                        <span id="bullet-count-badge" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-bold">0 Items</span>
+                    </div>
+
+                    <div id="bullets-list" class="space-y-2 min-h-[60px] bg-white border border-slate-200/90 rounded-xl p-3">
+                        <div id="bullets-empty-state" class="text-center py-5 text-xs text-slate-400">
+                            No custom requirements added yet. Add at least one bullet point specifying the customer's changes.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4: STRUCTURAL SAFETY GATE & ACKNOWLEDGMENT -->
+            <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-4">
+                <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                        <h2 class="text-sm font-bold text-brand-navy uppercase tracking-wider">4. Site Safety & Structural Governance</h2>
+                    </div>
+                    <span class="text-[11px] font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">Engineering Guardrail</span>
+                </div>
+
+                <div class="p-4 rounded-xl bg-amber-50/60 border border-amber-200 flex items-start gap-3">
+                    <input type="checkbox" id="structural-impact-toggle" class="mt-0.5 w-4 h-4 text-brand-navy rounded border-amber-400 focus:ring-brand-amber">
+                    <label for="structural-impact-toggle" class="text-xs text-slate-700 cursor-pointer leading-relaxed">
+                        <span class="font-bold text-slate-900">Check if this modification impacts any RCC Column, Beam, Shear Wall, or Load-Bearing Structure.</span>
+                        <br>
+                        <span class="text-slate-500 text-[11px]">Any structural tampering requires prior written consent from the Structural Consultant and Project Head.</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- SUBMIT & FOOTER ACTIONS -->
+            <div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+                <button type="reset" id="reset-form-btn" class="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer">
+                    Clear Fields
+                </button>
+                
+                <button type="submit" id="save-plan-change-btn" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-brand-navy hover:bg-brand-navyDark text-[#FFBF00] text-xs font-bold shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer">
+                    <svg id="save-spinner" class="hidden animate-spin h-4 w-4 text-[#FFBF00]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span id="save-btn-text">Save Plan Change Mandate</span>
+                </button>
+            </div>
+
+        </form>
+
+    </main>
+
+    <!-- Shell Integration & Universal Localization -->
+    <script type="module">
+        import { initShell } from '../common/shell.js';
+        document.addEventListener('DOMContentLoaded', () => {
+            initShell({ activeModule: 'plan-change' });
+        });
+    </script>
+
+    <!-- Form Business Logic Script -->
+    <script type="module" src="./plan-change-form.js"></script>
+
+</body>
+</html>

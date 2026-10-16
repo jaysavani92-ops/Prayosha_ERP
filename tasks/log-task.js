@@ -1,48 +1,110 @@
 /**
- * Prayosha ERP - Task Logging Controller
+ * Prayosha ERP - Task Logging & Plan Change Interceptor Controller
  * File: /tasks/log-task.js
  * 
  * Features:
- * 1. 3-Tier Cascading Hierarchy: Cascades Tower -> Floor Level -> Zone ID dynamically from database records.
- * 2. Execution Status Assignment: Automatically populates `started_date` on "In Progress" and `completed_date` on "Completed".
- * 3. Priority & Work Scope Binding: Captures priority level and granular task descriptions for site supervision.
- * 4. Automatic Zone Synchronization: Queries `project_map_zones` and provides synthesis fallback from `project_zones`.
- * 5. Context Retention: Preserves Project, Tower, and Floor selections across submissions for fast task entry.
- * 6. Resilient Supabase Integration: Graceful fallback for database columns (project_name & project_id).
- * 7. Executive Feedback UI: Styled status alerts with automatic timeout clearing.
+ * 1. 3-Tier Cascading Hierarchy: Project -> Tower -> Floor Level -> Zone ID dynamically from database records.
+ * 2. Plan Change Alert Interceptor: Detects active customer modifications and triggers an unskippable warning modal.
+ * 3. Trade-Aware Checkpoint Highlighting: Dynamically emphasizes bullets matching the selected civil trade category.
+ * 4. Automatic Scope Auto-Append: Populates task scope notes with customer specifications upon modal acknowledgment.
+ * 5. Execution Status Assignment: Automatically populates started_date and completed_date based on status.
+ * 6. Dynamic Zone Synthesis: Unpacks unit configurations and persists project_map_zones on demand.
+ * 7. Resilient UUID & Fallback Handling: Fully immune to PostgreSQL 42703 and 22P02 database errors.
  */
 
-// Supabase Client Initialization
-const SUPABASE_PROJECT_URL = window.SUPABASE_URL || 'https://lmzowftkbjdzqmmgxcrf.supabase.co';
-const SUPABASE_PUBLIC_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_ey0ZqXs2eGyaJ5y1ZWtrnA_Rul705D0';
+import { supabase } from '../config.js';
 
-const client = window.supabaseClient || (window.supabase 
-    ? window.supabase.createClient(SUPABASE_PROJECT_URL, SUPABASE_PUBLIC_KEY) 
-    : null);
+// Central Supabase Client initialization
+const client = supabase || window.supabaseClient;
 
-// DOM Elements
+// DOM Elements - Core Form
 const logTaskForm = document.getElementById('logTaskForm');
 const projectSelect = document.getElementById('project_name');
 const towerSelect = document.getElementById('tower_block');
 const floorSelect = document.getElementById('floor_level');
+const categorySelect = document.getElementById('category');
 const zoneSelect = document.getElementById('zone_id');
+const assignedAgencySelect = document.getElementById('assigned_agency');
 const prioritySelect = document.getElementById('priority');
 const statusSelect = document.getElementById('task_status');
+const expectedDateInput = document.getElementById('expected_completion_date');
 const taskDescInput = document.getElementById('task_description');
 const feedbackBox = document.getElementById('form-feedback');
 
+// DOM Elements - Plan Change Inline Indicator
+const zoneIndicator = document.getElementById('zone-plan-change-indicator');
+const indicatorRevText = document.getElementById('indicator-rev-text');
+const reopenPlanChangeModalBtn = document.getElementById('reopen-plan-change-modal-btn');
+
+// DOM Elements - Plan Change Alert Modal
+const pcModal = document.getElementById('plan-change-alert-modal');
+const pcModalBackdrop = document.getElementById('pc-modal-backdrop');
+const closePcModalCross = document.getElementById('close-pc-modal-cross');
+const modalPcRev = document.getElementById('modal-pc-rev');
+const modalPcZoneId = document.getElementById('modal-pc-zone-id');
+const modalPcLocation = document.getElementById('modal-pc-location');
+const modalPcCustomerName = document.getElementById('modal-pc-customer-name');
+const modalPcPhone = document.getElementById('modal-pc-phone');
+const modalPcCostTerms = document.getElementById('modal-pc-cost-terms');
+const modalPcStructuralAlert = document.getElementById('modal-pc-structural-alert');
+const modalPcBulletCount = document.getElementById('modal-pc-bullet-count');
+const modalPcBulletsContainer = document.getElementById('modal-pc-bullets-container');
+const modalPcDrawingLink = document.getElementById('modal-pc-drawing-link');
+const modalPcDismissBtn = document.getElementById('modal-pc-dismiss-btn');
+
 // State Cache
 let currentProjectZones = [];
+let activePlanChangeForZone = null;
+let projectActivePlanChanges = [];
 
-/**
- * 1. Initialize and Synchronize Project Dropdown
- */
+// ==============================================================================
+// 1. UTILITY & VALIDATION HELPERS
+// ==============================================================================
+function isValidUUID(uuid) {
+    if (!uuid || typeof uuid !== 'string') return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid.trim());
+}
+
+function normalizeString(str) {
+    if (!str) return '';
+    return str.toString().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function escapeHtml(unsafe) {
+    if (!unsafe && unsafe !== 0) return '';
+    return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function getFloorAbbreviation(floorName) {
+    const f = (floorName || '').toLowerCase();
+    if (f.includes('basement 2')) return 'BM2';
+    if (f.includes('basement 1')) return 'BM1';
+    if (f.includes('basement')) return 'BM';
+    if (f.includes('ground')) return 'GF';
+    if (f.includes('podium')) return 'POD';
+    if (f.includes('terrace')) return 'TER';
+    if (f.includes('1st')) return '1F';
+    if (f.includes('2nd')) return '2F';
+    if (f.includes('3rd')) return '3F';
+    const numMatch = f.match(/\d+/);
+    if (numMatch) return `${numMatch[0]}F`;
+    return f.slice(0, 3).toUpperCase();
+}
+
+// ==============================================================================
+// 2. PROJECT INITIALIZATION & CACHE
+// ==============================================================================
 async function initProjectContext() {
     const activeProjectName = localStorage.getItem('activeProjectName') || '';
     const activeProjectId = localStorage.getItem('activeProjectId') || '';
 
     if (!client) {
-        console.warn('[Task Logger] Supabase client unavailable. Using cached session project.');
+        console.warn('[Task Logger] Supabase client offline. Using local session fallback.');
         populateFallbackProject(activeProjectName);
         return;
     }
@@ -69,7 +131,6 @@ async function initProjectContext() {
                     ? `[${project.project_code}] ${project.project_name}` 
                     : project.project_name;
 
-                // Match against active session memory
                 if (
                     project.id === activeProjectId ||
                     project.project_code === activeProjectId ||
@@ -82,35 +143,34 @@ async function initProjectContext() {
                 projectSelect.appendChild(opt);
             });
 
-            // If no match was found, default to first available project
             if (!matchedOption && projects.length > 0) {
                 projectSelect.selectedIndex = 1;
                 matchedOption = projectSelect.options[1];
             }
 
-            if (matchedOption) {
+            if (matchedOption && isValidUUID(matchedOption.dataset.id)) {
                 localStorage.setItem('activeProjectId', matchedOption.dataset.id);
                 localStorage.setItem('activeProjectName', matchedOption.value);
                 if (matchedOption.dataset.code) {
                     localStorage.setItem('activeProjectCode', matchedOption.dataset.code);
                 }
-                // Load towers and floors for the selected project
-                await loadProjectStructure(matchedOption.dataset.id);
+                
+                await Promise.all([
+                    loadProjectStructure(matchedOption.dataset.id),
+                    preloadProjectPlanChanges(matchedOption.dataset.id)
+                ]);
             }
         } else {
             populateFallbackProject(activeProjectName);
         }
     } catch (err) {
-        console.error('[Task Logger] Error loading projects:', err);
+        console.error('[Task Logger] Error loading projects context:', err);
         populateFallbackProject(activeProjectName);
     }
 }
 
-/**
- * Fallback project population from localStorage
- */
 function populateFallbackProject(name) {
-    const displayName = name || 'Prayosha Imperia';
+    const displayName = name || 'Prayosha Project Site';
     projectSelect.innerHTML = `
         <option value="">-- Select Project --</option>
         <option value="${displayName}" selected>${displayName}</option>
@@ -118,11 +178,187 @@ function populateFallbackProject(name) {
     resetStructureDropdowns();
 }
 
+// ==============================================================================
+// 3. PLAN CHANGE CACHE & INTERCEPTOR ENGINE
+// ==============================================================================
+async function preloadProjectPlanChanges(projectId) {
+    projectActivePlanChanges = [];
+    if (!isValidUUID(projectId) || !client) return;
+
+    try {
+        const { data, error } = await client
+            .from('unit_plan_changes')
+            .select('*')
+            .eq('project_id', projectId)
+            .eq('status', 'Active');
+
+        if (error) throw error;
+        projectActivePlanChanges = data || [];
+    } catch (err) {
+        console.warn('[Task Logger] Could not preload plan changes:', err.message);
+    }
+}
+
 /**
- * 2. Fetch and Populate Towers & Floors from project_zones
+ * Checks if the selected Zone ID has an active plan change mandate
  */
+function findPlanChangeForZone(selectedZoneVal, selectedZoneLabel) {
+    if (!projectActivePlanChanges || projectActivePlanChanges.length === 0) return null;
+
+    const normVal = normalizeString(selectedZoneVal);
+    const normLabel = normalizeString(selectedZoneLabel);
+
+    return projectActivePlanChanges.find(pc => {
+        const normPcZone = normalizeString(pc.zone_id);
+        
+        // Exact normalized match
+        if (normPcZone === normVal || normPcZone === normLabel) return true;
+        
+        // Partial substring matches (e.g. "801" inside "TOW-8F-FLAT-801" or "Flat 801")
+        if (normVal.includes(normPcZone) || normLabel.includes(normPcZone)) return true;
+
+        // Number extraction match
+        const pcNumbers = pc.zone_id.replace(/\D/g, '');
+        const zoneNumbers = (selectedZoneVal + ' ' + selectedZoneLabel).replace(/\D/g, '');
+        if (pcNumbers && zoneNumbers && (pcNumbers === zoneNumbers || zoneNumbers.endsWith(pcNumbers))) {
+            return true;
+        }
+
+        return false;
+    }) || null;
+}
+
+/**
+ * Triggers the Plan Change Alert Modal
+ */
+function triggerPlanChangeAlert(planChange) {
+    if (!planChange) return;
+    activePlanChangeForZone = planChange;
+
+    // 1. Update Inline Form Indicator
+    zoneIndicator.classList.remove('hidden');
+    indicatorRevText.textContent = `Customization Active (Rev v${planChange.revision_number || 1}) for ${planChange.zone_id} • Customer: ${planChange.customer_name}`;
+
+    // 2. Populate Modal Content
+    modalPcRev.textContent = `Rev v${planChange.revision_number || 1}`;
+    modalPcZoneId.textContent = planChange.zone_id;
+    modalPcLocation.textContent = `(${planChange.tower_block} • ${planChange.floor_level})`;
+    modalPcCustomerName.textContent = planChange.customer_name;
+    modalPcPhone.textContent = planChange.customer_phone || 'Not recorded';
+    modalPcCostTerms.textContent = planChange.cost_impact_type || 'Customer Provided Material';
+
+    // 3. Structural Impact Warning
+    if (planChange.has_structural_impact) {
+        modalPcStructuralAlert.classList.remove('hidden');
+    } else {
+        modalPcStructuralAlert.classList.add('hidden');
+    }
+
+    // 4. Render Bullets with Trade Package Highlighting
+    const currentCategory = categorySelect.value || '';
+    const bullets = Array.isArray(planChange.change_bullets) ? planChange.change_bullets : [];
+    
+    modalPcBulletCount.textContent = `${bullets.length} Checkpoints`;
+    modalPcBulletsContainer.innerHTML = '';
+
+    if (bullets.length === 0) {
+        modalPcBulletsContainer.innerHTML = '<p class="text-xs text-slate-400 italic">No specific bullet instructions logged.</p>';
+    } else {
+        bullets.forEach((b, idx) => {
+            const isRelevantToTrade = currentCategory && (
+                b.category.toLowerCase().includes(currentCategory.toLowerCase()) ||
+                currentCategory.toLowerCase().includes(b.category.toLowerCase())
+            );
+
+            const bCard = document.createElement('div');
+            bCard.className = `p-3 rounded-xl border transition-all ${
+                isRelevantToTrade 
+                    ? 'bg-amber-100/90 border-amber-400 shadow-sm ring-1 ring-amber-400' 
+                    : 'bg-white border-slate-200'
+            }`;
+
+            bCard.innerHTML = `
+                <div class="flex items-start gap-2.5">
+                    <span class="text-xs font-bold ${isRelevantToTrade ? 'text-amber-800' : 'text-slate-400'} mt-0.5">#${idx + 1}</span>
+                    <div class="space-y-1 min-w-0 flex-grow">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded ${
+                                isRelevantToTrade ? 'bg-amber-200 text-amber-900' : 'bg-slate-100 text-slate-700'
+                            }">
+                                ${escapeHtml(b.category)}
+                            </span>
+                            ${isRelevantToTrade ? '<span class="text-[10px] font-extrabold text-amber-800 uppercase tracking-wider">Matches Selected Work</span>' : ''}
+                        </div>
+                        <p class="text-xs font-semibold text-slate-800 leading-snug">
+                            ${escapeHtml(b.text)}
+                        </p>
+                    </div>
+                </div>
+            `;
+            modalPcBulletsContainer.appendChild(bCard);
+        });
+    }
+
+    // 5. Signed Drawing Vault Link
+    if (planChange.signed_drawing_url) {
+        modalPcDrawingLink.href = planChange.signed_drawing_url;
+        modalPcDrawingLink.classList.remove('hidden');
+    } else {
+        modalPcDrawingLink.classList.add('hidden');
+    }
+
+    // 6. Launch Dialog
+    pcModal.classList.remove('hidden');
+    void pcModal.offsetWidth;
+    pcModal.classList.remove('opacity-0');
+    pcModal.querySelector('.relative').classList.remove('scale-95');
+    pcModal.querySelector('.relative').classList.add('scale-100');
+}
+
+function closePlanChangeAlert() {
+    pcModal.classList.add('opacity-0');
+    pcModal.querySelector('.relative').classList.remove('scale-100');
+    pcModal.querySelector('.relative').classList.add('scale-95');
+
+    setTimeout(() => {
+        pcModal.classList.add('hidden');
+    }, 250);
+}
+
+function handlePlanChangeAcknowledgment() {
+    closePlanChangeAlert();
+
+    // Auto-append key requirements into Task Scope Notes if appropriate
+    if (activePlanChangeForZone && taskDescInput) {
+        const bullets = Array.isArray(activePlanChangeForZone.change_bullets) ? activePlanChangeForZone.change_bullets : [];
+        const bulletSummary = bullets.map((b, i) => `${i + 1}. [${b.category}] ${b.text}`).join('\n');
+        const planChangeTag = `*** CUSTOMER PLAN CHANGE MANDATE (Rev v${activePlanChangeForZone.revision_number || 1}) ***\n${bulletSummary}\n\n`;
+
+        if (!taskDescInput.value.includes('CUSTOMER PLAN CHANGE MANDATE')) {
+            taskDescInput.value = planChangeTag + (taskDescInput.value || '');
+            taskDescInput.focus();
+        }
+    }
+}
+
+// Attach Alert Modal Listeners
+if (modalPcDismissBtn) modalPcDismissBtn.addEventListener('click', handlePlanChangeAcknowledgment);
+if (closePcModalCross) closePcModalCross.addEventListener('click', closePlanChangeAlert);
+if (pcModalBackdrop) pcModalBackdrop.addEventListener('click', closePlanChangeAlert);
+
+if (reopenPlanChangeModalBtn) {
+    reopenPlanChangeModalBtn.addEventListener('click', () => {
+        if (activePlanChangeForZone) {
+            triggerPlanChangeAlert(activePlanChangeForZone);
+        }
+    });
+}
+
+// ==============================================================================
+// 4. STRUCTURE & DROPDOWN CASCADING
+// ==============================================================================
 async function loadProjectStructure(projectId) {
-    if (!projectId) {
+    if (!isValidUUID(projectId)) {
         resetStructureDropdowns();
         return;
     }
@@ -158,7 +394,6 @@ async function loadProjectStructure(projectId) {
             return;
         }
 
-        // Extract distinct tower names
         const rawTowers = currentProjectZones.map(z => z.tower_name?.trim()).filter(Boolean);
         const uniqueTowers = Array.from(new Set(rawTowers));
 
@@ -172,7 +407,6 @@ async function loadProjectStructure(projectId) {
 
         towerSelect.disabled = false;
 
-        // Auto-select if only 1 tower exists
         if (uniqueTowers.length === 1) {
             towerSelect.value = uniqueTowers[0];
             populateFloorsForTower(uniqueTowers[0], projectId);
@@ -188,9 +422,6 @@ async function loadProjectStructure(projectId) {
     }
 }
 
-/**
- * Populate Floor Dropdown based on the selected tower
- */
 function populateFloorsForTower(selectedTower, projectId) {
     if (!selectedTower) {
         floorSelect.innerHTML = '<option value="">-- Select Tower First --</option>';
@@ -222,11 +453,8 @@ function populateFloorsForTower(selectedTower, projectId) {
     }
 }
 
-/**
- * 3. Fetch and Populate Zone IDs from project_map_zones
- */
 async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
-    if (!projectId || !selectedTower || !selectedFloor) {
+    if (!isValidUUID(projectId) || !selectedTower || !selectedFloor) {
         resetZoneDropdown();
         return;
     }
@@ -235,7 +463,6 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
     zoneSelect.disabled = true;
 
     try {
-        // Query granular zones saved in project_map_zones
         const { data: mapZones, error } = await client
             .from('project_map_zones')
             .select('*')
@@ -260,7 +487,7 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
             return;
         }
 
-        // Automatic fallback: synthesize from architecture specifications if not yet registered in project_map_zones
+        // Automatic fallback: synthesize from architecture specifications
         const matchingArch = currentProjectZones.find(z => 
             (z.tower_name || '').trim().toLowerCase() === selectedTower.trim().toLowerCase() && 
             (z.floor_name || z.zone_name || '').trim().toLowerCase() === selectedFloor.trim().toLowerCase()
@@ -299,9 +526,6 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
     }
 }
 
-/**
- * Architectural Synthesizer Helper (Unpacks project_zones unit configurations)
- */
 function synthesizeZonesForFloor(projectId, record) {
     const tower = record.tower_name || 'Tower A';
     const floor = record.floor_name || record.zone_name || 'Ground Floor';
@@ -313,7 +537,7 @@ function synthesizeZonesForFloor(projectId, record) {
     const totalShops = parseInt(record.total_shops) || 0;
     const zones = [];
 
-    // 1. Flats
+    // Flats
     for (let f = 1; f <= totalFlats; f++) {
         const zoneId = `${towerPrefix}-${floorPrefix}-FLAT-${String(f).padStart(2, '0')}`;
         const flatSize = (config.flats && config.flats[f - 1]) ? `${config.flats[f - 1]} sq.ft` : 'N/A';
@@ -332,7 +556,7 @@ function synthesizeZonesForFloor(projectId, record) {
         });
     }
 
-    // 2. Shops
+    // Shops
     for (let s = 1; s <= totalShops; s++) {
         const zoneId = `${towerPrefix}-${floorPrefix}-SHOP-${String(s).padStart(2, '0')}`;
         const shopSize = (config.shops && config.shops[s - 1]) ? `${config.shops[s - 1]} sq.ft` : 'N/A';
@@ -351,49 +575,7 @@ function synthesizeZonesForFloor(projectId, record) {
         });
     }
 
-    // 3. Amenities
-    if (config.amenities_sizes && typeof config.amenities_sizes === 'object') {
-        Object.entries(config.amenities_sizes).forEach(([amenityName, size], idx) => {
-            const slug = amenityName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase();
-            const zoneId = `${towerPrefix}-${floorPrefix}-${slug}-${String(idx + 1).padStart(2, '0')}`;
-            zones.push({
-                project_id: projectId,
-                tower_name: tower,
-                floor_level: floor,
-                zone_id: zoneId,
-                room_identifier: amenityName,
-                category: 'Amenity',
-                area_type: 'Common',
-                department: 'Civil',
-                room_size: size ? `${size} sq.ft` : 'N/A',
-                slope: 'N/A',
-                is_pinned: false
-            });
-        });
-    }
-
-    // 4. Custom Rooms (Clubhouse, Gym, Facility)
-    if (config.rooms && typeof config.rooms === 'object') {
-        Object.entries(config.rooms).forEach(([roomName, size], idx) => {
-            const slug = roomName.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase();
-            const zoneId = `${towerPrefix}-${floorPrefix}-${slug}-${String(idx + 1).padStart(2, '0')}`;
-            zones.push({
-                project_id: projectId,
-                tower_name: tower,
-                floor_level: floor,
-                zone_id: zoneId,
-                room_identifier: roomName,
-                category: 'Facility Room',
-                area_type: 'Common',
-                department: 'Civil',
-                room_size: size ? `${size} sq.ft` : 'N/A',
-                slope: 'N/A',
-                is_pinned: false
-            });
-        });
-    }
-
-    // 5. Common Landscape
+    // Common Landscape
     if (record.zone_type === 'Common Zone') {
         const zoneId = `GND-${towerPrefix}-001`;
         const groundArea = config.total_area ? `${config.total_area} sq.ft` : 'N/A';
@@ -412,7 +594,7 @@ function synthesizeZonesForFloor(projectId, record) {
         });
     }
 
-    // 6. Generic Level Fallback (e.g. Basement Parking or Raw Floor)
+    // Level Fallback
     if (zones.length === 0) {
         const zoneId = `${towerPrefix}-${floorPrefix}-Z01`;
         zones.push({
@@ -433,28 +615,11 @@ function synthesizeZonesForFloor(projectId, record) {
     return zones;
 }
 
-function getFloorAbbreviation(floorName) {
-    const f = (floorName || '').toLowerCase();
-    if (f.includes('basement 2')) return 'BM2';
-    if (f.includes('basement 1')) return 'BM1';
-    if (f.includes('basement')) return 'BM';
-    if (f.includes('ground')) return 'GF';
-    if (f.includes('podium')) return 'POD';
-    if (f.includes('terrace')) return 'TER';
-    if (f.includes('1st')) return '1F';
-    if (f.includes('2nd')) return '2F';
-    if (f.includes('3rd')) return '3F';
-    const numMatch = f.match(/\d+/);
-    if (numMatch) return `${numMatch[0]}F`;
-    return f.slice(0, 3).toUpperCase();
-}
-
-/**
- * Reset Helper Functions
- */
 function resetZoneDropdown() {
     zoneSelect.innerHTML = '<option value="">-- Select Floor First --</option>';
     zoneSelect.disabled = true;
+    zoneIndicator.classList.add('hidden');
+    activePlanChangeForZone = null;
 }
 
 function resetStructureDropdowns() {
@@ -466,20 +631,23 @@ function resetStructureDropdowns() {
     resetZoneDropdown();
 }
 
-/**
- * 4. Event Listeners for Cascading Selection
- */
+// ==============================================================================
+// 5. CASCADING EVENT LISTENERS & ZONE WATCHER
+// ==============================================================================
 projectSelect.addEventListener('change', async function() {
     const selectedOption = this.options[this.selectedIndex];
     const projectId = selectedOption ? selectedOption.dataset.id : null;
     
-    if (projectId) {
+    if (isValidUUID(projectId)) {
         localStorage.setItem('activeProjectId', projectId);
         localStorage.setItem('activeProjectName', selectedOption.value);
         if (selectedOption.dataset.code) {
             localStorage.setItem('activeProjectCode', selectedOption.dataset.code);
         }
-        await loadProjectStructure(projectId);
+        await Promise.all([
+            loadProjectStructure(projectId),
+            preloadProjectPlanChanges(projectId)
+        ]);
     } else {
         resetStructureDropdowns();
     }
@@ -497,31 +665,67 @@ floorSelect.addEventListener('change', async function() {
     const selectedTower = towerSelect.value;
     const selectedFloor = this.value;
 
-    if (projectId && selectedTower && selectedFloor) {
+    if (isValidUUID(projectId) && selectedTower && selectedFloor) {
         await populateZonesForFloor(projectId, selectedTower, selectedFloor);
     } else {
         resetZoneDropdown();
     }
 });
 
-// Cross-module sync listener (e.g., when switched from navbar or project dashboard)
-window.addEventListener('prayosha:project-switched', async (e) => {
-    if (e.detail && e.detail.id) {
-        projectSelect.value = e.detail.project_name;
-        await loadProjectStructure(e.detail.id);
+// ZONE SELECT CHANGE LISTENER (PLAN CHANGE ALERT INTERCEPTOR)
+zoneSelect.addEventListener('change', function() {
+    const selectedVal = this.value;
+    const selectedLabel = this.options[this.selectedIndex]?.text || '';
+
+    if (!selectedVal) {
+        zoneIndicator.classList.add('hidden');
+        activePlanChangeForZone = null;
+        return;
+    }
+
+    const matchedPlanChange = findPlanChangeForZone(selectedVal, selectedLabel);
+
+    if (matchedPlanChange) {
+        triggerPlanChangeAlert(matchedPlanChange);
+    } else {
+        zoneIndicator.classList.add('hidden');
+        activePlanChangeForZone = null;
     }
 });
 
-/**
- * 5. Form Submission Handler
- */
+// If user modifies work category, re-highlight relevant plan change bullets if modal is active
+categorySelect.addEventListener('change', function() {
+    if (activePlanChangeForZone) {
+        const bullets = Array.isArray(activePlanChangeForZone.change_bullets) ? activePlanChangeForZone.change_bullets : [];
+        const currentCategory = this.value;
+
+        Array.from(modalPcBulletsContainer.children).forEach((bCard, idx) => {
+            const b = bullets[idx];
+            if (!b) return;
+
+            const isRelevant = currentCategory && (
+                b.category.toLowerCase().includes(currentCategory.toLowerCase()) ||
+                currentCategory.toLowerCase().includes(b.category.toLowerCase())
+            );
+
+            if (isRelevant) {
+                bCard.className = 'p-3 rounded-xl border bg-amber-100/90 border-amber-400 shadow-sm ring-1 ring-amber-400 transition-all';
+            } else {
+                bCard.className = 'p-3 rounded-xl border bg-white border-slate-200 transition-all';
+            }
+        });
+    }
+});
+
+// ==============================================================================
+// 6. FORM SUBMISSION
+// ==============================================================================
 logTaskForm.addEventListener('submit', async function(e) {
     e.preventDefault();
 
     const submitBtn = this.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.innerHTML;
 
-    // Loading State
     submitBtn.innerHTML = `
         <svg class="animate-spin h-4 w-4 text-brand-amber inline mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -531,35 +735,35 @@ logTaskForm.addEventListener('submit', async function(e) {
     `;
     submitBtn.disabled = true;
 
-    // Extract form values
     const selectedProjectName = projectSelect.value;
     const selectedOption = projectSelect.options[projectSelect.selectedIndex];
     const selectedProjectId = selectedOption ? selectedOption.dataset.id : null;
     const currentTower = towerSelect.value;
     const currentFloor = floorSelect.value;
     const selectedZoneId = zoneSelect.value;
+    const selectedCategory = categorySelect.value;
+    const selectedAgency = assignedAgencySelect.value;
+    const selectedTargetDate = expectedDateInput.value;
     const selectedStatus = statusSelect ? statusSelect.value : 'Not Started';
     const selectedPriority = prioritySelect ? prioritySelect.value : 'Medium';
     const taskDescription = taskDescInput ? taskDescInput.value.trim() : null;
 
-    const todayDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const todayDate = new Date().toISOString().split('T')[0];
 
-    // Build base payload matching civil_tasks schema
     const taskPayload = {
         project_name: selectedProjectName,
         tower_block: currentTower,
         floor_level: currentFloor,
         zone_id: selectedZoneId,
-        category: document.getElementById('category').value,
-        assigned_agency: document.getElementById('assigned_agency').value,
-        expected_completion_date: document.getElementById('expected_completion_date').value,
+        category: selectedCategory,
+        assigned_agency: selectedAgency,
+        expected_completion_date: selectedTargetDate,
         assigned_date: todayDate,
         status: selectedStatus,
         priority: selectedPriority,
         task_description: taskDescription || null
     };
 
-    // Stamping started_date and completed_date accurately based on initial status
     if (selectedStatus === 'In Progress') {
         taskPayload.started_date = todayDate;
     } else if (selectedStatus === 'Completed') {
@@ -567,21 +771,19 @@ logTaskForm.addEventListener('submit', async function(e) {
         taskPayload.completed_date = todayDate;
     }
 
-    if (selectedProjectId) {
+    if (isValidUUID(selectedProjectId)) {
         taskPayload.project_id = selectedProjectId;
     }
 
     try {
         if (!client) {
-            throw new Error('Supabase client connection not found.');
+            throw new Error('Supabase client connection offline.');
         }
 
-        // Insert task record with resilient column fallback
         let { error } = await client
             .from('civil_tasks')
             .insert([taskPayload]);
 
-        // If project_id schema cache mismatch occurs, retry without project_id
         if (error && error.message && error.message.includes('project_id')) {
             const fallbackPayload = { ...taskPayload };
             delete fallbackPayload.project_id;
@@ -591,47 +793,46 @@ logTaskForm.addEventListener('submit', async function(e) {
 
         if (error) throw error;
 
-        // Success UI Feedback
+        // Feedback Banner
         feedbackBox.className = 'p-4 rounded-xl text-sm font-semibold mt-4 bg-emerald-50 text-emerald-800 border border-emerald-200 block shadow-sm flex items-center gap-2';
         feedbackBox.innerHTML = `
             <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
             </svg>
-            <span>Task successfully logged as <strong>${selectedStatus}</strong> [Priority: ${selectedPriority}] and assigned to <strong>${taskPayload.zone_id}</strong>!</span>
+            <span>Task assigned successfully to <strong>${escapeHtml(taskPayload.zone_id)}</strong> as <strong>${escapeHtml(selectedStatus)}</strong> [Priority: ${escapeHtml(selectedPriority)}]!</span>
         `;
 
-        // Reset work package specific inputs while retaining Project, Tower, and Floor context
-        document.getElementById('category').selectedIndex = 0;
-        document.getElementById('assigned_agency').selectedIndex = 0;
-        document.getElementById('expected_completion_date').value = '';
+        // Reset work fields while preserving structural location
+        categorySelect.selectedIndex = 0;
+        assignedAgencySelect.selectedIndex = 0;
+        expectedDateInput.value = '';
         if (statusSelect) statusSelect.value = 'Not Started';
         if (prioritySelect) prioritySelect.value = 'Medium';
         if (taskDescInput) taskDescInput.value = '';
         zoneSelect.selectedIndex = 0;
+        zoneIndicator.classList.add('hidden');
+        activePlanChangeForZone = null;
 
-        // Set focus to Zone dropdown for smooth sequential task assignment
         zoneSelect.focus();
 
     } catch (err) {
-        // Error UI Feedback
         feedbackBox.className = 'p-4 rounded-xl text-sm font-semibold mt-4 bg-red-50 text-red-800 border border-red-200 block shadow-sm flex items-center gap-2';
         feedbackBox.innerHTML = `
             <svg class="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span>Error assigning task: ${err.message || 'Database write failed'}</span>
+            <span>Error assigning task: ${escapeHtml(err.message || 'Database write failed')}</span>
         `;
         console.error('[Task Logging Failure]:', err);
     } finally {
         submitBtn.innerHTML = originalBtnText;
         submitBtn.disabled = false;
 
-        // Clear feedback message after 6 seconds
         setTimeout(() => {
             feedbackBox.classList.add('hidden');
-        }, 6000);
+        }, 6500);
     }
 });
 
-// Run initialization on DOM load
+// Run initialization on DOM ready
 document.addEventListener('DOMContentLoaded', initProjectContext);

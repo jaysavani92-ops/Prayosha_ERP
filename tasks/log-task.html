@@ -20,7 +20,9 @@
                             navy: '#1E3A5F',
                             navyDark: '#152A45',
                             amber: '#FFBF00',
+                            amberDark: '#D9A300',
                             emerald: '#10B981',
+                            rose: '#F43F5E',
                             indigo: '#4F46E5',
                             canvas: '#F8FAFC'
                         }
@@ -29,10 +31,10 @@
             }
         }
     </script>
-    <!-- Supabase JS Library -->
+    <!-- Supabase JS Library CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-[#F8FAFC] min-h-screen font-sans antialiased text-slate-800 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+<body class="bg-[#F8FAFC] min-h-screen font-sans antialiased text-slate-800 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] selection:bg-brand-amber selection:text-brand-navy">
 
     <!-- Main Content Area -->
     <main class="max-w-4xl mx-auto px-4 py-6">
@@ -47,10 +49,17 @@
                 <p class="text-xs text-slate-500 font-medium">Assign civil work packages, priority levels, and milestone dates to project zones</p>
             </div>
             
-            <a href="active-tasks.html" class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-navy hover:text-brand-navyDark bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-sm hover:shadow transition self-start sm:self-auto">
-                <svg class="w-4 h-4 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                View Active Tasks
-            </a>
+            <div class="flex items-center gap-2 flex-wrap">
+                <a href="../plan-change/plan-change-list.html" class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-navy hover:text-brand-navyDark bg-amber-50/80 border border-amber-300 px-3.5 py-2 rounded-xl shadow-sm hover:shadow transition">
+                    <span class="text-sm">📐</span>
+                    Plan Change Master
+                </a>
+
+                <a href="active-tasks.html" class="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-navy hover:text-brand-navyDark bg-white border border-slate-200 px-3.5 py-2 rounded-xl shadow-sm hover:shadow transition self-start sm:self-auto">
+                    <svg class="w-4 h-4 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    View Active Tasks
+                </a>
+            </div>
         </div>
 
         <!-- Glassmorphism Form Card -->
@@ -103,6 +112,20 @@
                         <select id="zone_id" class="w-full p-3 text-sm rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-brand-amber focus:border-transparent outline-none font-medium transition" required>
                             <option value="">-- Select Floor First --</option>
                         </select>
+
+                        <!-- Dynamic Plan Change Inline Badge Indicator -->
+                        <div id="zone-plan-change-indicator" class="hidden mt-2 p-2.5 rounded-xl bg-amber-50 border border-amber-300 flex items-center justify-between text-xs transition-all">
+                            <div class="flex items-center gap-2">
+                                <span class="text-base animate-pulse">⚠️</span>
+                                <div>
+                                    <span class="font-bold text-brand-navy">Customer Customization Active</span>
+                                    <span id="indicator-rev-text" class="text-[11px] text-amber-900 block font-medium">Special customer requirements recorded for this unit.</span>
+                                </div>
+                            </div>
+                            <button type="button" id="reopen-plan-change-modal-btn" class="px-2.5 py-1 bg-brand-navy text-[#FFBF00] text-[11px] font-bold rounded-lg hover:bg-brand-navyDark transition cursor-pointer">
+                                Review Mandate
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -155,7 +178,7 @@
                         Clear Fields
                     </button>
                     
-                    <button type="submit" class="bg-brand-navy hover:bg-brand-navyDark text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-brand-navy/20 transition duration-200 flex items-center gap-2">
+                    <button type="submit" class="bg-brand-navy hover:bg-brand-navyDark text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-brand-navy/20 transition duration-200 flex items-center gap-2 cursor-pointer">
                         <span class="text-brand-amber">⬢</span>
                         <span>Assign Task to Zone</span>
                     </button>
@@ -167,9 +190,116 @@
         </div>
     </main>
 
-    <!-- Global Config & Logic Scripts -->
-    <script src="../config.js"></script>
-    <script src="log-task.js"></script>
+    <!-- ================= PLAN CHANGE ALERT INTERCEPTOR MODAL ================= -->
+    <div id="plan-change-alert-modal" class="fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div id="pc-modal-backdrop" class="absolute inset-0 bg-slate-900/70 backdrop-blur-sm cursor-pointer"></div>
+
+        <!-- Dialog Box -->
+        <div class="relative bg-white rounded-3xl shadow-2xl border-2 border-amber-400 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300">
+            
+            <!-- Modal Header Alert Banner -->
+            <div class="px-6 py-4 bg-brand-navy text-white flex items-center justify-between border-b border-amber-400/40 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500 text-brand-navy flex items-center justify-center font-bold text-xl shadow">
+                        ⚠️
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-bold text-white tracking-wide">Customer Plan Change Detected!</h2>
+                            <span id="modal-pc-rev" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-amber text-brand-navy">Rev v1</span>
+                        </div>
+                        <p class="text-xs text-amber-200 font-medium">Do NOT execute default standard floor plan for this unit</p>
+                    </div>
+                </div>
+
+                <button type="button" id="close-pc-modal-cross" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 overflow-y-auto space-y-5 flex-grow">
+                
+                <!-- Unit & Customer Summary Card -->
+                <div class="p-4 bg-amber-50/70 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Target Unit & Customer</span>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span id="modal-pc-zone-id" class="text-lg font-black text-brand-navy">Flat 801</span>
+                            <span id="modal-pc-location" class="text-xs font-semibold text-slate-600">(Tower A • 8th Floor)</span>
+                        </div>
+                        <p class="text-xs text-slate-700 mt-1">
+                            Customer: <strong id="modal-pc-customer-name">Rajeshbhai Patel</strong> • Phone: <span id="modal-pc-phone">--</span>
+                        </p>
+                    </div>
+
+                    <div class="text-left sm:text-right">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Material / Cost Terms</span>
+                        <span id="modal-pc-cost-terms" class="text-xs font-bold text-brand-navy block mt-0.5">Customer Provided Material</span>
+                    </div>
+                </div>
+
+                <!-- Structural Safety Warning (Shown only if flagged) -->
+                <div id="modal-pc-structural-alert" class="hidden p-3.5 bg-rose-50 border border-rose-300 rounded-xl flex items-start gap-2.5 text-xs text-rose-900 font-medium">
+                    <span class="text-base text-rose-600">🚨</span>
+                    <div>
+                        <strong class="block">Structural Impact Warning:</strong>
+                        This customer request touches RCC structural columns/beams/slabs. Ensure structural consultant approval exists before assigning civil core-cutting or masonry shifting!
+                    </div>
+                </div>
+
+                <!-- Customized Trade Bullets -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-brand-navy uppercase tracking-wider">Specific Modifications Requested (Bullet Points)</span>
+                        <span id="modal-pc-bullet-count" class="text-[11px] font-bold text-slate-500">0 Checkpoints</span>
+                    </div>
+
+                    <div id="modal-pc-bullets-container" class="space-y-2 max-h-52 overflow-y-auto pr-1">
+                        <!-- Injected dynamic bullet items -->
+                    </div>
+                </div>
+
+                <!-- Signed Drawing Preview & External View -->
+                <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-100 text-brand-navy flex items-center justify-center font-bold text-base">
+                            📄
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">Customer-Signed Drawing Proof</span>
+                            <span class="text-[11px] text-slate-500">Physical copy verified with client sign</span>
+                        </div>
+                    </div>
+
+                    <a id="modal-pc-drawing-link" href="#" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-brand-navy text-[#FFBF00] text-xs font-bold hover:bg-brand-navyDark transition flex items-center gap-1.5 shadow-sm">
+                        <span>View Drawing</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </a>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 flex-shrink-0">
+                <span class="text-[11px] text-slate-500 font-medium">
+                    Please incorporate these specifications into the task instructions.
+                </span>
+                
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button type="button" id="modal-pc-dismiss-btn" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-navy hover:bg-brand-navyDark text-[#FFBF00] text-xs font-bold transition shadow-md cursor-pointer flex items-center justify-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Acknowledge & Proceed</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Logic Script (Loaded as ES Module) -->
+    <script type="module" src="./log-task.js"></script>
     
     <!-- Universal Navigation Shell -->
     <script type="module">

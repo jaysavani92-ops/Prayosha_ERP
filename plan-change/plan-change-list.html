@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayosha ERP | Plan Change Registry</title>
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            navy: '#1E3A5F',
+                            navyDark: '#152A45',
+                            amber: '#FFBF00',
+                            amberDark: '#D9A300',
+                            emerald: '#10B981',
+                            rose: '#F43F5E',
+                            indigo: '#4F46E5',
+                            canvas: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Printable Site Handover Slip / Chithi Styling */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printable-chithi, #printable-chithi * {
+                visibility: visible;
+            }
+            #printable-chithi {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 16px;
+                background: white !important;
+                color: black !important;
+            }
+            #prayosha-topbar, #prayosha-bottomdock, #prayosha-hub-drawer, #prayosha-shell-container {
+                display: none !important;
+            }
+        }
+
+        /* Dense table scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F5F9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+<body class="bg-brand-canvas text-slate-800 font-sans antialiased selection:bg-brand-amber selection:text-brand-navy min-h-screen flex flex-col">
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
+
+        <!-- Top Header & Primary Actions -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-brand-navy text-brand-amber flex items-center justify-center font-bold text-xl shadow-md border border-white/20">
+                    📐
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-brand-navy border border-amber-300">
+                            Customization Registry
+                        </span>
+                        <span id="active-project-badge" class="text-xs font-medium text-slate-500">
+                            Loading Project...
+                        </span>
+                    </div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-brand-navy mt-0.5">Unit Plan Change Master</h1>
+                    <p class="text-xs text-slate-500 font-medium">ગ્રાહક પ્લાન ફેરફાર રજિસ્ટર (Active Customizations, Signed Drawings & Audit Trail)</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" id="refresh-data-btn" class="px-3 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 transition flex items-center gap-1.5 shadow-sm cursor-pointer">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>Refresh</span>
+                </button>
+
+                <a href="plan-change-form.html" class="px-4 py-2 text-xs font-bold rounded-xl bg-brand-navy hover:bg-brand-navyDark text-[#FFBF00] transition flex items-center gap-1.5 shadow-md hover:shadow-lg cursor-pointer">
+                    <svg class="w-4 h-4 text-[#FFBF00]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    <span>+ Record Plan Change</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- KPI SUMMARY CARDS -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+            <!-- 1. Total Custom Units -->
+            <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Custom Units</span>
+                    <span id="kpi-total-units" class="text-2xl font-bold text-brand-navy mt-1 block">0</span>
+                    <span class="text-[10px] text-slate-500">Across site inventory</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-brand-navy flex items-center justify-center font-bold text-lg border border-blue-100">
+                    🏢
+                </div>
+            </div>
+
+            <!-- 2. Active Mandates -->
+            <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Active Mandates</span>
+                    <span id="kpi-active-mandates" class="text-2xl font-bold text-emerald-600 mt-1 block">0</span>
+                    <span class="text-[10px] text-slate-500">Pending or in execution</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg border border-emerald-100">
+                    ⚡
+                </div>
+            </div>
+
+            <!-- 3. Revised Orders -->
+            <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Revisions (v2+)</span>
+                    <span id="kpi-revised-units" class="text-2xl font-bold text-amber-600 mt-1 block">0</span>
+                    <span class="text-[10px] text-slate-500">Modified requirements</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-lg border border-amber-100">
+                    🔄
+                </div>
+            </div>
+
+            <!-- 4. Structural Safety Flags -->
+            <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">RCC Impacts</span>
+                    <span id="kpi-structural-flags" class="text-2xl font-bold text-rose-600 mt-1 block">0</span>
+                    <span class="text-[10px] text-slate-500">Structural safety review</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center font-bold text-lg border border-rose-100">
+                    ⚠️
+                </div>
+            </div>
+        </div>
+
+        <!-- SEARCH & MULTI-FILTER TOOLBAR -->
+        <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <!-- Search Input -->
+                <div class="lg:col-span-2 relative">
+                    <input type="text" id="search-input" placeholder="Search by Zone ID (Flat/Shop), Customer Name, Phone..." class="w-full bg-slate-50 focus:bg-white text-xs font-medium text-slate-800 py-2.5 pl-9 pr-3 rounded-xl border border-slate-300 focus:border-brand-navy focus:ring-1 focus:ring-brand-navy outline-none transition">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Tower Filter -->
+                <div>
+                    <select id="tower-filter" class="w-full bg-slate-50 focus:bg-white text-xs font-semibold text-slate-700 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy outline-none">
+                        <option value="ALL">All Towers / Wings</option>
+                    </select>
+                </div>
+
+                <!-- Trade / Category Filter -->
+                <div>
+                    <select id="trade-filter" class="w-full bg-slate-50 focus:bg-white text-xs font-semibold text-slate-700 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy outline-none">
+                        <option value="ALL">All Trade Packages</option>
+                        <option value="Flooring & Tiles">Flooring & Tiles (ટાઇલ્સ)</option>
+                        <option value="Plumbing & Sanitary">Plumbing & Sanitary (પ્લમ્બિંગ)</option>
+                        <option value="Electrical & Wiring">Electrical (ઇલેક્ટ્રિક)</option>
+                        <option value="Civil & Masonry">Civil & Masonry (ચણતર)</option>
+                        <option value="Doors & Windows">Doors & Windows (દરવાજા/બારી)</option>
+                        <option value="Kitchen & Platform">Kitchen Platform (રસોડું)</option>
+                        <option value="False Ceiling & POP">False Ceiling / POP</option>
+                        <option value="General & Scope">General / Other</option>
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <select id="status-filter" class="w-full bg-slate-50 focus:bg-white text-xs font-semibold text-slate-700 py-2.5 px-3 rounded-xl border border-slate-300 focus:border-brand-navy outline-none">
+                        <option value="ALL">All Statuses</option>
+                        <option value="Active" selected>Active Mandates (સક્રિય)</option>
+                        <option value="Revised">Revised (સુધારેલ - v1 Archive)</option>
+                        <option value="Executed">Executed on Site (પૂર્ણ થયેલ)</option>
+                        <option value="Cancelled">Cancelled (રદ થયેલ)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- MASTER REGISTRY TABLE CONTAINER -->
+        <div class="bg-white/90 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-brand-navy"></span>
+                    <h2 class="text-xs font-bold text-brand-navy uppercase tracking-wider">Site Plan Changes Master List</h2>
+                </div>
+                <div class="text-xs text-slate-500 font-medium">
+                    Showing <span id="filtered-count" class="font-bold text-brand-navy">0</span> entries
+                </div>
+            </div>
+
+            <!-- Responsive Table View -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                            <th class="py-3 px-4">Zone ID & Location</th>
+                            <th class="py-3 px-4">Customer Details</th>
+                            <th class="py-3 px-4">Customized Trades & Bullets</th>
+                            <th class="py-3 px-4">Cost Terms</th>
+                            <th class="py-3 px-4 text-center">Rev</th>
+                            <th class="py-3 px-4 text-center">Status</th>
+                            <th class="py-3 px-4 text-center">Signed Proof</th>
+                            <th class="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="plan-change-table-body" class="divide-y divide-slate-100">
+                        <!-- Loading State -->
+                        <tr id="loading-row">
+                            <td colspan="8" class="text-center py-12 text-slate-400">
+                                <div class="flex flex-col items-center justify-center space-y-2">
+                                    <svg class="animate-spin h-6 w-6 text-brand-navy" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                    </svg>
+                                    <span class="font-medium text-xs">Loading unit plan changes from Primary Database...</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State Container -->
+            <div id="empty-state" class="hidden text-center py-14 px-4">
+                <div class="w-14 h-14 rounded-2xl bg-amber-50 text-brand-amber flex items-center justify-center font-bold text-2xl mx-auto mb-3 border border-amber-200">
+                    📋
+                </div>
+                <h3 class="text-sm font-bold text-brand-navy">No Plan Changes Found</h3>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    No customized unit mandates match the selected project, tower, or trade filter.
+                </p>
+                <div class="mt-4">
+                    <a href="plan-change-form.html" class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-navy text-[#FFBF00] text-xs font-bold rounded-xl shadow-sm hover:shadow-md transition">
+                        <span>+ Record First Plan Change</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= FULL MANDATE & DRAWING LIGHTBOX MODAL ================= -->
+    <div id="detail-modal" class="fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div id="detail-modal-backdrop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer"></div>
+
+        <!-- Modal Panel -->
+        <div class="relative bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-brand-navy text-white flex items-center justify-between border-b border-white/10 flex-shrink-0">
+                <div class="flex items-center gap-3">
+                    <span class="text-brand-amber text-xl font-bold">⬢</span>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 id="modal-zone-id" class="text-base font-bold text-white tracking-wide">Flat 801</h2>
+                            <span id="modal-rev-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-amber text-brand-navy">Rev v1</span>
+                            <span id="modal-status-badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">Active</span>
+                        </div>
+                        <p id="modal-location-subtitle" class="text-xs text-slate-300">Tower A • 8th Floor • Prayosha Heritage</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" id="modal-print-btn" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition border border-white/20 cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                        </svg>
+                        <span>Print Chithi</span>
+                    </button>
+
+                    <button type="button" id="close-detail-modal" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content (Two Columns on Desktop) -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-grow">
+                
+                <!-- Structural Warning Banner (if applicable) -->
+                <div id="modal-structural-alert" class="hidden p-3.5 rounded-xl bg-rose-50 border border-rose-300 flex items-start gap-2.5 text-rose-900 text-xs font-medium">
+                    <span class="text-base text-rose-600">⚠️</span>
+                    <div>
+                        <span class="font-bold block">Structural Impact Caution:</span>
+                        This client custom request impacts RCC structural elements (Beams / Columns / Shear Wall). Ensure written verification from structural consultant before executing civil core cutting.
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    
+                    <!-- Left Column: Customer & Bullets -->
+                    <div class="space-y-4">
+                        <!-- Customer Card -->
+                        <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Customer & Commercial Context</span>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <span class="text-slate-500 block text-[11px]">Customer Name:</span>
+                                    <span id="modal-customer-name" class="font-bold text-slate-800">--</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[11px]">Contact Phone:</span>
+                                    <span id="modal-customer-phone" class="font-bold text-slate-800">--</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[11px]">Material Terms:</span>
+                                    <span id="modal-cost-terms" class="font-bold text-brand-navy">--</span>
+                                </div>
+                                <div>
+                                    <span class="text-slate-500 block text-[11px]">Recorded On:</span>
+                                    <span id="modal-date-recorded" class="font-bold text-slate-800">--</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Checkpoints / Bullets -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold text-brand-navy uppercase tracking-wider">Required Modifications (Bullet Points)</span>
+                                <span id="modal-bullet-count" class="text-[11px] font-bold text-slate-500">0 Items</span>
+                            </div>
+                            <div id="modal-bullets-list" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+                                <!-- Dynamically Injected Bullets -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Signed Drawing Proof Viewer -->
+                    <div class="flex flex-col space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-brand-navy uppercase tracking-wider">Customer Signed Drawing Proof</span>
+                            <a id="modal-open-drawing-external" href="#" target="_blank" class="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                                <span>Open Fullscreen</span>
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </a>
+                        </div>
+
+                        <div id="modal-drawing-container" class="w-full h-80 sm:h-96 bg-slate-100 border border-slate-200 rounded-2xl overflow-hidden flex items-center justify-center relative">
+                            <!-- Injected Image or Iframe for PDF -->
+                            <img id="modal-drawing-img" src="" alt="Signed Plan" class="hidden w-full h-full object-contain">
+                            <iframe id="modal-drawing-iframe" src="" class="hidden w-full h-full border-0"></iframe>
+                            <div id="modal-drawing-placeholder" class="text-center p-4 text-xs text-slate-400">
+                                No drawing loaded
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-slate-400 text-center">Verified S3-compatible asset stored in Cloudflare R2</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between flex-shrink-0">
+                <div class="text-[11px] text-slate-500 font-medium">
+                    Prayosha Site Quality & Customization Protocol
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="modal-close-footer" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition cursor-pointer">
+                        Close
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ================= PRINTABLE SITE HANDOVER SLIP (HIDDEN ON SCREEN, VISIBLE ON PRINT) ================= -->
+    <div id="printable-chithi" class="hidden">
+        <div class="border-2 border-black p-6 font-sans">
+            <!-- Slip Header -->
+            <div class="flex justify-between items-start border-b-2 border-black pb-4">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight">PRAYOSHA GROUP</h1>
+                    <p class="text-sm font-semibold uppercase">Site Execution Mandate - Plan Change Handover Chithi</p>
+                    <p class="text-xs text-gray-600">ગ્રાહક વિશેષ જરૂરિયાત અને પ્લાન ફેરફાર કાપલી</p>
+                </div>
+                <div class="text-right">
+                    <span id="print-zone-tag" class="text-2xl font-black border-2 border-black px-3 py-1 inline-block">FLAT 801</span>
+                    <p id="print-rev-tag" class="text-xs font-bold mt-1">Revision: v1</p>
+                </div>
+            </div>
+
+            <!-- Unit & Customer Metadata -->
+            <div class="grid grid-cols-2 gap-4 my-4 text-xs border-b border-gray-300 pb-3">
+                <div>
+                    <p><strong>Project:</strong> <span id="print-project-name">--</span></p>
+                    <p><strong>Tower / Wing:</strong> <span id="print-tower">--</span></p>
+                    <p><strong>Floor Level:</strong> <span id="print-floor">--</span></p>
+                </div>
+                <div>
+                    <p><strong>Customer Name:</strong> <span id="print-customer">--</span></p>
+                    <p><strong>Phone:</strong> <span id="print-phone">--</span></p>
+                    <p><strong>Material Terms:</strong> <span id="print-cost-terms">--</span></p>
+                    <p><strong>Date Issued:</strong> <span id="print-date">--</span></p>
+                </div>
+            </div>
+
+            <!-- Bullet Requirements -->
+            <div class="my-4">
+                <h3 class="text-xs font-bold uppercase tracking-wider mb-2 border-b border-black pb-1">
+                    Specific Execution Instructions (ચોક્કસ કામગીરી વિગતો):
+                </h3>
+                <div id="print-bullets" class="space-y-2 text-xs">
+                    <!-- Dynamic Items -->
+                </div>
+            </div>
+
+            <!-- Site Handover Signatures -->
+            <div class="grid grid-cols-3 gap-6 pt-16 mt-8 border-t-2 border-black text-center text-xs">
+                <div>
+                    <div class="border-t border-dashed border-black pt-1 font-semibold">Customer Signature</div>
+                    <div class="text-[10px] text-gray-500">(ગ્રાહકની સહી)</div>
+                </div>
+                <div>
+                    <div class="border-t border-dashed border-black pt-1 font-semibold">Site Engineer / Supervisor</div>
+                    <div class="text-[10px] text-gray-500">(સાઇટ ઇજનેર / સુપરવાઇઝર)</div>
+                </div>
+                <div>
+                    <div class="border-t border-dashed border-black pt-1 font-semibold">Contractor / Kadia Agency</div>
+                    <div class="text-[10px] text-gray-500">(કોન્ટ્રાક્ટર / એજન્સી સ્વીકૃતિ)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shell Integration & Universal Localization -->
+    <script type="module" src="../config.js"></script>
+    <script type="module">
+        import { initShell } from '../common/shell.js';
+        document.addEventListener('DOMContentLoaded', () => {
+            initShell({ activeModule: 'plan-change' });
+        });
+    </script>
+
+    <!-- Master Registry Script -->
+    <script type="module" src="./plan-change-list.js"></script>
+
+</body>
+</html>

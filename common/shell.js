@@ -3,7 +3,7 @@
  * File: /common/shell.js
  * 
  * Features:
- * 1. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Workforce, Pre-Dev, Admin, Site Map).
+ * 1. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Plan Change, Workforce, Pre-Dev, Admin, Site Map).
  * 2. Case-Insensitive Deep DOM Scanner: Automatically translates visible text, labels, and placeholders on any page.
  * 3. Bidirectional Caching: Remembers original English strings in a WeakMap for seamless EN <-> GU <-> HI toggles.
  * 4. Live MutationObserver: Automatically translates dynamically rendered cards, tables, and floor accordions.
@@ -21,61 +21,72 @@ const supabase = Config.supabase || Config.default?.supabase || window.supabaseC
 const RAW_DICTIONARY = {
     // --- Navigation & Core Shell ---
     "prayosha": { gu: "પ્રયોશા", hi: "प्रयोशा" },
-    "select site project": { gu: "પ્રોજેક્ટ પસંદ કરો", hi: "प्रोजेक्ट चुनें" },
-    "user": { gu: "વપરાશકર્તા", hi: "उपयोगकर्ता" },
-    "engineer": { gu: "ઈજનેર", hi: "अभियंता" },
-    "overview": { gu: "ડેશબોર્ડ", hi: "डैशबोर्ड" },
-    "tasks": { gu: "કાર્યો", hi: "कार्य" },
-    "hub": { gu: "હબ", hi: "हब" },
-    "workforce": { gu: "શ્રમિક દળ", hi: "श्रमिक दल" },
-    "pre-dev": { gu: "આયોજન", hi: "आयोजन" },
-    "prayosha action hub": { gu: "પ્રયોશા એક્શન હબ", hi: "प्रयोशा एक्शन हब" },
-    "quick entries & master navigation": { gu: "ઝડપી એન્ટ્રી અને માસ્ટર નેવિગેશન", hi: "त्वरित प्रविष्टियां और नेविगेशन" },
-    "site fast actions": { gu: "સાઇટ ઝડપી ક્રિયાઓ", hi: "साइट त्वरित कार्य" },
-    "raise issue": { gu: "સમસ્યા નોંધો", hi: "समस्या दर्ज करें" },
-    "log task": { gu: "કાર્ય ઉમેરો", hi: "कार्य जोड़ें" },
-    "log invoice": { gu: "ઇન્વોઇસ લોગ કરો", hi: "चालान लॉग करें" },
+    "select site project": { gu: "પ્રોજેક્ટ પસંદ કરો", hi: "પ્રૉજેક્ટ ચુનેં" },
+    "user": { gu: "વપરાશકર્તા", hi: "उपયોગકર્તા" },
+    "engineer": { gu: "ઈજનેર", hi: "અભિયંતા" },
+    "overview": { gu: "ડેશબોર્ડ", hi: "ડેશબોર્ડ" },
+    "tasks": { gu: "કાર્યો", hi: "કાર્ય" },
+    "hub": { gu: "હબ", hi: "હબ" },
+    "workforce": { gu: "શ્રમિક દળ", hi: "શ્રમિક દલ" },
+    "pre-dev": { gu: "આયોજન", hi: "આયોજન" },
+    "prayosha action hub": { gu: "પ્રયોશા એક્શન હબ", hi: "પ્રયોશા એક્શન હબ" },
+    "quick entries & master navigation": { gu: "ઝડપી એન્ટ્રી અને માસ્ટર નેવિગેશન", hi: "ત્વરિત પ્રવિષ્ટિયાં અને નેવિગેશન" },
+    "site fast actions": { gu: "સાઇટ ઝડપી ક્રિયાઓ", hi: "સાઇટ ત્વરિત કાર્ય" },
+    "raise issue": { gu: "સમસ્યા નોંધો", hi: "સમસ્યા દર્જ કરેં" },
+    "log task": { gu: "કાર્ય ઉમેરો", hi: "કાર્ય જોડેં" },
+    "log invoice": { gu: "ઇન્વોઇસ લોગ કરો", hi: "ચાલાન લોગ કરેં" },
     "daily report": { gu: "દૈનિક અહેવાલ", hi: "દૈનિક રિપોર્ટ" },
-    "site map & spatial suite": { gu: "સાઇટ મેપ અને ઝોન સૂટ", hi: "साइट मैप एवं ज़ोन सूट" },
-    "site map (zones)": { gu: "સાઇટ મેપ (ઝોન)", hi: "साइट मैप (ज़ोन)" },
-    "interactive 3d map": { gu: "ઇન્ટરેક્ટિવ 3D મેપ", hi: "इंटरैक्टिव 3D मैप" },
-    "original 2d drawings": { gu: "ઓરિજિનલ 2D ડ્રોઇંગ્સ", hi: "मूल 2D ड्रॉइंग्स" },
-    "zone kpis & grid": { gu: "ઝોન વિહંગાવલોકન અને ગ્રીડ", hi: "ज़ोन अवलोकन एवं ग्रिड" },
-    "floor plan manager": { gu: "ફ્લોર પ્લાન મેનેજર", hi: "फ्लोर प्लान प्रबंधक" },
-    "civil tasks suite": { gu: "સિવિલ કાર્યો સૂટ", hi: "सिविल कार्य सूट" },
+    "site map & spatial suite": { gu: "સાઇટ મેપ અને ઝોન સૂટ", hi: "સાઇટ મેપ તેમજ ઝોન સૂટ" },
+    "site map (zones)": { gu: "સાઇટ મેપ (ઝોન)", hi: "સાઇટ મેપ (ઝોન)" },
+    "interactive 3d map": { gu: "ઇન્ટરેક્ટિવ 3D મેપ", hi: "ઇન્ટરએક્ટિવ 3D મેપ" },
+    "original 2d drawings": { gu: "ઓરિજિનલ 2D ડ્રોઇંગ્સ", hi: "મૂલ 2D ડ્રોઇંગ્સ" },
+    "zone kpis & grid": { gu: "ઝોન વિહંગાવલોકન અને ગ્રીડ", hi: "ઝોન અવલોકન તેમજ ગ્રિડ" },
+    "floor plan manager": { gu: "ફ્લોર પ્લાન મેનેજર", hi: "ફ્લોર પ્લાન પ્રબંધક" },
+    "civil tasks suite": { gu: "સિવિલ કાર્યો સૂટ", hi: "સિવિલ કાર્ય સૂટ" },
     "active tasks": { gu: "સક્રિય કાર્યો", hi: "સક્રિય કાર્ય" },
-    "pending tasks": { gu: "બાકી કાર્યો", hi: "लंबित कार्य" },
-    "delayed tasks": { gu: "વિલંબિત કાર્યો", hi: "विलंबित कार्य" },
+    "pending tasks": { gu: "બાકી કાર્યો", hi: "લંબિત કાર્ય" },
+    "delayed tasks": { gu: "વિલંબિત કાર્યો", hi: "વિલંબિત કાર્ય" },
     "issue logs": { gu: "સમસ્યા લોગ", hi: "સમસ્યા લોગ" },
-    "zone timeline": { gu: "ઝોન સમયરેખા", hi: "ज़ोन समयरेखा" },
-    "tasks history": { gu: "કાર્ય ઇતિહાસ", hi: "कार्य इतिहास" },
-    "inventory & materials suite": { gu: "ઇન્વેન્ટરી અને સામગ્રી સૂટ", hi: "इन्वेंट्री एवं सामग्री सूट" },
-    "stock overview": { gu: "સ્ટોક વિહંગાવલોકન", hi: "स्टॉक अवलोकन" },
-    "log transaction": { gu: "ટ્રાન્ઝેક્શન લોગ", hi: "लेन-देन लॉग" },
+    "zone timeline": { gu: "ઝોન સમયરેખા", hi: "ઝોન સમયરેખા" },
+    "tasks history": { gu: "કાર્ય ઇતિહાસ", hi: "કાર્ય ઇતિહાસ" },
+    "inventory & materials suite": { gu: "ઇન્વેન્ટરી અને સામગ્રી સૂટ", hi: "ઇન્વેન્ટ્રી તેમજ સામગ્રી સૂટ" },
+    "stock overview": { gu: "સ્ટોક વિહંગાવલોકન", hi: "સ્ટોક અવલોકન" },
+    "log transaction": { gu: "ટ્રાન્ઝેક્શન લોગ", hi: "લેન-દેન લોગ" },
     "civil issue logs": { gu: "ઇશ્યુ લોગ્સ", hi: "ઇશ્યુ લોગ્સ" },
-    "request indent": { gu: "ઇન્ડેન્ટ વિનંતી", hi: "इंडेंट अनुरोध" },
+    "request indent": { gu: "ઇન્ડેન્ટ વિનંતી", hi: "ઇન્ડેન્ટ અનુરોધ" },
     "damage & returns": { gu: "નુકસાન અને વળતર", hi: "ક્ષતિ તેમજ વાપસી" },
-    "generate report": { gu: "અહેવાલ બનાવો", hi: "रिपोर्ट बनाएं" },
-    "purchase & indents suite": { gu: "ખરીદી અને ઇન્ડેન્ટ સૂટ", hi: "खरीद और इंडेंट सूट" },
-    "purchase ledger": { gu: "ખરીદી લેજર", hi: "खरीद लेज़र" },
-    "indent status": { gu: "ઇન્ડેન્ટ સ્ટેટસ", hi: "इंडेंट स्थिति" },
-    "pending payments": { gu: "બાકી ચૂકવણી", hi: "लंबित भुगतान" },
-    "cash ledger": { gu: "રોકડ લેજર", hi: "नकद लेज़र" },
-    "bank ledger": { gu: "બેંક લેજર", hi: "बैंक लेज़र" },
+    "generate report": { gu: "અહેવાલ બનાવો", hi: "રિપોર્ટ બનાયેં" },
+    "purchase & indents suite": { gu: "ખરીદી અને ઇન્ડેન્ટ સૂટ", hi: "ખરીદ તેમજ ઇન્ડેન્ટ સૂટ" },
+    "purchase ledger": { gu: "ખરીદી લેજર", hi: "ખરીદ લેઝર" },
+    "indent status": { gu: "ઇન્ડેન્ટ સ્ટેટસ", hi: "ઇન્ડેન્ટ સ્થિતિ" },
+    "pending payments": { gu: "બાકી ચૂકવણી", hi: "લંબિત ભુગતાન" },
+    "cash ledger": { gu: "રોકડ લેજર", hi: "નકદ લેઝર" },
+    "bank ledger": { gu: "બેંક લેજર", hi: "બેંક લેઝર" },
+
+    // --- Plan Change Suite Translations ---
+    "plan change & customization suite": { gu: "પ્લાન ફેરફાર અને ગ્રાહક વિશિષ્ટતા સૂટ", hi: "પ્લાન બદલાવ તેમજ ગ્રાહક અનુકૂલન સૂટ" },
+    "plan change suite": { gu: "પ્લાન ફેરફાર સૂટ", hi: "પ્લાન બદલાવ સૂટ" },
+    "plan change master": { gu: "પ્લાન ફેરફાર રજિસ્ટર", hi: "પ્લાન બદલાવ માસ્ટર" },
+    "plan change": { gu: "પ્લાન ફેરફાર", hi: "પ્લાન બદલાવ" },
+    "record plan change": { gu: "પ્લાન ફેરફાર નોંધો", hi: "પ્લાન બદલાવ દર્જ કરેં" },
+    "+ record plan change": { gu: "+ પ્લાન ફેરફાર નોંધો", hi: "+ નયા પ્લાન બદલાવ" },
+    "custom units": { gu: "કસ્ટમ યુનિટ્સ", hi: "કસ્ટમ યુનિટ્સ" },
+    "customer customization": { gu: "ગ્રાહક વિશેષ જરૂરિયાત", hi: "ગ્રાહક અનુકૂલન" },
+    "signed proof": { gu: "સહી કરેલ દસ્તાવેજ", hi: "હસ્તાક્ષરિત પ્રમાણ" },
 
     // --- Petty Cash Suite Translations ---
-    "petty cash suite": { gu: "પેટ્ટી કેશ સૂટ", hi: "पेट्टी कैश सूट" },
-    "petty cash": { gu: "પેટ્ટી કેશ", hi: "पेट्टी कैश" },
-    "petty cash ledger": { gu: "પેટ્ટી કેશ લેજર", hi: "पेट्टी कैश लेज़र" },
+    "petty cash suite": { gu: "પેટ્ટી કેશ સૂટ", hi: "પેટ્ટી કેશ સૂટ" },
+    "petty cash": { gu: "પેટ્ટી કેશ", hi: "પેટ્ટી કેશ" },
+    "petty cash ledger": { gu: "પેટ્ટી કેશ લેજર", hi: "પેટ્ટી કેશ લેઝર" },
     "log expense": { gu: "ખર્ચ નોંધો", hi: "ખર્ચ નોંધો" },
-    "record site expense": { gu: "સાઇટ ખર્ચ નોંધણી", hi: "साइट खर्च दर्ज करें" },
-    "reconciliation & audit": { gu: "હિસાબ ચકાસણી અને ઓડિટ", hi: "मिलान एवं ऑडिट" },
+    "record site expense": { gu: "સાઇટ ખર્ચ નોંધણી", hi: "સાઇટ ખર્ચ દર્જ કરેં" },
+    "reconciliation & audit": { gu: "હિસાબ ચકાસણી અને ઓડિટ", hi: "મિલાન તેમજ ઓડિટ" },
     "monthly reconciliation": { gu: "માસિક હિસાબ / ઓડિટ", hi: "માસિક હિસાબ / ઓડિટ" },
 
-    "pre-development": { gu: "પ્રી-ડેવલપમેન્ટ (આયોજન)", hi: "प्री-डेवलपमेंट (आयोजन)" },
-    "liasoning & boq master": { gu: "લાયઝનિંગ અને BOQ માસ્ટર", hi: "लायजनिंग एवं BOQ मास्टर" },
-    "• liasoning & boq master": { gu: "• લાયઝનિંગ અને BOQ માસ્ટર", hi: "• लायजनિંગ एवं BOQ मास्टर" },
-    "workforce & equipment": { gu: "શ્રમિક અને સાધન સામગ્રી", hi: "श्रमिक एवं उपकरण" },
+    "pre-development": { gu: "પ્રી-ડેવલપમેન્ટ (આયોજન)", hi: "પ્રી-ડેવલપમેન્ટ (આયોજન)" },
+    "liasoning & boq master": { gu: "લાયઝનિંગ અને BOQ માસ્ટર", hi: "લાયઝનિંગ તેમજ BOQ માસ્ટર" },
+    "• liasoning & boq master": { gu: "• લાયઝનિંગ અને BOQ માસ્ટર", hi: "• લાયઝનિંગ તેમજ BOQ માસ્ટર" },
+    "workforce & equipment": { gu: "શ્રમિક અને સાધન સામગ્રી", hi: "શ્રમિક તેમજ ઉપકરણ" },
     "daily labor & equipment diary": { gu: "દૈનિક મજૂર અને સાધન ડાયરી", hi: "દૈનિક શ્રમિક વ ઉપકરણ ડાયરી" },
     "• daily labor & equipment diary": { gu: "• દૈનિક મજૂર અને સાધન ડાયરી", hi: "• દૈનિક શ્રમિક વ ઉપકરણ ડાયરી" },
     "administration": { gu: "વહીવટ / એડમિન", hi: "પ્રશાસન / એડમિન" },
@@ -87,9 +98,9 @@ const RAW_DICTIONARY = {
 
     // --- Project Directory Dashboard & Cards ---
     "project directory": { gu: "પ્રોજેક્ટ ડિરેક્ટરી", hi: "પ્રોજેક્ટ નિર્દેશિકા" },
-    "multi-site portfolio, structural zones, and live progress tracking": { gu: "સાઇટ પોર્ટફોલિયો, માળખાકીય ઝોન અને લાઈવ પ્રગતિ ટ્રેકિંગ", hi: "मल्टी-साइट पोर्टफोलियो, संरचनात्मक ज़ोन और लाइव प्रगति ट्रैकिंग" },
+    "multi-site portfolio, structural zones, and live progress tracking": { gu: "સાઇટ પોર્ટફોલિયો, માળખાકીય ઝોન અને લાઈવ પ્રગતિ ટ્રેકિંગ", hi: "મલ્ટી-સાઇટ પોર્ટફોલિયો, સંરચનાત્મક ઝોન ઓર લાઇવ પ્રગતિ ટ્રેકિંગ" },
     "active workspace": { gu: "સક્રિય કાર્યક્ષેત્ર", hi: "સક્રિય કાર્યક્ષેત્ર" },
-    "quick access to operational suites for this site project": { gu: "આ સાઇટ પ્રોજેક્ટ માટે કાર્યકારી સ્યુટ્સની ઝડપી ઍક્સેસ", hi: "इस साइट प्रोजेक्ट के लिए परिचालन सुइट्स तक त्वरित पहुंच" },
+    "quick access to operational suites for this site project": { gu: "આ સાઇટ પ્રોજેક્ટ માટે કાર્યકારી સ્યુટ્સની ઝડપી ઍક્સેસ", hi: "ઇસ સાઇટ પ્રોજેક્ટ કે લિએ પરિચાલન સુઇટ્સ તક ત્વરિત પહોંચ" },
     "civil tasks": { gu: "સિવિલ કાર્યો", hi: "સિવિલ કાર્ય" },
     "live site execution": { gu: "લાઈવ સાઇટ અમલીકરણ", hi: "લાઈવ સાઇટ નિષ્પાદન" },
     "inventory & stock": { gu: "ઇન્વેન્ટરી અને સ્ટોક", hi: "ઇન્વેન્ટ્રી તેમજ સ્ટોક" },
@@ -119,7 +130,7 @@ const RAW_DICTIONARY = {
 
     // --- Create Project Architecture View ---
     "create project architecture": { gu: "નવી પ્રોજેક્ટ રચના બનાવો", hi: "નયા પ્રોજેક્ટ ઢાંચા બનાયેં" },
-    "define metadata, scope, financials, and multi-level floor & zone hierarchy": { gu: "પ્રોજેક્ટ વિગતો, સ્કોપ, બજેટ અને ફ્લોર/ઝોન માળખું વ્યાખ્યાયિત કરો", hi: "मेटाडेटा, दायरा, वित्तीय बजट और फ्लोर/ज़ोन पदानुक्रम को परिभाषित करें" },
+    "define metadata, scope, financials, and multi-level floor & zone hierarchy": { gu: "પ્રોજેક્ટ વિગતો, સ્કોપ, બજેટ અને ફ્લોર/ઝોન માળખું વ્યાખ્યાયિત કરો", hi: "મેટાડેટા, દાયરા, વિત્તીય બજેટ ઓર ફ્લોર/ઝોન પદાનુક્રમ કો પરિભાષિત કરેં" },
     "back to directory": { gu: "ડિરેક્ટરી પર પાછા જાઓ", hi: "નિર્દેશિકા પર વાપસ જાઓ" },
     "new project setup": { gu: "નવો પ્રોજેક્ટ સેટઅપ", hi: "નયા પ્રોજેક્ટ સેટઅપ" },
     "basic project details": { gu: "મૂળભૂત પ્રોજેક્ટ વિગતો", hi: "મૂલ પ્રોજેક્ટ વિવરણ" },
@@ -283,6 +294,7 @@ function getRootPrefix() {
         path.includes('/inventory/') ||
         path.includes('/purchase/') ||
         path.includes('/petty-cash/') ||
+        path.includes('/plan-change/') ||
         path.includes('/users/') ||
         path.includes('/vendors/') ||
         path.includes('/site-map/') ||
@@ -472,6 +484,7 @@ export async function initShell(options = {}) {
         else if (currentPath.includes('/inventory/')) activeModule = 'inventory';
         else if (currentPath.includes('/purchase/')) activeModule = 'purchase';
         else if (currentPath.includes('/petty-cash/')) activeModule = 'petty-cash';
+        else if (currentPath.includes('/plan-change/')) activeModule = 'plan-change';
         else if (currentPath.includes('/workforce/')) activeModule = 'workforce';
         else if (currentPath.includes('/pre-development/')) activeModule = 'pre-dev';
         else if (currentPath.includes('/users/')) activeModule = 'users';
@@ -573,6 +586,7 @@ function injectShellHTML(data) {
     const isPreDev = data.activeModule === 'pre-dev';
     const isSiteMap = data.activeModule === 'site-map';
     const isPettyCash = data.activeModule === 'petty-cash';
+    const isPlanChange = data.activeModule === 'plan-change';
 
     const dashColorClass = isDashboard ? 'text-[#1E3A5F]' : 'text-slate-400 hover:text-slate-600';
     const dashFontClass = isDashboard ? 'font-bold text-[#1E3A5F]' : 'font-medium';
@@ -760,7 +774,23 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 3. Civil Tasks Suite -->
+                    <!-- 3. PLAN CHANGE & CUSTOMIZATION SUITE -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span data-i18n="plan change & customization suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Plan Change & Customization Suite</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-brand-navy border border-amber-300">Customer Specs</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <a href="${ROOT_PATH}plan-change/plan-change-list.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition ${isPlanChange ? 'ring-2 ring-[#1E3A5F] bg-blue-50/50 font-bold text-[#1E3A5F]' : ''}">
+                                <span class="w-2 h-2 rounded-full bg-[#1E3A5F]"></span> <span data-i18n="plan change master">Plan Change Master</span>
+                            </a>
+                            <a href="${ROOT_PATH}plan-change/plan-change-form.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-[#FFBF00]"></span> <span data-i18n="record plan change">Record Plan Change</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 4. Civil Tasks Suite -->
                     <div>
                         <span data-i18n="civil tasks suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Civil Tasks Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -785,7 +815,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 4. INVENTORY & MATERIALS SUITE -->
+                    <!-- 5. INVENTORY & MATERIALS SUITE -->
                     <div>
                         <span data-i18n="inventory & materials suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Inventory & Materials Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -810,7 +840,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 5. PURCHASE & INDENTS SUITE -->
+                    <!-- 6. PURCHASE & INDENTS SUITE -->
                     <div>
                         <span data-i18n="purchase & indents suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Purchase & Indents Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -838,7 +868,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 6. PETTY CASH SUITE -->
+                    <!-- 7. PETTY CASH SUITE -->
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <span data-i18n="petty cash suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Petty Cash Suite</span>
@@ -857,7 +887,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 7. Pre-Development & Workforce -->
+                    <!-- 8. Pre-Development & Workforce -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-white p-3.5 rounded-2xl border border-slate-200">
                             <span data-i18n="pre-development" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Pre-Development</span>
@@ -878,7 +908,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 8. Administration & Masters -->
+                    <!-- 9. Administration & Masters -->
                     <div class="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
                         <span data-i18n="administration" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Administration</span>
                         <div class="flex items-center gap-3">
