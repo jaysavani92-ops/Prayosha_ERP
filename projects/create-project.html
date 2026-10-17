@@ -4,8 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prayosha ERP - Create Project</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            navy: '#1E3A5F',
+                            navyDark: '#152A45',
+                            amber: '#FFBF00',
+                            emerald: '#10B981',
+                            rose: '#F43F5E',
+                            indigo: '#4F46E5',
+                            canvas: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -40,12 +64,8 @@
         .facility-card { border-left: 4px solid #6366f1; background: rgba(255,255,255,0.6); }
         .ground-card { border-left: 4px solid #10b981; background: rgba(255,255,255,0.6); }
         
-        /* Stacking Context Elevation for Dropdowns */
-        .floor-group.dropdown-active {
-            position: relative;
-            z-index: 50 !important;
-        }
-        .floor-row.dropdown-active {
+        /* Elevation for dynamic menus */
+        .floor-group.dropdown-active, .floor-row.dropdown-active {
             position: relative;
             z-index: 50 !important;
         }
@@ -54,7 +74,7 @@
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="pt-20 md:pt-24 pb-28 px-4 sm:px-6 lg:px-8">
+<body class="pt-20 md:pt-24 pb-28 px-4 sm:px-6 lg:px-8 selection:bg-brand-amber selection:text-brand-navy">
 
     <!-- Page Context & Breadcrumb Action Bar -->
     <section class="max-w-7xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -67,12 +87,15 @@
                 <span class="text-gray-300">•</span>
                 <span class="text-xs font-semibold text-amber-600 uppercase tracking-wider">New Project Setup</span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-bold prayosha-navy tracking-tight">Create Project Architecture</h1>
+            <h1 class="text-2xl sm:text-3xl font-bold prayosha-navy tracking-tight flex items-center gap-2">
+                <span class="text-brand-amber">⬢</span>
+                <span>Create Project Architecture</span>
+            </h1>
             <p class="text-gray-500 text-xs sm:text-sm font-medium">Define metadata, scope, financials, and multi-level floor & zone hierarchy</p>
         </div>
 
         <div class="flex items-center gap-3 w-full sm:w-auto">
-            <a href="project-dashboard.html" class="w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl font-semibold bg-white/90 text-gray-700 hover:text-prayosha-navy text-sm border border-gray-200 hover:border-amber-400 transition shadow-sm flex items-center gap-2">
+            <a href="project-dashboard.html" class="w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl font-semibold bg-white/90 text-gray-700 hover:text-prayosha-navy text-sm border border-gray-200 hover:border-amber-400 transition shadow-sm flex items-center gap-2 cursor-pointer">
                 <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                 Project Directory
             </a>
@@ -100,7 +123,7 @@
 
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Project Type</label>
-                    <select id="project_type" class="input-field">
+                    <select id="project_type" class="input-field cursor-pointer">
                         <option value="Residential">Residential</option>
                         <option value="Commercial">Commercial</option>
                         <option value="Residential+Commercial">Residential+Commercial</option>
@@ -111,7 +134,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Contract Type</label>
-                    <select id="contract_type" class="input-field">
+                    <select id="contract_type" class="input-field cursor-pointer">
                         <option value="Material Only">Material Only</option>
                         <option value="Labour Only">Labour Only</option>
                         <option value="Labour Material">Labour Material</option>
@@ -122,7 +145,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Current Status</label>
-                    <select id="status" class="input-field">
+                    <select id="status" class="input-field cursor-pointer">
                         <option value="Planning">Planning</option>
                         <option value="Planning Completed, But Construction Not Started">Planning Completed, Not Started</option>
                         <option value="On Going">On Going</option>
@@ -189,27 +212,33 @@
             <!-- SECTION 3: Unified Structure & Zone Builder -->
             <h2 class="text-lg font-semibold prayosha-amber mb-4 border-b pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     Unified Architecture & Zone Builder
                 </div>
                 <div class="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-                    <button type="button" id="addTowerBtn" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-200 transition shrink-0 shadow-sm border border-blue-200">
+                    <button type="button" id="addTowerBtn" class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-blue-200 transition shrink-0 shadow-sm border border-blue-200 cursor-pointer">
                         + Add Tower Block
                     </button>
-                    <button type="button" id="addFacilityBtn" class="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-indigo-200 transition shrink-0 shadow-sm border border-indigo-200">
+                    <!-- Typology Inclusions Button -->
+                    <button type="button" id="addFlatInclusionsBtn" class="bg-rose-100 text-rose-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-rose-200 transition shrink-0 shadow-sm border border-rose-200 cursor-pointer flex items-center gap-1.5">
+                        <span>🛏️</span>
+                        <span>Master Flat Typologies</span>
+                    </button>
+                    <button type="button" id="addFacilityBtn" class="bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-indigo-200 transition shrink-0 shadow-sm border border-indigo-200 cursor-pointer">
                         + Add Multi-Level Facility
                     </button>
-                    <button type="button" id="addGroundZoneBtn" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-emerald-200 transition shrink-0 shadow-sm border border-emerald-200">
+                    <button type="button" id="addGroundZoneBtn" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded text-sm font-semibold hover:bg-emerald-200 transition shrink-0 shadow-sm border border-emerald-200 cursor-pointer">
                         + Add Ground Zone
                     </button>
                 </div>
             </h2>
             <div class="text-xs text-amber-700 mb-6 bg-amber-50 p-3 rounded border border-amber-100">
-                <p class="font-bold mb-1">Architecture Tips:</p>
+                <p class="font-bold mb-1">Architecture & Typology Tips:</p>
                 <ul class="list-disc pl-4 space-y-1">
-                    <li>Type a number in Flats/Shops or choose an Amenity to reveal the <b>Dynamic Sizing Panel</b>.</li>
-                    <li>For Clubhouses, separate custom rooms with commas (e.g. <i>"Reception, Sauna, Badminton"</i>) to auto-generate size inputs.</li>
-                    <li>Click <b>"Copy"</b> to duplicate a floor's layout AND all of its specific unit sizes instantly.</li>
+                    <li>Type a number in Flats/Shops to open the <b>Dynamic Sizing & Typology Panel</b>.</li>
+                    <li>Assign different Typologies (<b>2 BHK, 3 BHK, 4 BHK</b>) to individual flats on the same floor plate.</li>
+                    <li>Click <b>"Copy"</b> on a floor to duplicate all unit sizes and typologies across subsequent levels.</li>
+                    <li>Use <b>"Clone Tower"</b> in the tower header to replicate the entire multi-level block configuration.</li>
                 </ul>
             </div>
 
@@ -223,45 +252,120 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 Team & Access Assignment
             </h2>
-            <div class="text-xs text-indigo-600 bg-indigo-50 p-2 rounded mb-4">Users assigned here will be granted exclusive access to this project's database.</div>
+            <div class="text-xs text-indigo-600 bg-indigo-50 p-2 rounded mb-4">Users assigned here will be granted project oversight and operational dispatch rights.</div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Chief Engineer</label>
-                    <select id="assigned_chief_engineer" class="input-field">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Chief / Site Engineer</label>
+                    <select id="assigned_chief_engineer" class="input-field cursor-pointer">
                         <option value="">-- Assign Engineer --</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Project Manager</label>
-                    <select id="assigned_project_manager" class="input-field">
+                    <select id="assigned_project_manager" class="input-field cursor-pointer">
                         <option value="">-- Assign Manager --</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Main Contractor</label>
-                    <select id="assigned_contractor" class="input-field">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Main Contractor / Site Agency</label>
+                    <select id="assigned_contractor" class="input-field cursor-pointer">
                         <option value="">-- Assign Contractor --</option>
                     </select>
                 </div>
             </div>
 
             <div class="flex justify-end pt-4 border-t">
-                <button type="submit" id="submitBtn" class="bg-prayosha-navy text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:bg-opacity-90 transition flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                <button type="submit" id="submitBtn" class="bg-prayosha-navy text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:bg-opacity-90 transition flex items-center gap-2 cursor-pointer">
+                    <svg class="w-5 h-5 text-brand-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                     Create Project Architecture
                 </button>
             </div>
         </form>
     </main>
 
+    <!-- Master Flat Typology Profiles Modal -->
+    <div id="inclusionsModal" class="fixed inset-0 z-[100] hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-brand-navy text-white">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-brand-amber text-xl">🛏️</span>
+                    <div>
+                        <h3 class="font-bold text-base tracking-tight">Master Typology Inclusions Engine</h3>
+                        <p class="text-[11px] text-slate-300">Preset room inclusions per apartment profile (English + Gujarati)</p>
+                    </div>
+                </div>
+                <button type="button" id="closeInclusionsBtn" class="text-white hover:text-rose-400 transition text-xl font-bold">✕</button>
+            </div>
+
+            <!-- Typology Tabs Navigation -->
+            <div class="bg-slate-100 px-6 pt-3 flex gap-2 border-b border-slate-200 overflow-x-auto scrollbar-none">
+                <button type="button" class="typology-tab-btn px-4 py-2 text-xs font-bold rounded-t-xl transition bg-white text-brand-navy border-t-2 border-brand-amber shadow-2xs" data-typology="1 BHK">
+                    1 BHK
+                </button>
+                <button type="button" class="typology-tab-btn px-4 py-2 text-xs font-bold rounded-t-xl transition text-slate-600 hover:text-brand-navy hover:bg-white/60" data-typology="2 BHK">
+                    2 BHK
+                </button>
+                <button type="button" class="typology-tab-btn px-4 py-2 text-xs font-bold rounded-t-xl transition text-slate-600 hover:text-brand-navy hover:bg-white/60" data-typology="3 BHK">
+                    3 BHK
+                </button>
+                <button type="button" class="typology-tab-btn px-4 py-2 text-xs font-bold rounded-t-xl transition text-slate-600 hover:text-brand-navy hover:bg-white/60" data-typology="4 BHK">
+                    4 BHK
+                </button>
+                <button type="button" class="typology-tab-btn px-4 py-2 text-xs font-bold rounded-t-xl transition text-slate-600 hover:text-brand-navy hover:bg-white/60" data-typology="Penthouse">
+                    Penthouse / Custom
+                </button>
+            </div>
+
+            <!-- Modal Body (Rooms List) -->
+            <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/50">
+                <div class="flex items-center justify-between mb-3">
+                    <span id="activeTypologyLabel" class="text-xs font-bold uppercase tracking-wider text-brand-navy">
+                        Configuring 1 BHK Inclusions
+                    </span>
+                    <span class="text-[11px] text-slate-400">Checked items generate discrete civil sub-zones</span>
+                </div>
+
+                <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 px-2">
+                    <div class="col-span-2">Room Code</div>
+                    <div class="col-span-5">Room Name (English)</div>
+                    <div class="col-span-4">Gujarati Label</div>
+                    <div class="col-span-1 text-center">Active</div>
+                </div>
+
+                <div id="inclusionsList" class="space-y-2 mb-4">
+                    <!-- Populated dynamically per active typology -->
+                </div>
+
+                <button type="button" id="addNewInclusionBtn" class="w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 text-xs font-semibold rounded-xl hover:bg-white hover:border-brand-navy hover:text-brand-navy transition">
+                    + Add Custom Room to this Typology
+                </button>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-gray-100 bg-white flex items-center justify-between">
+                <span class="text-[11px] text-slate-400 font-medium">Auto-applied whenever a flat is assigned this profile</span>
+                <div class="flex gap-2.5">
+                    <button type="button" id="cancelInclusionsBtn" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+                    <button type="button" id="saveInclusionsBtn" class="px-5 py-2 rounded-xl text-xs font-bold bg-brand-navy text-white hover:bg-brand-navyDark transition shadow-md">
+                        Save Typology Presets
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-24 right-6 z-50 space-y-2 pointer-events-none"></div>
 
+    <!-- Script Controller & Universal Navigation Shell -->
     <script type="module" src="create-project.js"></script>
-    <!-- Universal Navigation Shell -->
     <script type="module">
         import { initShell } from '../common/shell.js';
-        initShell({ activeModule: 'Overview' });
+        document.addEventListener('DOMContentLoaded', () => {
+            initShell({ activeModule: 'projects' });
+        });
     </script>
 </body>
 </html>

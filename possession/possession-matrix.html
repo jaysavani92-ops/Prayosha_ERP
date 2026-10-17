@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prayosha ERP | Possession & Unit Matrix</title>
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            navy: '#1E3A5F',
+                            navyDark: '#152A45',
+                            amber: '#FFBF00',
+                            emerald: '#10B981',
+                            rose: '#F43F5E',
+                            indigo: '#4F46E5',
+                            canvas: '#F8FAFC'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#F8FAFC] font-sans antialiased text-slate-800 min-h-screen selection:bg-brand-amber selection:text-brand-navy">
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+        <!-- Top Header & Breadcrumb -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                    <span data-i18n="overview">Overview</span>
+                    <span>/</span>
+                    <span class="text-brand-navy font-bold" data-i18n="possession suite">Possession Suite</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-brand-navy flex items-center gap-2.5">
+                    <span class="text-brand-amber text-3xl leading-none">⬢</span>
+                    <span data-i18n="possession & unit matrix">Possession & Unit Matrix</span>
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-500 font-medium mt-1" data-i18n="track unit sales, delivery dates, and site completion readiness">
+                    Track sold vs unsold inventory, customer possession timelines, and key release locks.
+                </p>
+            </div>
+
+            <!-- Header Action Controls -->
+            <div class="flex items-center gap-2.5 flex-wrap">
+                <button id="btn-refresh" type="button" class="px-3.5 py-2 rounded-xl bg-white/90 border border-slate-200 text-slate-700 hover:text-brand-navy hover:bg-slate-50 text-xs font-semibold shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span data-i18n="refresh">Refresh</span>
+                </button>
+                <button id="btn-open-create-unit-modal" type="button" class="px-4 py-2 rounded-xl bg-brand-navy hover:bg-brand-navyDark text-white text-xs font-bold shadow-md hover:shadow-lg transition flex items-center gap-2 cursor-pointer">
+                    <span class="text-brand-amber text-base leading-none">+</span>
+                    <span data-i18n="register unit">+ Register Unit</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI Metric Cards Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3.5 sm:gap-4">
+            
+            <!-- 1. Total Inventory -->
+            <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1" data-i18n="total units">Total Units</span>
+                <div class="flex items-baseline justify-between">
+                    <span id="kpi-total-units" class="text-2xl font-bold text-brand-navy">0</span>
+                    <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md" data-i18n="all towers">All Towers</span>
+                </div>
+            </div>
+
+            <!-- 2. Sold Flats -->
+            <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-emerald-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-12 h-12 bg-emerald-500/10 rounded-bl-full pointer-events-none"></div>
+                <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider block mb-1" data-i18n="sold units">Sold Units</span>
+                <div class="flex items-baseline justify-between">
+                    <span id="kpi-sold-units" class="text-2xl font-bold text-emerald-700">0</span>
+                    <span id="kpi-sold-percent" class="text-[11px] font-bold text-emerald-600">0%</span>
+                </div>
+            </div>
+
+            <!-- 3. Unsold Available -->
+            <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-blue-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-12 h-12 bg-blue-500/10 rounded-bl-full pointer-events-none"></div>
+                <span class="text-[11px] font-bold text-blue-600 uppercase tracking-wider block mb-1" data-i18n="available unsold">Available (Unsold)</span>
+                <div class="flex items-baseline justify-between">
+                    <span id="kpi-available-units" class="text-2xl font-bold text-blue-800">0</span>
+                    <span id="kpi-available-percent" class="text-[11px] font-bold text-blue-600">0%</span>
+                </div>
+            </div>
+
+            <!-- 4. Work in Progress / Finishing -->
+            <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-amber-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-12 h-12 bg-brand-amber/15 rounded-bl-full pointer-events-none"></div>
+                <span class="text-[11px] font-bold text-amber-700 uppercase tracking-wider block mb-1" data-i18n="finishing pending">Finishing In Progress</span>
+                <div class="flex items-baseline justify-between">
+                    <span id="kpi-finishing-units" class="text-2xl font-bold text-amber-900">0</span>
+                    <span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md" data-i18n="active snags">Active Snags</span>
+                </div>
+            </div>
+
+            <!-- 5. Keys Delivered -->
+            <div class="col-span-2 lg:col-span-1 bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-indigo-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-12 h-12 bg-indigo-500/10 rounded-bl-full pointer-events-none"></div>
+                <span class="text-[11px] font-bold text-indigo-600 uppercase tracking-wider block mb-1" data-i18n="keys handed over">Keys Handed Over</span>
+                <div class="flex items-baseline justify-between">
+                    <span id="kpi-delivered-units" class="text-2xl font-bold text-indigo-900">0</span>
+                    <span class="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-md" data-i18n="final possession">Possession Given</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Bar & Search Filters -->
+        <div class="bg-white/90 backdrop-blur-md p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            
+            <!-- Left Filters: Tower & Status Tabs -->
+            <div class="flex flex-wrap items-center gap-2.5">
+                <!-- Tower / Wing Select -->
+                <div class="relative min-w-[150px]">
+                    <select id="filter-tower" class="w-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 py-2 pl-3 pr-8 rounded-xl outline-none focus:border-brand-navy focus:bg-white transition cursor-pointer">
+                        <option value="ALL" data-i18n="all towers / blocks">All Towers / Wings</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+
+                <!-- Status Filter Pills -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold text-slate-600">
+                    <button type="button" data-status-filter="ALL" class="status-tab px-3 py-1.5 rounded-lg bg-white text-brand-navy shadow-sm transition">All</button>
+                    <button type="button" data-status-filter="sold" class="status-tab px-3 py-1.5 rounded-lg hover:text-brand-navy transition">Sold</button>
+                    <button type="button" data-status-filter="available" class="status-tab px-3 py-1.5 rounded-lg hover:text-brand-navy transition">Available</button>
+                    <button type="button" data-status-filter="handed_over" class="status-tab px-3 py-1.5 rounded-lg hover:text-brand-navy transition">Handed Over</button>
+                </div>
+            </div>
+
+            <!-- Right Search Box -->
+            <div class="relative w-full md:w-72">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </span>
+                <input id="search-unit-input" type="text" placeholder="Search flat no, customer, or phone..." class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl pl-9 pr-3 py-2 outline-none focus:border-brand-navy focus:bg-white transition">
+            </div>
+
+        </div>
+
+        <!-- Legend Ribbon -->
+        <div class="flex flex-wrap items-center gap-4 text-xs font-semibold px-1 text-slate-500">
+            <span class="text-slate-400 uppercase tracking-wider text-[10px]">Legend:</span>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-500"></span> <span>Available (Unsold)</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-500"></span> <span>Sold (Finishing Pending)</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-emerald-500"></span> <span>Ready For Handover</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-indigo-600"></span> <span>Keys Handed Over</span></div>
+            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-500"></span> <span>Possession Overdue</span></div>
+            <div class="flex items-center gap-1.5 ml-auto text-rose-600 font-bold"><span class="text-xs">🔒</span> <span>Hard Chabi (Key) Lock Active</span></div>
+        </div>
+
+        <!-- Floor-by-Floor Interactive Matrix Grid -->
+        <div id="unit-matrix-container" class="space-y-4">
+            <!-- Loading Indicator -->
+            <div class="bg-white/80 backdrop-blur-md rounded-2xl border border-slate-200 p-12 text-center">
+                <svg class="animate-spin h-8 w-8 text-brand-amber mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <p class="text-xs font-semibold text-slate-600" data-i18n="loading unit matrix">Loading possession records & tower matrix...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Slide-Over Drawer: Unit Possession & Chabi Gate Workspace -->
+    <div id="unit-detail-drawer" class="fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div id="drawer-backdrop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer"></div>
+        <div id="drawer-panel" class="absolute top-0 right-0 bottom-0 w-full max-w-xl bg-white shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-out border-l border-slate-200">
+            
+            <!-- Drawer Header -->
+            <div class="px-6 py-4 bg-brand-navy text-white flex items-center justify-between">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span id="drawer-unit-badge" class="px-2 py-0.5 rounded text-[11px] font-bold bg-brand-amber text-brand-navy">A-101</span>
+                        <span id="drawer-status-pill" class="px-2 py-0.5 rounded text-[11px] font-semibold bg-white/20 text-white">Sold</span>
+                    </div>
+                    <h2 id="drawer-unit-title" class="text-base font-bold text-white mt-1">Unit 101 Details</h2>
+                </div>
+                <button id="btn-close-drawer" type="button" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Drawer Content Body -->
+            <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-[#F8FAFC]">
+                
+                <!-- 1. Customer & Delivery Milestone Banner -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Customer & Possession Info</span>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <span class="text-[11px] text-slate-500 block">Buyer / Customer Name</span>
+                            <span id="drawer-customer-name" class="text-xs font-bold text-slate-800">Available (Unsold)</span>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-500 block">Contact Phone</span>
+                            <span id="drawer-customer-phone" class="text-xs font-bold text-slate-800">-</span>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-500 block">Committed Handover</span>
+                            <span id="drawer-committed-date" class="text-xs font-bold text-brand-navy">-</span>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-500 block">Days Left / Overdue</span>
+                            <span id="drawer-days-status" class="text-xs font-bold text-slate-700">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. STRICT SECURITY GATE: CHABI (KEY) RELEASE LOCK -->
+                <div id="drawer-chabi-gate-card" class="p-4 rounded-2xl border-2 border-dashed border-rose-300 bg-rose-50/70 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🔒</span>
+                            <div>
+                                <h3 class="text-xs font-bold text-rose-900 uppercase tracking-wider">Hard Chabi (Key) Security Lock</h3>
+                                <p class="text-[11px] text-rose-700 font-medium">Head Office accounts & legal approval status</p>
+                            </div>
+                        </div>
+                        <span id="drawer-key-lock-tag" class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white">KEYS LOCKED</span>
+                    </div>
+
+                    <p class="text-[11px] text-rose-800 bg-white/70 p-2.5 rounded-xl border border-rose-200 leading-relaxed">
+                        ⚠️ <strong>STRICT DIRECTIVE:</strong> Site engineers are authorized to execute touch-ups and rectification work only. Under no circumstances may keys be handed over or buyer interior work commenced until marked as HO Approved.
+                    </p>
+
+                    <!-- HO Clearance Toggle Control (Visible for Owner/Admin) -->
+                    <div class="pt-2 flex items-center justify-between border-t border-rose-200">
+                        <span class="text-xs font-semibold text-rose-900">HO Accounts & Key Clearance:</span>
+                        <button id="btn-toggle-key-clearance" type="button" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm cursor-pointer">
+                            Unlock Key Handover
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. WhatsApp Site Work Dispatcher -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Site Team Dispatcher</span>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">WhatsApp Ready</span>
+                    </div>
+
+                    <div>
+                        <label for="drawer-engineer-select" class="block text-[11px] font-semibold text-slate-600 mb-1">Assigned Site Supervisor / Engineer</label>
+                        <select id="drawer-engineer-select" class="w-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-800 py-2 px-3 rounded-xl outline-none focus:border-brand-navy">
+                            <option value="">-- Select Engineer / In-Charge --</option>
+                        </select>
+                    </div>
+
+                    <button id="btn-dispatch-whatsapp" type="button" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <span>💬</span>
+                        <span>Send WhatsApp Priority Work Order</span>
+                    </button>
+                </div>
+
+                <!-- 4. Snags & Punch List Summary -->
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pre-Handover Snags</span>
+                        <span id="drawer-snag-count-pill" class="text-[10px] font-bold text-brand-navy bg-slate-100 px-2 py-0.5 rounded-md">0 Items</span>
+                    </div>
+
+                    <div id="drawer-snags-list" class="space-y-2">
+                        <p class="text-xs text-slate-400 italic">No open punch-list snags recorded for this flat.</p>
+                    </div>
+
+                    <!-- Quick Add Snag -->
+                    <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
+                        <input id="input-new-snag" type="text" placeholder="Add punch list note (e.g. tile grouting, switchboard)..." class="flex-1 bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 outline-none focus:border-brand-navy">
+                        <button id="btn-add-snag" type="button" class="px-3.5 py-2 bg-brand-navy hover:bg-brand-navyDark text-white text-xs font-bold rounded-xl transition cursor-pointer">Add</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Drawer Bottom Actions -->
+            <div class="p-4 bg-white border-t border-slate-200 flex items-center justify-between gap-3">
+                <button id="btn-mark-ready-qc" type="button" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer">
+                    Mark Snags Rectified
+                </button>
+                <button id="btn-final-key-handover" type="button" disabled class="flex-1 py-2.5 rounded-xl bg-slate-300 text-slate-500 text-xs font-bold transition cursor-not-allowed">
+                    Deliver Keys to Buyer
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal: Register / Add New Unit -->
+    <div id="create-unit-modal" class="fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-300">
+        <div id="modal-backdrop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm cursor-pointer"></div>
+        <div class="relative min-h-screen flex items-center justify-center p-4">
+            <div class="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+                
+                <div class="px-6 py-4 bg-brand-navy text-white flex items-center justify-between">
+                    <h3 class="text-sm font-bold flex items-center gap-2">
+                        <span class="text-brand-amber">⬢</span>
+                        <span>Register New Project Unit</span>
+                    </h3>
+                    <button id="btn-close-modal" type="button" class="text-white/60 hover:text-white transition cursor-pointer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <form id="form-create-unit" class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tower / Wing <span class="text-red-500">*</span></label>
+                            <input id="modal-tower" type="text" required placeholder="e.g. Tower A" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 outline-none focus:border-brand-navy">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Floor Number <span class="text-red-500">*</span></label>
+                            <input id="modal-floor" type="number" required placeholder="e.g. 4" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 outline-none focus:border-brand-navy">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Unit Number <span class="text-red-500">*</span></label>
+                            <input id="modal-unit" type="text" required placeholder="e.g. A-402" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 outline-none focus:border-brand-navy">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Unit Type</label>
+                            <select id="modal-type" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 outline-none focus:border-brand-navy">
+                                <option value="2 BHK">2 BHK</option>
+                                <option value="3 BHK" selected>3 BHK</option>
+                                <option value="4 BHK">4 BHK</option>
+                                <option value="Penthouse">Penthouse</option>
+                                <option value="Shop">Shop / Commercial</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-100 pt-3">
+                        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Customer Booking Details (Optional)</span>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Customer Name</label>
+                                <input id="modal-customer-name" type="text" placeholder="Buyer's name" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 outline-none focus:border-brand-navy">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">Phone Number</label>
+                                <input id="modal-customer-phone" type="tel" placeholder="+91 98765 43210" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 outline-none focus:border-brand-navy">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Promised Possession Date</label>
+                            <input id="modal-possession-date" type="date" class="w-full bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded-xl px-3 py-2 outline-none focus:border-brand-navy">
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex items-center justify-end gap-2.5">
+                        <button id="btn-cancel-modal" type="button" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition cursor-pointer">Cancel</button>
+                        <button type="submit" class="px-5 py-2 rounded-xl bg-brand-navy hover:bg-brand-navyDark text-white text-xs font-bold transition shadow-md cursor-pointer">Save Unit</button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts Integration -->
+    <script type="module">
+        import { initShell } from '../common/shell.js';
+        document.addEventListener('DOMContentLoaded', () => {
+            initShell({ activeModule: 'possession' });
+        });
+    </script>
+    <script type="module" src="possession-matrix.js"></script>
+</body>
+</html>

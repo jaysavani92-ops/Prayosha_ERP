@@ -4,11 +4,11 @@
  * 
  * Features:
  * 1. 3-Tier Cascading Hierarchy: Project -> Tower -> Floor Level -> Zone ID dynamically from database records.
- * 2. Plan Change Alert Interceptor: Detects active customer modifications and triggers an unskippable warning modal.
- * 3. Trade-Aware Checkpoint Highlighting: Dynamically emphasizes bullets matching the selected civil trade category.
- * 4. Automatic Scope Auto-Append: Populates task scope notes with customer specifications upon modal acknowledgment.
- * 5. Execution Status Assignment: Automatically populates started_date and completed_date based on status.
- * 6. Dynamic Zone Synthesis: Unpacks unit configurations and persists project_map_zones on demand.
+ * 2. Discrete Zone Parser: Unpacks flats, shops, AND every individual floor amenity (Parking, Lifts, Ducts, Stairs, Passage).
+ * 3. Self-Healing Database Sync: Automatically replaces legacy compound basement strings with isolated work zones.
+ * 4. Plan Change Alert Interceptor: Detects active customer modifications and triggers an unskippable warning modal.
+ * 5. Trade-Aware Checkpoint Highlighting: Dynamically emphasizes bullets matching the selected civil trade category.
+ * 6. Dynamic Agency Loader: Populates contractor options from the vendors directory.
  * 7. Resilient UUID & Fallback Handling: Fully immune to PostgreSQL 42703 and 22P02 database errors.
  */
 
@@ -81,19 +81,46 @@ function escapeHtml(unsafe) {
 }
 
 function getFloorAbbreviation(floorName) {
-    const f = (floorName || '').toLowerCase();
-    if (f.includes('basement 2')) return 'BM2';
-    if (f.includes('basement 1')) return 'BM1';
-    if (f.includes('basement')) return 'BM';
-    if (f.includes('ground')) return 'GF';
+    const f = (floorName || '').toLowerCase().trim();
+    if (f.includes('basement 2') || f === 'bm2' || f === 'b2') return 'BM2';
+    if (f.includes('basement 1') || f === 'bm1' || f === 'b1') return 'BM1';
+    if (f.includes('basement')) {
+        const num = f.replace(/\D/g, '');
+        return num ? `BM${num}` : 'BM';
+    }
+    if (f.includes('ground') || f === 'gf' || f === 'g') return 'GF';
     if (f.includes('podium')) return 'POD';
     if (f.includes('terrace')) return 'TER';
-    if (f.includes('1st')) return '1F';
-    if (f.includes('2nd')) return '2F';
-    if (f.includes('3rd')) return '3F';
+    if (f.includes('1st') || f === '1') return '1F';
+    if (f.includes('2nd') || f === '2') return '2F';
+    if (f.includes('3rd') || f === '3') return '3F';
     const numMatch = f.match(/\d+/);
     if (numMatch) return `${numMatch[0]}F`;
     return f.slice(0, 3).toUpperCase();
+}
+
+function getAmenityCode(amenityName) {
+    const clean = (amenityName || '').trim().toLowerCase();
+    if (clean.includes('parking')) return 'PKG';
+    if (clean.includes('lift 1') || clean === 'lift1') return 'LFT1';
+    if (clean.includes('lift 2') || clean === 'lift2') return 'LFT2';
+    if (clean.includes('lift 3') || clean === 'lift3') return 'LFT3';
+    if (clean.includes('lift')) return 'LFT';
+    if (clean.includes('duct')) return 'DCT';
+    if (clean.includes('stair')) return 'STR';
+    if (clean.includes('passage') || clean.includes('corridor')) return 'PAS';
+    if (clean.includes('reception')) return 'RCP';
+    if (clean.includes('gym')) return 'GYM';
+    if (clean.includes('pool')) return 'POOL';
+    if (clean.includes('club')) return 'CLUB';
+    if (clean.includes('garden')) return 'GDN';
+    if (clean.includes('play')) return 'PLAY';
+    if (clean.includes('yoga')) return 'YGA';
+    if (clean.includes('spa')) return 'SPA';
+    if (clean.includes('sauna')) return 'SNA';
+    if (clean.includes('foyer') || clean.includes('lobby')) return 'LBY';
+    const abbrev = clean.replace(/[^a-z0-9]/g, '').slice(0, 4).toUpperCase();
+    return abbrev || 'AMN';
 }
 
 // ==============================================================================
@@ -102,6 +129,9 @@ function getFloorAbbreviation(floorName) {
 async function initProjectContext() {
     const activeProjectName = localStorage.getItem('activeProjectName') || '';
     const activeProjectId = localStorage.getItem('activeProjectId') || '';
+
+    // Populate agency dropdown from registered vendors
+    await loadAgencies();
 
     if (!client) {
         console.warn('[Task Logger] Supabase client offline. Using local session fallback.');
@@ -169,6 +199,36 @@ async function initProjectContext() {
     }
 }
 
+async function loadAgencies() {
+    if (!assignedAgencySelect || !client) return;
+
+    try {
+        const { data: vendorList } = await client
+            .from('vendors')
+            .select('id, name, trade_name, category, status')
+            .order('name', { ascending: true });
+
+        if (vendorList && vendorList.length > 0) {
+            const currentVal = assignedAgencySelect.value;
+            assignedAgencySelect.innerHTML = '<option value="">-- Select Agency --</option>';
+            
+            vendorList.forEach(v => {
+                if (v.status === 'Blacklisted') return;
+                const firm = v.name || v.trade_name;
+                const cat = v.category ? ` [${v.category}]` : '';
+                const opt = document.createElement('option');
+                opt.value = firm;
+                opt.textContent = `${firm}${cat}`;
+                assignedAgencySelect.appendChild(opt);
+            });
+
+            if (currentVal) assignedAgencySelect.value = currentVal;
+        }
+    } catch (err) {
+        console.warn('[Task Logger] Could not load vendors into assigned_agency:', err);
+    }
+}
+
 function populateFallbackProject(name) {
     const displayName = name || 'Prayosha Project Site';
     projectSelect.innerHTML = `
@@ -199,9 +259,6 @@ async function preloadProjectPlanChanges(projectId) {
     }
 }
 
-/**
- * Checks if the selected Zone ID has an active plan change mandate
- */
 function findPlanChangeForZone(selectedZoneVal, selectedZoneLabel) {
     if (!projectActivePlanChanges || projectActivePlanChanges.length === 0) return null;
 
@@ -211,13 +268,9 @@ function findPlanChangeForZone(selectedZoneVal, selectedZoneLabel) {
     return projectActivePlanChanges.find(pc => {
         const normPcZone = normalizeString(pc.zone_id);
         
-        // Exact normalized match
         if (normPcZone === normVal || normPcZone === normLabel) return true;
-        
-        // Partial substring matches (e.g. "801" inside "TOW-8F-FLAT-801" or "Flat 801")
         if (normVal.includes(normPcZone) || normLabel.includes(normPcZone)) return true;
 
-        // Number extraction match
         const pcNumbers = pc.zone_id.replace(/\D/g, '');
         const zoneNumbers = (selectedZoneVal + ' ' + selectedZoneLabel).replace(/\D/g, '');
         if (pcNumbers && zoneNumbers && (pcNumbers === zoneNumbers || zoneNumbers.endsWith(pcNumbers))) {
@@ -228,18 +281,13 @@ function findPlanChangeForZone(selectedZoneVal, selectedZoneLabel) {
     }) || null;
 }
 
-/**
- * Triggers the Plan Change Alert Modal
- */
 function triggerPlanChangeAlert(planChange) {
     if (!planChange) return;
     activePlanChangeForZone = planChange;
 
-    // 1. Update Inline Form Indicator
     zoneIndicator.classList.remove('hidden');
     indicatorRevText.textContent = `Customization Active (Rev v${planChange.revision_number || 1}) for ${planChange.zone_id} • Customer: ${planChange.customer_name}`;
 
-    // 2. Populate Modal Content
     modalPcRev.textContent = `Rev v${planChange.revision_number || 1}`;
     modalPcZoneId.textContent = planChange.zone_id;
     modalPcLocation.textContent = `(${planChange.tower_block} • ${planChange.floor_level})`;
@@ -247,14 +295,12 @@ function triggerPlanChangeAlert(planChange) {
     modalPcPhone.textContent = planChange.customer_phone || 'Not recorded';
     modalPcCostTerms.textContent = planChange.cost_impact_type || 'Customer Provided Material';
 
-    // 3. Structural Impact Warning
     if (planChange.has_structural_impact) {
         modalPcStructuralAlert.classList.remove('hidden');
     } else {
         modalPcStructuralAlert.classList.add('hidden');
     }
 
-    // 4. Render Bullets with Trade Package Highlighting
     const currentCategory = categorySelect.value || '';
     const bullets = Array.isArray(planChange.change_bullets) ? planChange.change_bullets : [];
     
@@ -299,7 +345,6 @@ function triggerPlanChangeAlert(planChange) {
         });
     }
 
-    // 5. Signed Drawing Vault Link
     if (planChange.signed_drawing_url) {
         modalPcDrawingLink.href = planChange.signed_drawing_url;
         modalPcDrawingLink.classList.remove('hidden');
@@ -307,7 +352,6 @@ function triggerPlanChangeAlert(planChange) {
         modalPcDrawingLink.classList.add('hidden');
     }
 
-    // 6. Launch Dialog
     pcModal.classList.remove('hidden');
     void pcModal.offsetWidth;
     pcModal.classList.remove('opacity-0');
@@ -328,7 +372,6 @@ function closePlanChangeAlert() {
 function handlePlanChangeAcknowledgment() {
     closePlanChangeAlert();
 
-    // Auto-append key requirements into Task Scope Notes if appropriate
     if (activePlanChangeForZone && taskDescInput) {
         const bullets = Array.isArray(activePlanChangeForZone.change_bullets) ? activePlanChangeForZone.change_bullets : [];
         const bulletSummary = bullets.map((b, i) => `${i + 1}. [${b.category}] ${b.text}`).join('\n');
@@ -341,7 +384,6 @@ function handlePlanChangeAcknowledgment() {
     }
 }
 
-// Attach Alert Modal Listeners
 if (modalPcDismissBtn) modalPcDismissBtn.addEventListener('click', handlePlanChangeAcknowledgment);
 if (closePcModalCross) closePcModalCross.addEventListener('click', closePlanChangeAlert);
 if (pcModalBackdrop) pcModalBackdrop.addEventListener('click', closePlanChangeAlert);
@@ -453,6 +495,10 @@ function populateFloorsForTower(selectedTower, projectId) {
     }
 }
 
+/**
+ * Self-healing zone loader: fetches map zones, eliminates legacy clumped rows,
+ * and synthesizes any missing flats, shops, or individual amenities on demand.
+ */
 async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
     if (!isValidUUID(projectId) || !selectedTower || !selectedFloor) {
         resetZoneDropdown();
@@ -463,6 +509,11 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
     zoneSelect.disabled = true;
 
     try {
+        const matchingArch = currentProjectZones.find(z => 
+            (z.tower_name || '').trim().toLowerCase() === selectedTower.trim().toLowerCase() && 
+            (z.floor_name || z.zone_name || '').trim().toLowerCase() === selectedFloor.trim().toLowerCase()
+        );
+
         const { data: mapZones, error } = await client
             .from('project_map_zones')
             .select('*')
@@ -473,47 +524,82 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
 
         if (error) throw error;
 
-        if (mapZones && mapZones.length > 0) {
+        let activeZones = mapZones || [];
+
+        // 1. Detect legacy compound/clumped basement rows (e.g. TOW-BM1-Z01 with commas or merged text)
+        const legacyRows = activeZones.filter(z => 
+            (z.room_identifier && z.room_identifier.includes(',')) ||
+            (z.zone_id && z.zone_id.endsWith('-Z01') && z.room_identifier && z.room_identifier.includes('Parking'))
+        );
+
+        if (legacyRows.length > 0) {
+            const legacyIds = legacyRows.map(r => r.id).filter(Boolean);
+            if (legacyIds.length > 0) {
+                try {
+                    await client.from('project_map_zones').delete().in('id', legacyIds);
+                } catch (delErr) {
+                    console.warn('[Task Logger] Could not prune legacy clumped zones:', delErr);
+                }
+            }
+            activeZones = activeZones.filter(z => !legacyIds.includes(z.id));
+        }
+
+        // 2. Synthesize complete zone package from architecture blueprint
+        if (matchingArch) {
+            const synthesized = synthesizeZonesForFloor(projectId, matchingArch);
+
+            // Determine if any synthesized zone is missing from activeZones
+            const missingZones = synthesized.filter(syn => 
+                !activeZones.some(az => 
+                    az.zone_id === syn.zone_id || 
+                    normalizeString(az.room_identifier) === normalizeString(syn.room_identifier)
+                )
+            );
+
+            if (missingZones.length > 0) {
+                try {
+                    const { data: inserted, error: insErr } = await client
+                        .from('project_map_zones')
+                        .insert(missingZones)
+                        .select();
+
+                    if (!insErr && inserted) {
+                        activeZones = activeZones.concat(inserted);
+                    } else {
+                        activeZones = activeZones.concat(missingZones);
+                    }
+                } catch (persistErr) {
+                    activeZones = activeZones.concat(missingZones);
+                }
+            }
+        }
+
+        // 3. Render distinct, selectable zones in the dropdown
+        if (activeZones.length > 0) {
+            activeZones.sort((a, b) => {
+                const getWeight = (z) => {
+                    const cat = (z.category || '').toLowerCase();
+                    if (cat === 'flat') return 1;
+                    if (cat === 'shop') return 2;
+                    if (cat === 'amenity' || cat === 'common area' || cat === 'facility room') return 3;
+                    return 4;
+                };
+                const wDiff = getWeight(a) - getWeight(b);
+                if (wDiff !== 0) return wDiff;
+                return (a.zone_id || '').localeCompare(b.zone_id || '');
+            });
+
             zoneSelect.innerHTML = '<option value="">-- Select Zone ID --</option>';
-            mapZones.forEach(zone => {
+            activeZones.forEach(zone => {
                 const opt = document.createElement('option');
                 opt.value = zone.zone_id;
-                const label = zone.room_identifier ? `[${zone.zone_id}] ${zone.room_identifier}` : zone.zone_id;
-                const categorySuffix = zone.category ? ` (${zone.category})` : '';
-                opt.textContent = `${label}${categorySuffix}`;
+                const baseLabel = zone.room_identifier ? `[${zone.zone_id}] ${zone.room_identifier}` : zone.zone_id;
+                const catTag = zone.category ? ` (${zone.category})` : '';
+                opt.textContent = `${baseLabel}${catTag}`;
                 zoneSelect.appendChild(opt);
             });
             zoneSelect.disabled = false;
             return;
-        }
-
-        // Automatic fallback: synthesize from architecture specifications
-        const matchingArch = currentProjectZones.find(z => 
-            (z.tower_name || '').trim().toLowerCase() === selectedTower.trim().toLowerCase() && 
-            (z.floor_name || z.zone_name || '').trim().toLowerCase() === selectedFloor.trim().toLowerCase()
-        );
-
-        if (matchingArch) {
-            const synthesized = synthesizeZonesForFloor(projectId, matchingArch);
-            if (synthesized.length > 0) {
-                try {
-                    await client.from('project_map_zones').insert(synthesized);
-                } catch (persistErr) {
-                    console.warn('[Task Logger] Auto-persist synthesized zones notice:', persistErr);
-                }
-
-                zoneSelect.innerHTML = '<option value="">-- Select Zone ID --</option>';
-                synthesized.forEach(zone => {
-                    const opt = document.createElement('option');
-                    opt.value = zone.zone_id;
-                    const label = zone.room_identifier ? `[${zone.zone_id}] ${zone.room_identifier}` : zone.zone_id;
-                    const categorySuffix = zone.category ? ` (${zone.category})` : '';
-                    opt.textContent = `${label}${categorySuffix}`;
-                    zoneSelect.appendChild(opt);
-                });
-                zoneSelect.disabled = false;
-                return;
-            }
         }
 
         zoneSelect.innerHTML = '<option value="">-- No Zones Found for This Floor --</option>';
@@ -526,21 +612,26 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
     }
 }
 
+/**
+ * Synthesizes flats, shops, and every individual amenity from the architecture record.
+ */
 function synthesizeZonesForFloor(projectId, record) {
     const tower = record.tower_name || 'Tower A';
     const floor = record.floor_name || record.zone_name || 'Ground Floor';
-    const towerPrefix = tower.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase();
+    const towerPrefix = tower.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'TOW';
     const floorPrefix = getFloorAbbreviation(floor);
 
     const config = record.unit_configuration || {};
     const totalFlats = parseInt(record.total_flats) || 0;
     const totalShops = parseInt(record.total_shops) || 0;
     const zones = [];
+    const usedZoneIds = new Set();
 
-    // Flats
+    // 1. Flats
     for (let f = 1; f <= totalFlats; f++) {
         const zoneId = `${towerPrefix}-${floorPrefix}-FLAT-${String(f).padStart(2, '0')}`;
         const flatSize = (config.flats && config.flats[f - 1]) ? `${config.flats[f - 1]} sq.ft` : 'N/A';
+        usedZoneIds.add(zoneId);
         zones.push({
             project_id: projectId,
             tower_name: tower,
@@ -556,10 +647,11 @@ function synthesizeZonesForFloor(projectId, record) {
         });
     }
 
-    // Shops
+    // 2. Shops
     for (let s = 1; s <= totalShops; s++) {
         const zoneId = `${towerPrefix}-${floorPrefix}-SHOP-${String(s).padStart(2, '0')}`;
         const shopSize = (config.shops && config.shops[s - 1]) ? `${config.shops[s - 1]} sq.ft` : 'N/A';
+        usedZoneIds.add(zoneId);
         zones.push({
             project_id: projectId,
             tower_name: tower,
@@ -575,8 +667,92 @@ function synthesizeZonesForFloor(projectId, record) {
         });
     }
 
-    // Common Landscape
-    if (record.zone_type === 'Common Zone') {
+    // 3. Custom Facility Rooms (e.g. Reception, Spa, Gym in Clubhouses)
+    if (config.rooms && typeof config.rooms === 'object') {
+        Object.entries(config.rooms).forEach(([roomName, sizeVal]) => {
+            const cleanRoom = roomName.trim();
+            if (!cleanRoom) return;
+
+            const code = getAmenityCode(cleanRoom);
+            let zoneId = `${towerPrefix}-${floorPrefix}-${code}`;
+            let counter = 1;
+            while (usedZoneIds.has(zoneId)) {
+                zoneId = `${towerPrefix}-${floorPrefix}-${code}-${counter++}`;
+            }
+            usedZoneIds.add(zoneId);
+
+            const sizeStr = (sizeVal && sizeVal > 0) ? `${sizeVal} sq.ft` : 'N/A';
+            const displayTitle = sizeVal && sizeVal > 0 ? `${cleanRoom} (${sizeVal} sq.ft)` : cleanRoom;
+
+            zones.push({
+                project_id: projectId,
+                tower_name: tower,
+                floor_level: floor,
+                zone_id: zoneId,
+                room_identifier: displayTitle,
+                category: 'Facility Room',
+                area_type: 'Common Area',
+                department: 'Civil',
+                room_size: sizeStr,
+                slope: 'N/A',
+                is_pinned: false
+            });
+        });
+    }
+
+    // 4. Floor Amenities & Common Core (Parking, Lift 1, Lift 2, Duct, Stair Case, Passage)
+    const amenitySet = new Set();
+
+    if (config.amenities_sizes && typeof config.amenities_sizes === 'object') {
+        Object.keys(config.amenities_sizes).forEach(name => {
+            if (name && name.trim() && name.trim().toUpperCase() !== 'N.A.') {
+                amenitySet.add(name.trim());
+            }
+        });
+    }
+
+    if (record.amenity && typeof record.amenity === 'string' && record.amenity.toUpperCase() !== 'N.A.') {
+        record.amenity.split(',').forEach(item => {
+            const clean = item.trim();
+            if (clean && clean.toUpperCase() !== 'N.A.') {
+                amenitySet.add(clean);
+            }
+        });
+    }
+
+    amenitySet.forEach(amenityName => {
+        const sizeVal = (config.amenities_sizes && config.amenities_sizes[amenityName]) 
+            ? parseFloat(config.amenities_sizes[amenityName]) 
+            : 0;
+
+        const code = getAmenityCode(amenityName);
+        let zoneId = `${towerPrefix}-${floorPrefix}-${code}`;
+        let counter = 1;
+        while (usedZoneIds.has(zoneId)) {
+            zoneId = `${towerPrefix}-${floorPrefix}-${code}-${counter++}`;
+        }
+        usedZoneIds.add(zoneId);
+
+        const sizeStr = (sizeVal && sizeVal > 0) ? `${sizeVal} sq.ft` : 'N/A';
+        const displayTitle = (sizeVal && sizeVal > 0) ? `${amenityName} (${sizeVal} sq.ft)` : amenityName;
+
+        zones.push({
+            project_id: projectId,
+            tower_name: tower,
+            floor_level: floor,
+            zone_id: zoneId,
+            room_identifier: displayTitle,
+            category: 'Amenity',
+            area_type: 'Common Area',
+            department: 'Civil',
+            room_size: sizeStr,
+            slope: 'N/A',
+            is_pinned: false
+        });
+    });
+
+    // 5. Common Landscape fallback
+    if (record.zone_type === 'Common Zone' && zones.length === 0) {
         const zoneId = `GND-${towerPrefix}-001`;
         const groundArea = config.total_area ? `${config.total_area} sq.ft` : 'N/A';
         zones.push({
@@ -589,24 +765,6 @@ function synthesizeZonesForFloor(projectId, record) {
             area_type: 'Landscape',
             department: 'Civil',
             room_size: groundArea,
-            slope: 'N/A',
-            is_pinned: false
-        });
-    }
-
-    // Level Fallback
-    if (zones.length === 0) {
-        const zoneId = `${towerPrefix}-${floorPrefix}-Z01`;
-        zones.push({
-            project_id: projectId,
-            tower_name: tower,
-            floor_level: floor,
-            zone_id: zoneId,
-            room_identifier: record.amenity && record.amenity !== 'N.A.' ? record.amenity : floor,
-            category: record.zone_type || 'Civil Zone',
-            area_type: 'General',
-            department: 'Civil',
-            room_size: 'N/A',
             slope: 'N/A',
             is_pinned: false
         });
@@ -672,7 +830,6 @@ floorSelect.addEventListener('change', async function() {
     }
 });
 
-// ZONE SELECT CHANGE LISTENER (PLAN CHANGE ALERT INTERCEPTOR)
 zoneSelect.addEventListener('change', function() {
     const selectedVal = this.value;
     const selectedLabel = this.options[this.selectedIndex]?.text || '';
@@ -693,7 +850,6 @@ zoneSelect.addEventListener('change', function() {
     }
 });
 
-// If user modifies work category, re-highlight relevant plan change bullets if modal is active
 categorySelect.addEventListener('change', function() {
     if (activePlanChangeForZone) {
         const bullets = Array.isArray(activePlanChangeForZone.change_bullets) ? activePlanChangeForZone.change_bullets : [];
@@ -793,7 +949,6 @@ logTaskForm.addEventListener('submit', async function(e) {
 
         if (error) throw error;
 
-        // Feedback Banner
         feedbackBox.className = 'p-4 rounded-xl text-sm font-semibold mt-4 bg-emerald-50 text-emerald-800 border border-emerald-200 block shadow-sm flex items-center gap-2';
         feedbackBox.innerHTML = `
             <svg class="w-5 h-5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -802,7 +957,6 @@ logTaskForm.addEventListener('submit', async function(e) {
             <span>Task assigned successfully to <strong>${escapeHtml(taskPayload.zone_id)}</strong> as <strong>${escapeHtml(selectedStatus)}</strong> [Priority: ${escapeHtml(selectedPriority)}]!</span>
         `;
 
-        // Reset work fields while preserving structural location
         categorySelect.selectedIndex = 0;
         assignedAgencySelect.selectedIndex = 0;
         expectedDateInput.value = '';

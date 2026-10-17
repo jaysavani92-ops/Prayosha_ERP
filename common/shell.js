@@ -3,7 +3,7 @@
  * File: /common/shell.js
  * 
  * Features:
- * 1. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Plan Change, Drawings, Workforce, Pre-Dev, Admin, Site Map).
+ * 1. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Plan Change, Drawings, Possession, Workforce, Pre-Dev, Admin, Site Map).
  * 2. Case-Insensitive Deep DOM Scanner: Automatically translates visible text, labels, and placeholders on any page.
  * 3. Bidirectional Caching: Remembers original English strings in a WeakMap for seamless EN <-> GU <-> HI toggles.
  * 4. Live MutationObserver: Automatically translates dynamically rendered cards, tables, and floor accordions.
@@ -92,6 +92,24 @@ const RAW_DICTIONARY = {
     "+ raise drawing request": { gu: "+ ડ્રોઇંગ વિનંતી નોંધો", hi: "+ નયા ડ્રૉઇંગ અનુરોધ" },
     "consultant cases": { gu: "કન્સલ્ટન્ટ કેસ", hi: "કન્સલ્ટન્ટ કેસ" },
     "case workspace": { gu: "કેસ વર્કસ્પેસ", hi: "કેસ વર્કસ્પેસ" },
+
+    // --- Possession & Handover Suite Translations ---
+    "possession & handover suite": { gu: "કબ્જો અને ફ્લેટ સોંપણી સૂટ", hi: "कब्जा एवं फ्लैट सुपुर्दगी सूट" },
+    "possession suite": { gu: "કબ્જો (પઝેશન) સૂટ", hi: "कब्जा (पजेशन) सूट" },
+    "possession & unit matrix": { gu: "કબ્જો અને યુનિટ મેટ્રિક્સ", hi: "कब्जा एवं यूनिट मैट्रिक्स" },
+    "possession matrix": { gu: "પઝેશન મેટ્રિક્સ", hi: "पजेशन मैट्रिक्स" },
+    "unit handover workspace": { gu: "યુનિટ સોંપણી વર્કસ્પેસ", hi: "यूनिट सुपुर्दगी वर्कस्पेस" },
+    "unit handover": { gu: "ફ્લેટ / યુનિટ સોંપણી", hi: "फ्लैट / यूनिट सुपुर्दगी" },
+    "unit handover & snags": { gu: "યુનિટ સોંપણી અને સ્નેગ્સ", hi: "यूनिट सुपुर्दगी एवं स्नैग्स" },
+    "priority dispatch log": { gu: "પ્રાથમિકતા ડિસ્પેચ લોગ", hi: "प्राथमिकता प्रेषण लॉग" },
+    "priority dispatch": { gu: "પ્રાથમિકતા ડિસ્પેચ", hi: "प्राथमिकता डिस्पैच" },
+    "site alerts & priority work orders": { gu: "સાઇટ ચેતવણીઓ અને કાર્ય આદેશ", hi: "साइट अलर्ट एवं कार्य आदेश" },
+    "hard chabi (key) security lock": { gu: "કડક ચાવી સુરક્ષા લોક", hi: "कठोर चाबी सुरक्षा लॉक" },
+    "keys locked": { gu: "ચાવીઓ લોક કરેલ છે", hi: "चाबियां लॉक हैं" },
+    "keys delivered": { gu: "ચાવીઓ સોંપેલ છે", hi: "चाबियां सौंप दी गई हैं" },
+    "sold units": { gu: "વેચાયેલ યુનિટ્સ", hi: "बिके हुए यूनिट्स" },
+    "available (unsold)": { gu: "ઉપલબ્ધ (બાકી વેચાણ)", hi: "उपलब्ध (बिक्री हेतु शेष)" },
+    "keys handed over": { gu: "ચાવીઓ સોંપેલ", hi: "चाबियां सौंपी गईं" },
 
     "pre-development": { gu: "પ્રી-ડેવલપમેન્ટ (આયોજન)", hi: "પ્રી-ડેવલપમેન્ટ (આયોજન)" },
     "liasoning & boq master": { gu: "લાયઝનિંગ અને BOQ માસ્ટર", hi: "લાયઝનિંગ તેમજ BOQ માસ્ટર" },
@@ -306,6 +324,7 @@ function getRootPrefix() {
         path.includes('/petty-cash/') ||
         path.includes('/plan-change/') ||
         path.includes('/drawings/') ||
+        path.includes('/possession/') ||
         path.includes('/users/') ||
         path.includes('/vendors/') ||
         path.includes('/site-map/') ||
@@ -497,6 +516,7 @@ export async function initShell(options = {}) {
         else if (currentPath.includes('/purchase/')) activeModule = 'purchase';
         else if (currentPath.includes('/petty-cash/')) activeModule = 'petty-cash';
         else if (currentPath.includes('/plan-change/')) activeModule = 'plan-change';
+        else if (currentPath.includes('/possession/')) activeModule = 'possession';
         else if (currentPath.includes('/workforce/')) activeModule = 'workforce';
         else if (currentPath.includes('/pre-development/')) activeModule = 'pre-dev';
         else if (currentPath.includes('/users/')) activeModule = 'users';
@@ -600,6 +620,7 @@ function injectShellHTML(data) {
     const isPettyCash = data.activeModule === 'petty-cash';
     const isPlanChange = data.activeModule === 'plan-change';
     const isDrawings = data.activeModule === 'drawings';
+    const isPossession = data.activeModule === 'possession';
 
     const dashColorClass = isDashboard ? 'text-[#1E3A5F]' : 'text-slate-400 hover:text-slate-600';
     const dashFontClass = isDashboard ? 'font-bold text-[#1E3A5F]' : 'font-medium';
@@ -819,7 +840,26 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 5. Civil Tasks Suite -->
+                    <!-- 5. POSSESSION & HANDOVER SUITE (SALES & KEY RELEASE GATE) -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span data-i18n="possession & handover suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Possession & Handover Suite</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300">Key Security Gate</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <a href="${ROOT_PATH}possession/possession-matrix.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition ${isPossession ? 'ring-2 ring-[#1E3A5F] bg-blue-50/50 font-bold text-[#1E3A5F]' : ''}">
+                                <span class="w-2 h-2 rounded-full bg-[#1E3A5F]"></span> <span data-i18n="possession & unit matrix">Possession Matrix</span>
+                            </a>
+                            <a href="${ROOT_PATH}possession/unit-handover.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-[#FFBF00]"></span> <span data-i18n="unit handover & snags">Unit Handover & Snags</span>
+                            </a>
+                            <a href="${ROOT_PATH}possession/possession-alerts.html" class="p-2.5 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 hover:border-[#1E3A5F] flex items-center gap-2 transition">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> <span data-i18n="priority dispatch log">Priority Dispatch Log</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 6. Civil Tasks Suite -->
                     <div>
                         <span data-i18n="civil tasks suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Civil Tasks Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -844,7 +884,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 6. INVENTORY & MATERIALS SUITE -->
+                    <!-- 7. INVENTORY & MATERIALS SUITE -->
                     <div>
                         <span data-i18n="inventory & materials suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Inventory & Materials Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -869,7 +909,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 7. PURCHASE & INDENTS SUITE -->
+                    <!-- 8. PURCHASE & INDENTS SUITE -->
                     <div>
                         <span data-i18n="purchase & indents suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Purchase & Indents Suite</span>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -897,7 +937,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 8. PETTY CASH SUITE -->
+                    <!-- 9. PETTY CASH SUITE -->
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <span data-i18n="petty cash suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Petty Cash Suite</span>
@@ -916,7 +956,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 9. Pre-Development & Workforce -->
+                    <!-- 10. Pre-Development & Workforce -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-white p-3.5 rounded-2xl border border-slate-200">
                             <span data-i18n="pre-development" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Pre-Development</span>
@@ -937,7 +977,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 10. Administration & Masters -->
+                    <!-- 11. Administration & Masters -->
                     <div class="bg-white p-3.5 rounded-2xl border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
                         <span data-i18n="administration" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Administration</span>
                         <div class="flex items-center gap-3">

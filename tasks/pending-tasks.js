@@ -4,8 +4,8 @@
  * 
  * Features:
  * 1. Project Context Filter: Scopes floor tree and pending tasks to activeProjectId / activeProjectName.
- * 2. Multi-Level Floor Hierarchy: Groups all project Zone IDs into collapsible Floor and Category accordions.
- * 3. Dynamic Zone Synthesis: Queries project_map_zones or synthesizes discrete zones from project_zones architecture.
+ * 2. Multi-Level Floor Hierarchy: Groups all project Zone IDs by Tower AND Floor chronologically.
+ * 3. Dynamic Zone Synthesis: Synthesizes discrete zones from project_zones architecture (Source of Truth).
  * 4. Staged Work Binding: Maps civil_tasks (Not Started / In Progress) directly to their respective zones.
  * 5. Execution State Transitions: Transitions staged tasks to 'In Progress' with automatic started_date stamping.
  * 6. Interactive Toolbar: Supports Tower filtering, Zone ID live search, and Expand/Collapse All triggers.
@@ -131,27 +131,7 @@ async function loadPendingTasksTree() {
 async function fetchProjectZones(projectId, projectName) {
     if (!projectId && !projectName) return [];
 
-    // Attempt 1: Fetch from project_map_zones
-    try {
-        let mapQuery = client
-            .from('project_map_zones')
-            .select('*')
-            .order('zone_id', { ascending: true });
-
-        if (projectId) {
-            mapQuery = mapQuery.eq('project_id', projectId);
-        }
-
-        const { data: mapZones, error: mapErr } = await mapQuery;
-
-        if (!mapErr && mapZones && mapZones.length > 0) {
-            return mapZones;
-        }
-    } catch (e) {
-        console.warn('[Zone Tree] project_map_zones lookup bypassed:', e);
-    }
-
-    // Attempt 2: Fetch architectural specifications from project_zones and synthesize
+    // Attempt 1: Fetch architectural specifications from project_zones and synthesize (Primary Source of Truth)
     try {
         let archQuery = client
             .from('project_zones')
@@ -172,15 +152,35 @@ async function fetchProjectZones(projectId, projectName) {
                 synthesizedAll = synthesizedAll.concat(unpacked);
             });
 
-            // Attempt to persist synthesized zones in background for subsequent calls
+            // Sync synthesized zones to project_map_zones in background (UPSERT prevents unique constraint blocking)
             if (synthesizedAll.length > 0) {
-                client.from('project_map_zones').insert(synthesizedAll).then().catch(() => {});
+                client.from('project_map_zones').upsert(synthesizedAll, { onConflict: 'zone_id' }).then().catch(() => {});
             }
 
             return synthesizedAll;
         }
     } catch (err) {
         console.warn('[Zone Tree] project_zones synthesis error:', err);
+    }
+
+    // Attempt 2: Fallback to project_map_zones if architecture generation fails
+    try {
+        let mapQuery = client
+            .from('project_map_zones')
+            .select('*')
+            .order('zone_id', { ascending: true });
+
+        if (projectId) {
+            mapQuery = mapQuery.eq('project_id', projectId);
+        }
+
+        const { data: mapZones, error: mapErr } = await mapQuery;
+
+        if (!mapErr && mapZones && mapZones.length > 0) {
+            return mapZones;
+        }
+    } catch (e) {
+        console.warn('[Zone Tree] project_map_zones fallback bypassed:', e);
     }
 
     return [];
@@ -192,7 +192,13 @@ async function fetchProjectZones(projectId, projectName) {
 function synthesizeZonesForRecord(projectId, record) {
     const tower = record.tower_name || 'Tower A';
     const floor = record.floor_name || record.zone_name || 'Ground Floor';
-    const towerPrefix = tower.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase();
+    
+    // Fix: Generate collision-free prefix (Tower A -> TOWA, Tower B -> TOWB, Main Garden -> MAIN)
+    let towerClean = tower.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    let towerPrefix = towerClean.startsWith('TOWER') 
+        ? towerClean.replace('TOWER', 'TOW').slice(0, 4) 
+        : towerClean.slice(0, 4);
+
     const floorPrefix = getFloorAbbreviation(floor);
 
     const config = record.unit_configuration || {};
@@ -321,7 +327,7 @@ function getFloorAbbreviation(floorName) {
     if (f.includes('3rd')) return '3F';
     const numMatch = f.match(/\d+/);
     if (numMatch) return `${numMatch[0]}F`;
-    return f.slice(0, 3).toUpperCase();
+    return f.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase();
 }
 
 /**
@@ -345,27 +351,39 @@ function populateTowerFilter() {
 }
 
 /**
- * 4. Helper: Civil Floor Sorting Weight
+ * 4. Helper: Chronological Floor Sorting Weight (Bottom to Top)
  */
 function getFloorSortWeight(floorName) {
-    const f = (floorName || '').toLowerCase();
-    if (f.includes('basement 4')) return -40;
-    if (f.includes('basement 3')) return -30;
-    if (f.includes('basement 2')) return -20;
-    if (f.includes('basement 1') || f === 'basement') return -10;
-    if (f.includes('lower ground')) return -5;
-    if (f.includes('ground')) return 0;
-    if (f.includes('podium')) return 5;
-    if (f.includes('terrace')) return 990;
-    if (f.includes('common') || f.includes('landscape')) return 1000;
-
+    const f = (floorName || '').toLowerCase().trim();
+    
+    // Deepest basements must come first. (-100 - basementNumber) ensures BM2 (-102) < BM1 (-101)
+    if (f.includes('basement')) {
+        const match = f.match(/\d+/);
+        const num = match ? parseInt(match[0], 10) : 1;
+        return -100 - num; 
+    }
+    if (f.includes('lower ground') || f === 'lg') return -50;
+    if (f.includes('ground') || f === 'g' || f === 'gf') return 0;
+    
+    // Podiums sit just above ground
+    if (f.includes('podium')) {
+        const match = f.match(/\d+/);
+        const num = match ? parseInt(match[0], 10) : 1;
+        return 10 + num;
+    }
+    
+    // Highest elevations
+    if (f.includes('terrace') || f.includes('roof')) return 10000;
+    
+    // Regular numbered floors
     const match = f.match(/\d+/);
-    if (match) return parseInt(match[0], 10);
-    return 100;
+    if (match) return parseInt(match[0], 10) * 100;
+    
+    return 5000; // Common Areas fallback
 }
 
 /**
- * 5. Render Floor-Wise Accordion Tree
+ * 5. Render Floor-Wise Hierarchical Accordion Tree
  */
 function renderHierarchicalTree() {
     if (!taskContainer) return;
@@ -409,20 +427,32 @@ function renderHierarchicalTree() {
         return;
     }
 
-    // Group filtered zones by Floor Level
+    // Group filtered zones by Tower AND Floor Level for clean visual separation
     const floorGroups = {};
     filteredZones.forEach(zone => {
-        const floorKey = (zone.floor_level || 'General Level').trim();
+        const tName = (zone.tower_name || 'General Block').trim();
+        const fName = (zone.floor_level || 'General Level').trim();
+        const floorKey = `${tName} | ${fName}`;
+        
         if (!floorGroups[floorKey]) floorGroups[floorKey] = [];
         floorGroups[floorKey].push(zone);
     });
 
-    // Sort floors logically
-    const sortedFloors = Object.keys(floorGroups).sort((a, b) => getFloorSortWeight(a) - getFloorSortWeight(b));
+    // Sort logically: Alphabetically by Tower, then Chronologically by Floor (Bottom -> Top)
+    const sortedKeys = Object.keys(floorGroups).sort((a, b) => {
+        const [towerA, floorA] = a.split(' | ');
+        const [towerB, floorB] = b.split(' | ');
+        
+        if (towerA !== towerB) {
+            return towerA.localeCompare(towerB);
+        }
+        return getFloorSortWeight(floorA) - getFloorSortWeight(floorB);
+    });
 
     // Render floor accordions
-    sortedFloors.forEach((floorName, index) => {
-        const zonesOnFloor = floorGroups[floorName];
+    sortedKeys.forEach((key, index) => {
+        const [towerName, floorName] = key.split(' | ');
+        const zonesOnFloor = floorGroups[key];
         const floorZoneCount = zonesOnFloor.length;
 
         // Count pending tasks on this floor
@@ -446,7 +476,7 @@ function renderHierarchicalTree() {
                         <svg class="w-4 h-4 text-brand-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     </div>
                     <div>
-                        <span class="font-bold text-brand-navy text-sm uppercase tracking-wide block">${floorName}</span>
+                        <span class="font-bold text-brand-navy text-sm uppercase tracking-wide block">${towerName} - ${floorName}</span>
                         <span class="text-[11px] text-slate-400 font-medium">Floor Level Package</span>
                     </div>
                 </div>
