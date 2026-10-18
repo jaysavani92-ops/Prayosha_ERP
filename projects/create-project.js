@@ -65,24 +65,42 @@ let typologyProfiles = {
     ]
 };
 
+// State Variables
+let isEditMode = false;
+let editProjectId = null;
+let existingPhotoUrl = null;
+let towerCount = 0;
+let facilityCount = 0;
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Role-Based Access Guard
     const userRole = localStorage.getItem('userRole');
     if (userRole && userRole !== 'Owner' && userRole !== 'General Manager' && userRole !== 'Construction Head') {
-        showToast('Access restricted: Only Owners and Construction Heads can create projects.', 'error');
+        showToast('Access restricted: Only Owners and Construction Heads can access project architecture.', 'error');
         setTimeout(() => {
             window.location.href = 'project-dashboard.html';
         }, 1200);
         return;
     }
 
-    // 2. Initial Data Loading
-    await generateNextProjectCode();
-    await loadEmployeeDropdowns();
+    // 2. Determine Create vs Edit Mode from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    editProjectId = urlParams.get('id');
+    isEditMode = Boolean(editProjectId);
+
+    // 3. Initial Static & Reference Data Loading
     await loadCustomDropdownValues();
+    await loadEmployeeDropdowns();
     initTypologyModal();
 
-    // 3. Dynamic Custom Option Registration
+    if (isEditMode) {
+        setupEditModeUI();
+        await loadExistingProjectForEditing(editProjectId);
+    } else {
+        await generateNextProjectCode();
+    }
+
+    // 4. Dynamic Custom Option Registration
     ['project_type', 'contract_type', 'status'].forEach(selectId => {
         const select = document.getElementById(selectId);
         if (!select) return;
@@ -113,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // 4. Auto Budget Calculation
+    // 5. Auto Budget Calculation
     const sqftInput = document.getElementById('total_sqft');
     const rateInput = document.getElementById('rate_per_sqft');
     const budgetOutput = document.getElementById('estimated_budget');
@@ -127,21 +145,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     rateInput.addEventListener('input', calculateBudget);
 
     // ==========================================
-    // UNIFIED STRUCTURE BUILDER
+    // UNIFIED STRUCTURE BUILDER HANDLERS
     // ==========================================
     const projectTypeSelect = document.getElementById('project_type');
     const structureContainer = document.getElementById('structureContainer');
-    
-    let towerCount = 0;
-    let facilityCount = 0;
-
-    const getColumnVisibility = () => {
-        const type = projectTypeSelect.value || '';
-        return { 
-            showFlats: type.includes('Residential'), 
-            showShops: type.includes('Commercial') 
-        };
-    };
 
     projectTypeSelect.addEventListener('change', () => {
         if (projectTypeSelect.value !== '_ADD_NEW_') {
@@ -151,26 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Floor Naming Helpers
-    const getNextFloorName = (container) => {
-        const existing = Array.from(container.querySelectorAll('.floor-name-input'))
-            .map(inp => inp.value).filter(val => !val.toLowerCase().includes('basement'));
-        if (existing.length === 0) return 'Ground Floor';
-        if (existing.length === 1) return '1st Floor';
-        if (existing.length === 2) return '2nd Floor';
-        if (existing.length === 3) return '3rd Floor';
-        return `${existing.length}th Floor`;
-    };
-
-    const getNextBasementName = (container) => {
-        const existing = Array.from(container.querySelectorAll('.floor-name-input'))
-            .map(inp => inp.value).filter(val => val.toLowerCase().includes('basement'));
-        return `Basement ${existing.length + 1}`;
-    };
-
-    // ----------------------------------------------------
-    // TEMPLATE 1: TOWER BLOCK (WITH 1-CLICK CLONING)
-    // ----------------------------------------------------
+    // Add Tower Block
     document.getElementById('addTowerBtn').addEventListener('click', () => {
         towerCount++;
         const towerName = `Tower ${String.fromCharCode(64 + towerCount)}`; 
@@ -204,32 +192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         structureContainer.insertAdjacentHTML('beforeend', html);
     });
 
-    function generateTowerFloorHTML(name, showFlats, showShops, isBasement = false) {
-        const disabled = isBasement ? 'disabled' : '';
-        const bg = isBasement ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white';
-        return `
-            <div class="floor-group">
-                <div class="floor-row grid grid-cols-12 gap-2 items-center bg-white p-2 border border-gray-200 rounded shadow-sm relative">
-                    <div class="col-span-3"><input type="text" class="input-field text-sm p-1 floor-name-input font-medium" value="${name}"></div>
-                    <div class="col-span-2 col-flats" style="display: ${showFlats ? 'block' : 'none'}">
-                        <input type="number" class="input-field text-sm p-1 flat-input trigger-sizing ${bg}" value="0" min="0" ${disabled}>
-                    </div>
-                    <div class="col-span-2 col-shops" style="display: ${showShops ? 'block' : 'none'}">
-                        <input type="number" class="input-field text-sm p-1 shop-input trigger-sizing ${bg}" value="0" min="0" ${disabled}>
-                    </div>
-                    ${generateAmenityDropdown()}
-                    <div class="col-span-2 flex justify-end gap-1">
-                        <button type="button" class="btn-copy-floor text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 border border-blue-200">Copy</button>
-                        <button type="button" class="btn-remove-floor text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 border border-red-200">X</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // ----------------------------------------------------
-    // TEMPLATE 2: MULTI-LEVEL FACILITY (CLUBHOUSE)
-    // ----------------------------------------------------
+    // Add Facility
     document.getElementById('addFacilityBtn').addEventListener('click', () => {
         facilityCount++;
         const facilityName = `Clubhouse ${facilityCount}`; 
@@ -260,27 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         structureContainer.insertAdjacentHTML('beforeend', html);
     });
 
-    function generateFacilityFloorHTML(name) {
-        return `
-            <div class="floor-group">
-                <div class="floor-row grid grid-cols-12 gap-2 items-center bg-white p-2 border border-gray-200 rounded shadow-sm relative">
-                    <div class="col-span-3"><input type="text" class="input-field text-sm p-1 floor-name-input font-medium" value="${name}"></div>
-                    <div class="col-span-4">
-                        <input type="text" class="input-field text-sm p-1 room-input trigger-facility-sizing" placeholder="e.g. Reception, Gym, Spa">
-                    </div>
-                    ${generateAmenityDropdown()}
-                    <div class="col-span-2 flex justify-end gap-1">
-                        <button type="button" class="btn-copy-floor text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 border border-blue-200">Copy</button>
-                        <button type="button" class="btn-remove-floor text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 border border-red-200">X</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // ----------------------------------------------------
-    // TEMPLATE 3: FLAT GROUND ZONE
-    // ----------------------------------------------------
+    // Add Ground Zone
     document.getElementById('addGroundZoneBtn').addEventListener('click', () => {
         const html = `
             <div class="structure-card ground-card p-4 rounded-xl shadow-sm border border-gray-200 relative mb-4">
@@ -306,224 +249,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         structureContainer.insertAdjacentHTML('beforeend', html);
     });
 
-    // ----------------------------------------------------
-    // DYNAMIC SIZING & TYPOLOGY PANELS
-    // ----------------------------------------------------
-    function updateTowerSizingPanel(floorGroup) {
-        const floorRow = floorGroup.querySelector('.floor-row');
-        const floorName = floorRow.querySelector('.floor-name-input').value.trim();
-        const floorLevel = parseFloorLevel(floorName);
-        
-        const flats = parseInt(floorRow.querySelector('.flat-input').value) || 0;
-        const shops = parseInt(floorRow.querySelector('.shop-input').value) || 0;
-        const amenityStr = floorRow.querySelector('.amenity-display').value;
-        const amenities = amenityStr.split(',').map(a => a.trim()).filter(Boolean);
-        
-        // Preserve already typed sizes and selected typologies
-        let existingFlats = [], existingTypologies = [], existingShops = [], existingAmenities = {};
-        const existingPanel = floorGroup.querySelector('.sizing-panel');
-        if (existingPanel) {
-            existingPanel.querySelectorAll('.size-flat').forEach(i => existingFlats.push(i.value));
-            existingPanel.querySelectorAll('.select-typology').forEach(s => existingTypologies.push(s.value));
-            existingPanel.querySelectorAll('.size-shop').forEach(i => existingShops.push(i.value));
-            existingPanel.querySelectorAll('.size-amenity').forEach(i => existingAmenities[i.getAttribute('data-amenity')] = i.value);
-            existingPanel.remove();
-        }
-
-        if (flats === 0 && shops === 0 && amenities.length === 0) {
-            floorRow.classList.add('rounded');
-            floorRow.classList.remove('rounded-t-lg', 'border-b-0');
-            return; 
-        }
-
-        floorRow.classList.remove('rounded');
-        floorRow.classList.add('rounded-t-lg', 'border-b-0');
-
-        let html = `<div class="sizing-panel bg-slate-50/90 p-3.5 rounded-b-xl border-x border-b border-gray-200 mb-2 grid grid-cols-1 gap-4 shadow-inner">`;
-        
-        // Unit-Level Flat Cards with Typology Selection
-        if (flats > 0) {
-            html += `<div class="bg-white p-3 rounded-xl border border-gray-200">
-                        <div class="flex justify-between items-center mb-2.5">
-                            <div>
-                                <span class="text-xs font-bold text-brand-navy uppercase tracking-wide">Flats Configuration & Typologies</span>
-                                <span class="text-[10px] text-slate-400 ml-2">(Auto-adjusts typology based on Carpet Sq.Ft)</span>
-                            </div>
-                            <button type="button" class="btn-apply-all-flats text-[10px] bg-brand-navy/10 text-brand-navy px-2.5 py-1 rounded-lg hover:bg-brand-navy hover:text-white transition font-bold">
-                                Apply First Flat to All
-                            </button>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">`;
-
-            for (let i = 1; i <= flats; i++) {
-                const val = existingFlats[i - 1] || '';
-                const selectedTypology = existingTypologies[i - 1] || (parseFloat(val) >= 1800 ? '4 BHK' : (parseFloat(val) >= 1200 ? '3 BHK' : '2 BHK'));
-
-                let unitNum;
-                if (floorLevel === 0) unitNum = `G${String(i).padStart(2, '0')}`;
-                else if (floorLevel < 0) unitNum = `B${Math.abs(floorLevel)}${String(i).padStart(2, '0')}`;
-                else unitNum = `${floorLevel}${String(i).padStart(2, '0')}`;
-
-                html += `
-                    <div class="flat-unit-card bg-slate-50 p-2.5 rounded-xl border border-slate-200/90 shadow-2xs">
-                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1.5">
-                            <span class="text-brand-navy">Flat ${unitNum}</span>
-                            <span class="text-[9px] font-semibold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-100">Unit ${i}</span>
-                        </div>
-                        <div class="flex gap-1.5">
-                            <input type="number" class="input-field text-xs p-1.5 size-flat border-gray-300 w-1/2 bg-white" placeholder="Sq.Ft" value="${val}" data-flat-idx="${i}">
-                            <select class="input-field text-xs p-1.5 select-typology border-gray-300 w-1/2 cursor-pointer bg-white font-medium" data-flat-idx="${i}">
-                                <option value="1 BHK" ${selectedTypology === '1 BHK' ? 'selected' : ''}>1 BHK</option>
-                                <option value="2 BHK" ${selectedTypology === '2 BHK' ? 'selected' : ''}>2 BHK</option>
-                                <option value="3 BHK" ${selectedTypology === '3 BHK' ? 'selected' : ''}>3 BHK</option>
-                                <option value="4 BHK" ${selectedTypology === '4 BHK' ? 'selected' : ''}>4 BHK</option>
-                                <option value="Penthouse" ${selectedTypology === 'Penthouse' ? 'selected' : ''}>Penthouse</option>
-                            </select>
-                        </div>
-                    </div>
-                `;
-            }
-            html += `</div></div>`;
-        }
-        
-        // Shops Configuration
-        if (shops > 0) {
-            html += `<div class="bg-white p-3 rounded-xl border border-gray-200">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-gray-700 uppercase">Commercial Shop Sizes (Sq.Ft)</span>
-                            <button type="button" class="btn-apply-all text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded hover:bg-indigo-100 font-semibold" data-target=".size-shop">Apply First to All</button>
-                        </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">`;
-            for(let i = 1; i <= shops; i++) {
-                const val = existingShops[i - 1] || '';
-                let unitNum;
-                if (floorLevel === 0) unitNum = `G${String(i).padStart(2, '0')}`;
-                else if (floorLevel < 0) unitNum = `B${Math.abs(floorLevel)}${String(i).padStart(2, '0')}`;
-                else unitNum = `${floorLevel}${String(i).padStart(2, '0')}`;
-
-                html += `<div>
-                            <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Shop ${unitNum}</label>
-                            <input type="number" class="input-field text-xs p-1.5 size-shop border-gray-300 bg-white" placeholder="Sq.Ft" value="${val}">
-                         </div>`;
-            }
-            html += `</div></div>`;
-        }
-
-        // Amenities Sizes
-        if (amenities.length > 0) {
-            html += `<div class="bg-white p-3 rounded-xl border border-gray-200">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-emerald-700 uppercase">Amenity Area Sizes (Sq.Ft)</span>
-                        </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">`;
-            amenities.forEach(amenity => {
-                const val = existingAmenities[amenity] || '';
-                html += `<div>
-                            <label class="block text-[10px] text-gray-500 mb-1 truncate">${amenity}</label>
-                            <input type="number" class="input-field text-xs p-1.5 size-amenity border-gray-300 bg-white" data-amenity="${amenity}" placeholder="Sq.Ft" value="${val}">
-                         </div>`;
-            });
-            html += `</div></div>`;
-        }
-
-        html += `</div>`;
-        floorGroup.insertAdjacentHTML('beforeend', html);
-    }
-
-    function updateFacilitySizingPanel(floorGroup) {
-        const floorRow = floorGroup.querySelector('.floor-row');
-        const roomStr = floorRow.querySelector('.room-input').value;
-        const rooms = roomStr.split(',').map(r => r.trim()).filter(Boolean);
-        const amenityStr = floorRow.querySelector('.amenity-display').value;
-        const amenities = amenityStr.split(',').map(a => a.trim()).filter(Boolean);
-
-        let existingMap = {};
-        const existingPanel = floorGroup.querySelector('.sizing-panel');
-        if (existingPanel) {
-            existingPanel.querySelectorAll('.size-room, .size-amenity').forEach(i => {
-                const key = i.getAttribute('data-room') || i.getAttribute('data-amenity');
-                existingMap[key] = i.value;
-            });
-            existingPanel.remove();
-        }
-
-        if (rooms.length === 0 && amenities.length === 0) {
-            floorRow.classList.add('rounded');
-            floorRow.classList.remove('rounded-t-lg', 'border-b-0');
-            return;
-        }
-
-        floorRow.classList.remove('rounded');
-        floorRow.classList.add('rounded-t-lg', 'border-b-0');
-
-        let html = `<div class="sizing-panel bg-indigo-50/50 p-3 rounded-b-lg border-x border-b border-gray-200 mb-2">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-indigo-800 uppercase">Room & Amenity Sizes (Sq.Ft)</span>
-                        </div>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">`;
-        
-        rooms.forEach(room => {
-            const val = existingMap[room] || '';
-            html += `<div>
-                        <label class="block text-[10px] text-gray-500 mb-1 truncate">${room}</label>
-                        <input type="number" class="input-field text-xs p-1 size-room border-gray-300 bg-white" data-room="${room}" placeholder="Sq.Ft" value="${val}">
-                     </div>`;
-        });
-
-        amenities.forEach(amenity => {
-            const val = existingMap[amenity] || '';
-            html += `<div>
-                        <label class="block text-[10px] text-emerald-700 font-semibold mb-1 truncate">${amenity}</label>
-                        <input type="number" class="input-field text-xs p-1 size-amenity border-gray-300 bg-white" data-amenity="${amenity}" placeholder="Sq.Ft" value="${val}">
-                     </div>`;
-        });
-        
-        html += `</div></div>`;
-        floorGroup.insertAdjacentHTML('beforeend', html);
-    }
-
-    function generateAmenityDropdown() {
-        let optionsHTML = globalAmenities.map(amenity => 
-            `<label class="flex items-center text-xs mb-1 p-1 hover:bg-gray-50 rounded cursor-pointer">
-                <input type="checkbox" value="${amenity}" class="mr-2 amenity-cb"> ${amenity}
-            </label>`
-        ).join('');
-
-        return `
-            <div class="col-span-3 relative multi-select-wrapper">
-                <input type="text" class="input-field text-sm p-1 amenity-display cursor-pointer bg-white" readonly placeholder="Click to select..." value="">
-                <div class="absolute z-50 hidden bg-white border border-gray-200 shadow-2xl rounded mt-1 w-full p-2 options-container custom-scroll">
-                    <div class="amenity-list-container max-h-32 overflow-y-auto">
-                        ${optionsHTML}
-                    </div>
-                    <div class="border-t border-gray-200 mt-2 pt-2 flex gap-1">
-                        <input type="text" class="input-field text-[10px] p-1 flex-1 custom-amenity-input" placeholder="New amenity...">
-                        <button type="button" class="btn-add-custom-amenity bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] hover:bg-emerald-200 font-bold">+</button>
-                    </div>
-                </div>
-            </div>`;
-    }
-
-    function closeAllAmenityDropdowns() {
-        document.querySelectorAll('.options-container').forEach(c => c.classList.add('hidden'));
-        document.querySelectorAll('.floor-row.dropdown-active').forEach(r => r.classList.remove('dropdown-active'));
-        document.querySelectorAll('.floor-group.dropdown-active').forEach(g => g.classList.remove('dropdown-active'));
-    }
-
-    function parseFloorLevel(name) {
-        if (!name) return 0;
-        const lower = name.toLowerCase().trim();
-        if (lower.includes('basement')) {
-            const num = parseInt(lower.replace(/\D/g, '')) || 1;
-            return -num;
-        }
-        if (lower.includes('ground') || lower === '0' || lower === 'g' || lower === 'gf') {
-            return 0;
-        }
-        const num = parseInt(lower.replace(/\D/g, ''));
-        return isNaN(num) ? 0 : num;
-    }
-
     // ==========================================
     // CRITICAL EVENT DELEGATION
     // ==========================================
@@ -534,7 +259,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.target.classList.contains('trigger-facility-sizing')) {
             updateFacilitySizingPanel(e.target.closest('.floor-group'));
         }
-        // Auto-Detect Typology on Sq.Ft Input
         if (e.target.classList.contains('size-flat')) {
             const card = e.target.closest('.flat-unit-card');
             const sqft = parseFloat(e.target.value) || 0;
@@ -617,7 +341,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const nameInput = clonedCard.querySelector('.structure-name');
             if (nameInput) nameInput.value = newTowerName;
 
-            // Preserve all user inputs, typologies, and checkbox states
             const origInputs = sourceCard.querySelectorAll('input, select');
             const cloneInputs = clonedCard.querySelectorAll('input, select');
             origInputs.forEach((inp, idx) => {
@@ -635,7 +358,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Copy Floor Format (Carries all flat sizes + typologies to next floor)
+        // Copy Floor Format
         if (e.target.classList.contains('btn-copy-floor')) {
             const floorGroup = e.target.closest('.floor-group');
             const card = floorGroup.closest('.structure-card');
@@ -679,7 +402,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 updateTowerSizingPanel(newRow);
 
-                // Clone Flat Sizes & Typologies
                 const oldFlatSizes = Array.from(floorGroup.querySelectorAll('.size-flat')).map(i => i.value);
                 const oldTypologies = Array.from(floorGroup.querySelectorAll('.select-typology')).map(s => s.value);
                 const oldShopSizes = Array.from(floorGroup.querySelectorAll('.size-shop')).map(i => i.value);
@@ -779,7 +501,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Close on clicking outside
     document.addEventListener('click', (e) => {
         if (!e.target.closest('.multi-select-wrapper')) {
             closeAllAmenityDropdowns();
@@ -787,21 +508,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ==========================================
-    // FORM SUBMISSION & SUPABASE INSERTION
+    // FORM SUBMISSION (CREATE & UPDATE ENGINE)
     // ==========================================
     document.getElementById('createProjectForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = `
-            <svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            Saving Architecture...
-        `;
+        const submitBtnText = document.getElementById('submitBtnText');
+        const originalText = submitBtnText ? submitBtnText.textContent : 'Save Architecture';
+
+        if (submitBtnText) submitBtnText.textContent = isEditMode ? 'Updating Architecture...' : 'Saving Architecture...';
         submitBtn.disabled = true;
 
         try {
             const photoFile = document.getElementById('project_photo').files[0];
-            let photoUrl = null;
+            let photoUrl = existingPhotoUrl;
             if (photoFile) {
                 photoUrl = await uploadToR2(photoFile, 'project-photos'); 
             }
@@ -818,7 +538,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const rate = parseFloat(rateInput.value) || 0;
 
             const basePayload = {
-                project_code: document.getElementById('project_code').value,
                 project_name: document.getElementById('project_name').value.trim(),
                 project_type: projectTypeSelect.value,
                 contract_type: document.getElementById('contract_type').value,
@@ -833,9 +552,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 start_date: document.getElementById('start_date').value || null,
                 target_end_date: document.getElementById('target_end_date').value || null,
                 project_photo_url: photoUrl,
-                project_team_array: teamArray,
-                created_by: createdBy
+                project_team_array: teamArray
             };
+
+            if (!isEditMode) {
+                basePayload.project_code = document.getElementById('project_code').value;
+                basePayload.created_by = createdBy;
+            }
 
             const fullPayload = {
                 ...basePayload,
@@ -845,23 +568,36 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
 
             let projectData = null;
-            const firstAttempt = await supabase.from('projects').insert([fullPayload]).select().single();
-            projectData = firstAttempt.data;
-            let projectError = firstAttempt.error;
 
-            if (projectError && (projectError.code === '23503' || String(projectError.message).includes('foreign key constraint'))) {
-                const fallbackPayload = {
-                    ...basePayload,
-                    assigned_chief_engineer: null,
-                    assigned_project_manager: null,
-                    assigned_contractor: null
-                };
-                const secondAttempt = await supabase.from('projects').insert([fallbackPayload]).select().single();
-                if (secondAttempt.error) throw secondAttempt.error;
-                projectData = secondAttempt.data;
-                projectError = null;
-            } else if (projectError) {
-                throw projectError;
+            if (isEditMode) {
+                // UPDATE EXISTING PROJECT
+                let updateAttempt = await supabase.from('projects').update(fullPayload).eq('id', editProjectId).select().single();
+                if (updateAttempt.error && (updateAttempt.error.code === '23503' || String(updateAttempt.error.message).includes('foreign key constraint'))) {
+                    const fallbackPayload = {
+                        ...basePayload,
+                        assigned_chief_engineer: null,
+                        assigned_project_manager: null,
+                        assigned_contractor: null
+                    };
+                    updateAttempt = await supabase.from('projects').update(fallbackPayload).eq('id', editProjectId).select().single();
+                }
+                if (updateAttempt.error) throw updateAttempt.error;
+                projectData = updateAttempt.data;
+
+            } else {
+                // INSERT NEW PROJECT
+                let insertAttempt = await supabase.from('projects').insert([fullPayload]).select().single();
+                if (insertAttempt.error && (insertAttempt.error.code === '23503' || String(insertAttempt.error.message).includes('foreign key constraint'))) {
+                    const fallbackPayload = {
+                        ...basePayload,
+                        assigned_chief_engineer: null,
+                        assigned_project_manager: null,
+                        assigned_contractor: null
+                    };
+                    insertAttempt = await supabase.from('projects').insert([fallbackPayload]).select().single();
+                }
+                if (insertAttempt.error) throw insertAttempt.error;
+                projectData = insertAttempt.data;
             }
 
             // 2. Prepare Zones & Inventory Units
@@ -871,8 +607,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             cards.forEach(card => {
                 const structName = card.querySelector('.structure-name').value.trim();
-                
-                // Smart Prefix: "Tower A" -> "TA", "Tower B" -> "TB", "Clubhouse" -> "CLU"
                 let cleanName = structName.replace(/[^a-zA-Z0-9\s]/g, '').toUpperCase().trim();
                 let towerPrefix = cleanName.slice(0, 3);
                 const tMatch = cleanName.match(/TOWER\s*([A-Z0-9])/);
@@ -897,7 +631,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const isFacility = card.classList.contains('facility-card');
                 const floorGroups = card.querySelectorAll('.floor-group');
 
-                // AUTO-INJECT EXTERNAL TOWER ENVELOPE (Outside Plastering, Elevation, Painting, Scaffolding)
+                // AUTO-INJECT EXTERNAL TOWER ENVELOPE
                 if (!isFacility) {
                     zonesToInsert.push({
                         project_id: projectData.id,
@@ -979,7 +713,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             });
                         }
 
-                        // Generate Concrete Inventory Shops
+                        // Concrete Inventory Shops
                         const shopInputs = group.querySelectorAll('.size-shop');
                         for (let s = 1; s <= shops; s++) {
                             const shopSize = parseFloat(shopInputs[s - 1] ? shopInputs[s - 1].value : 0) || 0;
@@ -1004,7 +738,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         }
                     }
 
-                    // Attach current snapshot of Typology Profiles for full fidelity reconstruction
                     configJSON.typology_snapshot = typologyProfiles;
 
                     zonesToInsert.push({
@@ -1035,40 +768,653 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
 
-            // 3. Batch Insert into 'project_zones'
+            // 3. Synchronize 'project_zones' in Supabase
+            if (isEditMode) {
+                await supabase.from('project_zones').delete().eq('project_id', projectData.id);
+            }
             if (zonesToInsert.length > 0) {
                 const { error: zoneError } = await supabase.from('project_zones').insert(zonesToInsert);
                 if (zoneError) throw zoneError;
             }
 
-            // 4. Batch Insert into 'project_units'
+            // 4. Synchronize 'project_units' in Supabase
+            if (isEditMode) {
+                await supabase.from('project_units').delete().eq('project_id', projectData.id);
+            }
             if (unitsToInsert.length > 0) {
                 const { error: unitError } = await supabase.from('project_units').insert(unitsToInsert);
                 if (unitError) {
-                    console.warn('[Create Project] Warning: Failed to populate project_units inventory:', unitError);
+                    console.warn('[Project Architecture] Warning: Failed to populate project_units inventory:', unitError);
                 }
             }
 
-            // Set new project as active workspace
-            localStorage.setItem('activeProjectId', projectData.id);
-            localStorage.setItem('activeProjectCode', projectData.project_code);
-            localStorage.setItem('activeProjectName', projectData.project_name);
-            window.dispatchEvent(new CustomEvent('prayosha:project-switched', { detail: projectData }));
+            // Sync Active Workspace
+            if (localStorage.getItem('activeProjectId') === projectData.id || !isEditMode) {
+                localStorage.setItem('activeProjectId', projectData.id);
+                localStorage.setItem('activeProjectCode', projectData.project_code);
+                localStorage.setItem('activeProjectName', projectData.project_name);
+                window.dispatchEvent(new CustomEvent('prayosha:project-switched', { detail: projectData }));
+                window.dispatchEvent(new CustomEvent('projectChanged', { 
+                    detail: { projectId: projectData.id, projectName: projectData.project_name } 
+                }));
+            }
 
-            showToast(`Project "${projectData.project_name}" created with ${unitsToInsert.length} units!`, 'success');
+            showToast(isEditMode 
+                ? `Project "${projectData.project_name}" updated successfully!` 
+                : `Project "${projectData.project_name}" created with ${unitsToInsert.length} units!`, 
+                'success'
+            );
 
             setTimeout(() => {
                 window.location.href = 'project-dashboard.html';
             }, 1200);
 
         } catch (error) {
-            console.error('Error creating project:', error);
-            showToast(`Creation error: ${error.message}`, 'error');
-            submitBtn.innerHTML = originalText;
+            console.error('Error saving project:', error);
+            showToast(`Saving error: ${error.message}`, 'error');
+            if (submitBtnText) submitBtnText.textContent = originalText;
             submitBtn.disabled = false;
         }
     });
 });
+
+// ==========================================
+// EDIT MODE PRE-POPULATION ENGINE
+// ==========================================
+function setupEditModeUI() {
+    const pageModeBadge = document.getElementById('pageModeBadge');
+    const pageHeadingTitle = document.getElementById('pageHeadingTitle');
+    const pageSubHeadingText = document.getElementById('pageSubHeadingText');
+    const submitBtnText = document.getElementById('submitBtnText');
+    const editProjectIdInput = document.getElementById('edit_project_id');
+
+    if (pageModeBadge) pageModeBadge.textContent = 'Edit Project Mode';
+    if (pageHeadingTitle) pageHeadingTitle.textContent = 'Edit Project Architecture';
+    if (pageSubHeadingText) pageSubHeadingText.textContent = 'Modify metadata, financials, and structural floor/zone hierarchy';
+    if (submitBtnText) submitBtnText.textContent = 'Update Project Architecture';
+    if (editProjectIdInput) editProjectIdInput.value = editProjectId;
+}
+
+async function loadExistingProjectForEditing(projectId) {
+    showToast('Loading existing project architecture...', 'info');
+
+    try {
+        // 1. Fetch Project Record
+        const { data: project, error: projError } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', projectId)
+            .single();
+
+        if (projError) throw projError;
+        if (!project) throw new Error('Project record not found');
+
+        // Populate Form Fields
+        document.getElementById('project_code').value = project.project_code || '';
+        document.getElementById('project_name').value = project.project_name || '';
+        document.getElementById('project_type').value = project.project_type || 'Residential';
+        document.getElementById('contract_type').value = project.contract_type || 'Material Only';
+        document.getElementById('status').value = project.status || 'Planning';
+        document.getElementById('description').value = project.description || '';
+        document.getElementById('rera_number').value = project.rera_number || '';
+        document.getElementById('project_address').value = project.project_address || '';
+        document.getElementById('map_link').value = project.map_link || '';
+
+        document.getElementById('total_sqft').value = project.total_sqft || '';
+        document.getElementById('rate_per_sqft').value = project.rate_per_sqft || '';
+        document.getElementById('estimated_budget').value = `₹${Number(project.estimated_budget || 0).toLocaleString('en-IN')}`;
+
+        if (project.start_date) {
+            document.getElementById('start_date').value = project.start_date.split('T')[0];
+        }
+        if (project.target_end_date || project.target_date) {
+            const tDate = project.target_end_date || project.target_date;
+            document.getElementById('target_end_date').value = tDate.split('T')[0];
+        }
+
+        // Project Photo Preview
+        if (project.project_photo_url) {
+            existingPhotoUrl = project.project_photo_url;
+            const photoCont = document.getElementById('currentPhotoContainer');
+            const photoPreview = document.getElementById('currentPhotoPreview');
+            const photoLink = document.getElementById('currentPhotoLink');
+
+            if (photoCont && photoPreview && photoLink) {
+                photoPreview.src = existingPhotoUrl;
+                photoLink.href = existingPhotoUrl;
+                photoCont.classList.remove('hidden');
+            }
+        }
+
+        // Assigned Staff / Team
+        if (project.assigned_chief_engineer) {
+            document.getElementById('assigned_chief_engineer').value = project.assigned_chief_engineer;
+        }
+        if (project.assigned_project_manager) {
+            document.getElementById('assigned_project_manager').value = project.assigned_project_manager;
+        }
+        if (project.assigned_contractor) {
+            document.getElementById('assigned_contractor').value = project.assigned_contractor;
+        }
+
+        // 2. Fetch Project Zones
+        const { data: zones, error: zoneError } = await supabase
+            .from('project_zones')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('created_at', { ascending: true });
+
+        if (zoneError) throw zoneError;
+
+        if (zones && zones.length > 0) {
+            reconstructStructureBuilderFromZones(zones);
+        }
+
+        showToast('Project architecture loaded for editing', 'success');
+
+    } catch (err) {
+        console.error('Failed to load project details:', err);
+        showToast(`Could not load project: ${err.message}`, 'error');
+    }
+}
+
+// ----------------------------------------------------
+// DYNAMIC STRUCTURE RECONSTRUCTION ENGINE
+// ----------------------------------------------------
+function reconstructStructureBuilderFromZones(zones) {
+    const structureContainer = document.getElementById('structureContainer');
+    structureContainer.innerHTML = ''; // Clear default container
+
+    // Filter out synthetic envelope packages
+    const activeZones = zones.filter(z => 
+        z.zone_type !== 'External Structure' && 
+        z.zone_type !== 'External Infrastructure' &&
+        z.tower_name !== 'Site Infrastructure' &&
+        z.floor_name !== 'External Elevation'
+    );
+
+    // Group zones by structure/tower name
+    const structuresMap = {};
+    activeZones.forEach(zone => {
+        const name = zone.tower_name || 'Tower A';
+        if (!structuresMap[name]) structuresMap[name] = [];
+        structuresMap[name].push(zone);
+    });
+
+    const { showFlats, showShops } = getColumnVisibility();
+
+    Object.keys(structuresMap).forEach(structureName => {
+        const structureZones = structuresMap[structureName];
+        const isGroundZone = structureZones.some(z => z.zone_type === 'Common Zone');
+        const isFacility = structureZones.some(z => z.zone_type === 'Facility');
+
+        if (isGroundZone) {
+            // Reconstruct Ground Card
+            const gz = structureZones[0];
+            const area = gz.unit_configuration?.total_area || 0;
+            const desc = (gz.amenity && gz.amenity !== 'N.A.') ? gz.amenity : '';
+
+            const html = `
+                <div class="structure-card ground-card p-4 rounded-xl shadow-sm border border-gray-200 relative mb-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center gap-2 w-1/2">
+                            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <input type="text" class="structure-name font-bold text-lg text-emerald-900 bg-transparent border-b border-dashed border-gray-400 focus:outline-none w-full" value="${structureName}" title="Rename Zone">
+                        </div>
+                        <button type="button" class="btn-delete-structure text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 transition">Delete</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-3 border border-gray-100 rounded-lg">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Description / Features</label>
+                            <input type="text" class="input-field text-sm ground-desc" value="${desc}" placeholder="e.g. Landscaping, Walkways">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Total Area (Sq.Ft)</label>
+                            <input type="number" class="input-field text-sm ground-area" value="${area}" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+            `;
+            structureContainer.insertAdjacentHTML('beforeend', html);
+
+        } else if (isFacility) {
+            // Reconstruct Facility Card
+            facilityCount++;
+            const cardId = `facility-${Date.now()}-${facilityCount}`;
+            const html = `
+                <div id="${cardId}" class="structure-card facility-card p-4 rounded-xl shadow-sm border border-gray-200 relative mb-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <input type="text" class="structure-name font-bold text-lg text-indigo-900 bg-transparent border-b border-dashed border-gray-400 focus:outline-none w-1/2" value="${structureName}" title="Rename Facility">
+                        <div class="flex gap-2">
+                            <button type="button" class="btn-add-basement text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-300 transition">+ Add Basement</button>
+                            <button type="button" class="btn-add-floor text-xs bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-200 transition">+ Add Floor</button>
+                            <button type="button" class="btn-delete-structure text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 transition ml-2">Delete</button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-500 uppercase border-b pb-2 mb-2 px-2">
+                        <div class="col-span-3">Floor / Level</div>
+                        <div class="col-span-4">Custom Rooms / Zones (Comma separated)</div>
+                        <div class="col-span-3">Amenities</div>
+                        <div class="col-span-2 text-right">Actions</div>
+                    </div>
+
+                    <div class="floors-container space-y-3"></div>
+                </div>
+            `;
+            structureContainer.insertAdjacentHTML('beforeend', html);
+            const cardEl = document.getElementById(cardId);
+            const floorsCont = cardEl.querySelector('.floors-container');
+
+            structureZones.forEach(z => {
+                const floorHTML = generateFacilityFloorHTML(z.floor_name);
+                floorsCont.insertAdjacentHTML('beforeend', floorHTML);
+                const floorGroup = floorsCont.lastElementChild;
+
+                const customRooms = z.unit_configuration?.custom_labels || (z.unit_configuration?.rooms ? Object.keys(z.unit_configuration.rooms).join(', ') : '');
+                floorGroup.querySelector('.room-input').value = customRooms;
+
+                const amenityStr = (z.amenity && z.amenity !== 'N.A.') ? z.amenity : '';
+                floorGroup.querySelector('.amenity-display').value = amenityStr;
+
+                // Sync checkboxes
+                if (amenityStr) {
+                    const checkedList = amenityStr.split(',').map(a => a.trim());
+                    floorGroup.querySelectorAll('.amenity-cb').forEach(cb => {
+                        if (checkedList.includes(cb.value)) cb.checked = true;
+                    });
+                }
+
+                updateFacilitySizingPanel(floorGroup);
+
+                // Populate room and amenity sizes
+                if (z.unit_configuration?.rooms) {
+                    Object.entries(z.unit_configuration.rooms).forEach(([room, size]) => {
+                        const inp = floorGroup.querySelector(`.size-room[data-room="${room}"]`);
+                        if (inp) inp.value = size;
+                    });
+                }
+                if (z.unit_configuration?.amenities_sizes) {
+                    Object.entries(z.unit_configuration.amenities_sizes).forEach(([amenity, size]) => {
+                        const inp = floorGroup.querySelector(`.size-amenity[data-amenity="${amenity}"]`);
+                        if (inp) inp.value = size;
+                    });
+                }
+            });
+
+        } else {
+            // Reconstruct Tower Block
+            towerCount++;
+            const cardId = `tower-${Date.now()}-${towerCount}`;
+            const html = `
+                <div id="${cardId}" class="structure-card tower-card p-4 rounded-xl shadow-sm border border-gray-200 relative mb-4">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
+                        <input type="text" class="structure-name font-bold text-lg prayosha-navy bg-transparent border-b border-dashed border-gray-400 focus:outline-none w-full sm:w-1/3" value="${structureName}" title="Rename Block">
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" class="btn-add-basement text-xs bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-300 transition">+ Add Basement</button>
+                            <button type="button" class="btn-add-floor text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg hover:bg-blue-200 transition">+ Add Floor</button>
+                            <button type="button" class="btn-clone-tower text-xs bg-brand-amber/20 text-brand-navy border border-brand-amber px-3 py-1.5 rounded-lg hover:bg-brand-amber hover:text-white transition font-semibold" title="Clone Entire Tower Setup">⧉ Clone Tower</button>
+                            <button type="button" class="btn-delete-structure text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-200 transition ml-2">Delete</button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-500 uppercase border-b pb-2 mb-2 px-2">
+                        <div class="col-span-3">Floor / Level</div>
+                        <div class="col-span-2 col-flats" style="display: ${showFlats ? 'block' : 'none'}">Total Flats</div>
+                        <div class="col-span-2 col-shops" style="display: ${showShops ? 'block' : 'none'}">Total Shops</div>
+                        <div class="col-span-3">Amenities</div>
+                        <div class="col-span-2 text-right">Actions</div>
+                    </div>
+
+                    <div class="floors-container space-y-3"></div>
+                </div>
+            `;
+            structureContainer.insertAdjacentHTML('beforeend', html);
+            const cardEl = document.getElementById(cardId);
+            const floorsCont = cardEl.querySelector('.floors-container');
+
+            structureZones.forEach(z => {
+                const isBasement = (z.zone_type === 'Basement' || z.floor_name.toLowerCase().includes('basement'));
+                const floorHTML = generateTowerFloorHTML(z.floor_name, showFlats, showShops, isBasement);
+                floorsCont.insertAdjacentHTML('beforeend', floorHTML);
+                const floorGroup = floorsCont.lastElementChild;
+
+                floorGroup.querySelector('.flat-input').value = z.total_flats || 0;
+                floorGroup.querySelector('.shop-input').value = z.total_shops || 0;
+
+                const amenityStr = (z.amenity && z.amenity !== 'N.A.') ? z.amenity : '';
+                floorGroup.querySelector('.amenity-display').value = amenityStr;
+
+                if (amenityStr) {
+                    const checkedList = amenityStr.split(',').map(a => a.trim());
+                    floorGroup.querySelectorAll('.amenity-cb').forEach(cb => {
+                        if (checkedList.includes(cb.value)) cb.checked = true;
+                    });
+                }
+
+                // Render Sizing & Typology Panel
+                updateTowerSizingPanel(floorGroup);
+
+                // Populate flat sizes and typology dropdowns
+                const config = z.unit_configuration || {};
+                const flatInputs = floorGroup.querySelectorAll('.size-flat');
+                const typologySelects = floorGroup.querySelectorAll('.select-typology');
+
+                if (config.flats && config.flats.length > 0) {
+                    config.flats.forEach((size, idx) => {
+                        if (flatInputs[idx]) flatInputs[idx].value = size;
+                    });
+                }
+
+                if (config.flat_typologies && config.flat_typologies.length > 0) {
+                    config.flat_typologies.forEach((typ, idx) => {
+                        if (typologySelects[idx]) typologySelects[idx].value = typ;
+                    });
+                } else if (config.flat_details && config.flat_details.length > 0) {
+                    config.flat_details.forEach((det, idx) => {
+                        if (typologySelects[idx] && det.typology) typologySelects[idx].value = det.typology;
+                    });
+                }
+
+                // Populate shop sizes
+                const shopInputs = floorGroup.querySelectorAll('.size-shop');
+                if (config.shops && config.shops.length > 0) {
+                    config.shops.forEach((size, idx) => {
+                        if (shopInputs[idx]) shopInputs[idx].value = size;
+                    });
+                }
+
+                // Populate amenity sizes
+                if (config.amenities_sizes) {
+                    Object.entries(config.amenities_sizes).forEach(([amenity, size]) => {
+                        const inp = floorGroup.querySelector(`.size-amenity[data-amenity="${amenity}"]`);
+                        if (inp) inp.value = size;
+                    });
+                }
+            });
+        }
+    });
+}
+
+// ==========================================
+// FLOOR GENERATION TEMPLATES & HELPERS
+// ==========================================
+function getColumnVisibility() {
+    const projectTypeSelect = document.getElementById('project_type');
+    const type = projectTypeSelect ? (projectTypeSelect.value || '') : '';
+    return { 
+        showFlats: type.includes('Residential'), 
+        showShops: type.includes('Commercial') 
+    };
+}
+
+function getNextFloorName(container) {
+    const existing = Array.from(container.querySelectorAll('.floor-name-input'))
+        .map(inp => inp.value).filter(val => !val.toLowerCase().includes('basement'));
+    if (existing.length === 0) return 'Ground Floor';
+    if (existing.length === 1) return '1st Floor';
+    if (existing.length === 2) return '2nd Floor';
+    if (existing.length === 3) return '3rd Floor';
+    return `${existing.length}th Floor`;
+}
+
+function getNextBasementName(container) {
+    const existing = Array.from(container.querySelectorAll('.floor-name-input'))
+        .map(inp => inp.value).filter(val => val.toLowerCase().includes('basement'));
+    return `Basement ${existing.length + 1}`;
+}
+
+function generateTowerFloorHTML(name, showFlats, showShops, isBasement = false) {
+    const disabled = isBasement ? 'disabled' : '';
+    const bg = isBasement ? 'bg-gray-100 cursor-not-allowed text-gray-400' : 'bg-white';
+    return `
+        <div class="floor-group">
+            <div class="floor-row grid grid-cols-12 gap-2 items-center bg-white p-2 border border-gray-200 rounded shadow-sm relative">
+                <div class="col-span-3"><input type="text" class="input-field text-sm p-1 floor-name-input font-medium" value="${name}"></div>
+                <div class="col-span-2 col-flats" style="display: ${showFlats ? 'block' : 'none'}">
+                    <input type="number" class="input-field text-sm p-1 flat-input trigger-sizing ${bg}" value="0" min="0" ${disabled}>
+                </div>
+                <div class="col-span-2 col-shops" style="display: ${showShops ? 'block' : 'none'}">
+                    <input type="number" class="input-field text-sm p-1 shop-input trigger-sizing ${bg}" value="0" min="0" ${disabled}>
+                </div>
+                ${generateAmenityDropdown()}
+                <div class="col-span-2 flex justify-end gap-1">
+                    <button type="button" class="btn-copy-floor text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 border border-blue-200">Copy</button>
+                    <button type="button" class="btn-remove-floor text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 border border-red-200">X</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function generateFacilityFloorHTML(name) {
+    return `
+        <div class="floor-group">
+            <div class="floor-row grid grid-cols-12 gap-2 items-center bg-white p-2 border border-gray-200 rounded shadow-sm relative">
+                <div class="col-span-3"><input type="text" class="input-field text-sm p-1 floor-name-input font-medium" value="${name}"></div>
+                <div class="col-span-4">
+                    <input type="text" class="input-field text-sm p-1 room-input trigger-facility-sizing" placeholder="e.g. Reception, Gym, Spa">
+                </div>
+                ${generateAmenityDropdown()}
+                <div class="col-span-2 flex justify-end gap-1">
+                    <button type="button" class="btn-copy-floor text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 border border-blue-200">Copy</button>
+                    <button type="button" class="btn-remove-floor text-xs bg-red-50 text-red-600 px-2 py-1 rounded hover:bg-red-100 border border-red-200">X</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function updateTowerSizingPanel(floorGroup) {
+    const floorRow = floorGroup.querySelector('.floor-row');
+    const floorName = floorRow.querySelector('.floor-name-input').value.trim();
+    const floorLevel = parseFloorLevel(floorName);
+    
+    const flats = parseInt(floorRow.querySelector('.flat-input').value) || 0;
+    const shops = parseInt(floorRow.querySelector('.shop-input').value) || 0;
+    const amenityStr = floorRow.querySelector('.amenity-display').value;
+    const amenities = amenityStr.split(',').map(a => a.trim()).filter(Boolean);
+    
+    let existingFlats = [], existingTypologies = [], existingShops = [], existingAmenities = {};
+    const existingPanel = floorGroup.querySelector('.sizing-panel');
+    if (existingPanel) {
+        existingPanel.querySelectorAll('.size-flat').forEach(i => existingFlats.push(i.value));
+        existingPanel.querySelectorAll('.select-typology').forEach(s => existingTypologies.push(s.value));
+        existingPanel.querySelectorAll('.size-shop').forEach(i => existingShops.push(i.value));
+        existingPanel.querySelectorAll('.size-amenity').forEach(i => existingAmenities[i.getAttribute('data-amenity')] = i.value);
+        existingPanel.remove();
+    }
+
+    if (flats === 0 && shops === 0 && amenities.length === 0) {
+        floorRow.classList.add('rounded');
+        floorRow.classList.remove('rounded-t-lg', 'border-b-0');
+        return; 
+    }
+
+    floorRow.classList.remove('rounded');
+    floorRow.classList.add('rounded-t-lg', 'border-b-0');
+
+    let html = `<div class="sizing-panel bg-slate-50/90 p-3.5 rounded-b-xl border-x border-b border-gray-200 mb-2 grid grid-cols-1 gap-4 shadow-inner">`;
+    
+    if (flats > 0) {
+        html += `<div class="bg-white p-3 rounded-xl border border-gray-200">
+                    <div class="flex justify-between items-center mb-2.5">
+                        <div>
+                            <span class="text-xs font-bold text-brand-navy uppercase tracking-wide">Flats Configuration & Typologies</span>
+                            <span class="text-[10px] text-slate-400 ml-2">(Auto-adjusts typology based on Carpet Sq.Ft)</span>
+                        </div>
+                        <button type="button" class="btn-apply-all-flats text-[10px] bg-brand-navy/10 text-brand-navy px-2.5 py-1 rounded-lg hover:bg-brand-navy hover:text-white transition font-bold">
+                            Apply First Flat to All
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">`;
+
+        for (let i = 1; i <= flats; i++) {
+            const val = existingFlats[i - 1] || '';
+            const selectedTypology = existingTypologies[i - 1] || (parseFloat(val) >= 1800 ? '4 BHK' : (parseFloat(val) >= 1200 ? '3 BHK' : '2 BHK'));
+
+            let unitNum;
+            if (floorLevel === 0) unitNum = `G${String(i).padStart(2, '0')}`;
+            else if (floorLevel < 0) unitNum = `B${Math.abs(floorLevel)}${String(i).padStart(2, '0')}`;
+            else unitNum = `${floorLevel}${String(i).padStart(2, '0')}`;
+
+            html += `
+                <div class="flat-unit-card bg-slate-50 p-2.5 rounded-xl border border-slate-200/90 shadow-2xs">
+                    <div class="flex items-center justify-between text-[11px] font-bold text-slate-700 mb-1.5">
+                        <span class="text-brand-navy">Flat ${unitNum}</span>
+                        <span class="text-[9px] font-semibold text-slate-400 bg-white px-1.5 py-0.5 rounded border border-slate-100">Unit ${i}</span>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <input type="number" class="input-field text-xs p-1.5 size-flat border-gray-300 w-1/2 bg-white" placeholder="Sq.Ft" value="${val}" data-flat-idx="${i}">
+                        <select class="input-field text-xs p-1.5 select-typology border-gray-300 w-1/2 cursor-pointer bg-white font-medium" data-flat-idx="${i}">
+                            <option value="1 BHK" ${selectedTypology === '1 BHK' ? 'selected' : ''}>1 BHK</option>
+                            <option value="2 BHK" ${selectedTypology === '2 BHK' ? 'selected' : ''}>2 BHK</option>
+                            <option value="3 BHK" ${selectedTypology === '3 BHK' ? 'selected' : ''}>3 BHK</option>
+                            <option value="4 BHK" ${selectedTypology === '4 BHK' ? 'selected' : ''}>4 BHK</option>
+                            <option value="Penthouse" ${selectedTypology === 'Penthouse' ? 'selected' : ''}>Penthouse</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+        }
+        html += `</div></div>`;
+    }
+    
+    if (shops > 0) {
+        html += `<div class="bg-white p-3 rounded-xl border border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-gray-700 uppercase">Commercial Shop Sizes (Sq.Ft)</span>
+                        <button type="button" class="btn-apply-all text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded hover:bg-indigo-100 font-semibold" data-target=".size-shop">Apply First to All</button>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">`;
+        for (let i = 1; i <= shops; i++) {
+            const val = existingShops[i - 1] || '';
+            let unitNum;
+            if (floorLevel === 0) unitNum = `G${String(i).padStart(2, '0')}`;
+            else if (floorLevel < 0) unitNum = `B${Math.abs(floorLevel)}${String(i).padStart(2, '0')}`;
+            else unitNum = `${floorLevel}${String(i).padStart(2, '0')}`;
+
+            html += `<div>
+                        <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Shop ${unitNum}</label>
+                        <input type="number" class="input-field text-xs p-1.5 size-shop border-gray-300 bg-white" placeholder="Sq.Ft" value="${val}">
+                     </div>`;
+        }
+        html += `</div></div>`;
+    }
+
+    if (amenities.length > 0) {
+        html += `<div class="bg-white p-3 rounded-xl border border-gray-200">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-emerald-700 uppercase">Amenity Area Sizes (Sq.Ft)</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">`;
+        amenities.forEach(amenity => {
+            const val = existingAmenities[amenity] || '';
+            html += `<div>
+                        <label class="block text-[10px] text-gray-500 mb-1 truncate">${amenity}</label>
+                        <input type="number" class="input-field text-xs p-1.5 size-amenity border-gray-300 bg-white" data-amenity="${amenity}" placeholder="Sq.Ft" value="${val}">
+                     </div>`;
+        });
+        html += `</div></div>`;
+    }
+
+    html += `</div>`;
+    floorGroup.insertAdjacentHTML('beforeend', html);
+}
+
+function updateFacilitySizingPanel(floorGroup) {
+    const floorRow = floorGroup.querySelector('.floor-row');
+    const roomStr = floorRow.querySelector('.room-input').value;
+    const rooms = roomStr.split(',').map(r => r.trim()).filter(Boolean);
+    const amenityStr = floorRow.querySelector('.amenity-display').value;
+    const amenities = amenityStr.split(',').map(a => a.trim()).filter(Boolean);
+
+    let existingMap = {};
+    const existingPanel = floorGroup.querySelector('.sizing-panel');
+    if (existingPanel) {
+        existingPanel.querySelectorAll('.size-room, .size-amenity').forEach(i => {
+            const key = i.getAttribute('data-room') || i.getAttribute('data-amenity');
+            existingMap[key] = i.value;
+        });
+        existingPanel.remove();
+    }
+
+    if (rooms.length === 0 && amenities.length === 0) {
+        floorRow.classList.add('rounded');
+        floorRow.classList.remove('rounded-t-lg', 'border-b-0');
+        return;
+    }
+
+    floorRow.classList.remove('rounded');
+    floorRow.classList.add('rounded-t-lg', 'border-b-0');
+
+    let html = `<div class="sizing-panel bg-indigo-50/50 p-3 rounded-b-lg border-x border-b border-gray-200 mb-2">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold text-indigo-800 uppercase">Room & Amenity Sizes (Sq.Ft)</span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">`;
+    
+    rooms.forEach(room => {
+        const val = existingMap[room] || '';
+        html += `<div>
+                    <label class="block text-[10px] text-gray-500 mb-1 truncate">${room}</label>
+                    <input type="number" class="input-field text-xs p-1 size-room border-gray-300 bg-white" data-room="${room}" placeholder="Sq.Ft" value="${val}">
+                 </div>`;
+    });
+
+    amenities.forEach(amenity => {
+        const val = existingMap[amenity] || '';
+        html += `<div>
+                    <label class="block text-[10px] text-emerald-700 font-semibold mb-1 truncate">${amenity}</label>
+                    <input type="number" class="input-field text-xs p-1 size-amenity border-gray-300 bg-white" data-amenity="${amenity}" placeholder="Sq.Ft" value="${val}">
+                 </div>`;
+    });
+    
+    html += `</div></div>`;
+    floorGroup.insertAdjacentHTML('beforeend', html);
+}
+
+function generateAmenityDropdown() {
+    let optionsHTML = globalAmenities.map(amenity => 
+        `<label class="flex items-center text-xs mb-1 p-1 hover:bg-gray-50 rounded cursor-pointer">
+            <input type="checkbox" value="${amenity}" class="mr-2 amenity-cb"> ${amenity}
+        </label>`
+    ).join('');
+
+    return `
+        <div class="col-span-3 relative multi-select-wrapper">
+            <input type="text" class="input-field text-sm p-1 amenity-display cursor-pointer bg-white" readonly placeholder="Click to select..." value="">
+            <div class="absolute z-50 hidden bg-white border border-gray-200 shadow-2xl rounded mt-1 w-full p-2 options-container custom-scroll">
+                <div class="amenity-list-container max-h-32 overflow-y-auto">
+                    ${optionsHTML}
+                </div>
+                <div class="border-t border-gray-200 mt-2 pt-2 flex gap-1">
+                    <input type="text" class="input-field text-[10px] p-1 flex-1 custom-amenity-input" placeholder="New amenity...">
+                    <button type="button" class="btn-add-custom-amenity bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-[10px] hover:bg-emerald-200 font-bold">+</button>
+                </div>
+            </div>
+        </div>`;
+}
+
+function closeAllAmenityDropdowns() {
+    document.querySelectorAll('.options-container').forEach(c => c.classList.add('hidden'));
+    document.querySelectorAll('.floor-row.dropdown-active').forEach(r => r.classList.remove('dropdown-active'));
+    document.querySelectorAll('.floor-group.dropdown-active').forEach(g => g.classList.remove('dropdown-active'));
+}
+
+function parseFloorLevel(name) {
+    if (!name) return 0;
+    const lower = name.toLowerCase().trim();
+    if (lower.includes('basement')) {
+        const num = parseInt(lower.replace(/\D/g, '')) || 1;
+        return -num;
+    }
+    if (lower.includes('ground') || lower === '0' || lower === 'g' || lower === 'gf') {
+        return 0;
+    }
+    const num = parseInt(lower.replace(/\D/g, ''));
+    return isNaN(num) ? 0 : num;
+}
 
 // ==========================================
 // MASTER TYPOLOGY INCLUSIONS CONTROLLER
@@ -1095,7 +1441,6 @@ function initTypologyModal() {
             activeLabel.textContent = `Configuring ${activeTypologyTab} Inclusions`;
         }
 
-        // Highlight active tab
         tabButtons.forEach(btn => {
             const isMatch = btn.getAttribute('data-typology') === activeTypologyTab;
             if (isMatch) {
@@ -1127,7 +1472,6 @@ function initTypologyModal() {
         });
     };
 
-    // Tab Switch Trigger
     tabButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             saveCurrentTypologyFromDOM();
@@ -1233,7 +1577,7 @@ async function loadEmployeeDropdowns() {
             .order('display_name', { ascending: true });
 
         if (staffError) {
-            console.warn('[Create Project] Could not load staff from user_roles:', staffError);
+            console.warn('[Project Setup] Could not load staff from user_roles:', staffError);
         }
 
         const { data: vendorList, error: vendorError } = await supabase
@@ -1242,7 +1586,7 @@ async function loadEmployeeDropdowns() {
             .order('name', { ascending: true });
 
         if (vendorError) {
-            console.warn('[Create Project] Could not load contractors from vendors:', vendorError);
+            console.warn('[Project Setup] Could not load contractors from vendors:', vendorError);
         }
 
         if (staffList && staffList.length > 0) {
@@ -1297,7 +1641,7 @@ async function loadEmployeeDropdowns() {
         }
 
     } catch (e) {
-        console.error('[Create Project] Exception loading employee and contractor dropdowns:', e);
+        console.error('[Project Setup] Exception loading employee and contractor dropdowns:', e);
     }
 }
 

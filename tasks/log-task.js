@@ -1,18 +1,21 @@
 /**
- * Prayosha ERP - Task Logging & Plan Change Interceptor Controller
+ * Prayosha ERP - Task Logging, Plan Change Interceptor & Real-Time Notification Controller
  * File: /tasks/log-task.js
  * 
  * Features:
  * 1. 3-Tier Cascading Hierarchy: Project -> Tower -> Floor Level -> Zone ID dynamically from database records.
- * 2. Discrete Zone Parser: Unpacks flats, shops, AND every individual floor amenity (Parking, Lifts, Ducts, Stairs, Passage).
- * 3. Self-Healing Database Sync: Automatically replaces legacy compound basement strings with isolated work zones.
- * 4. Plan Change Alert Interceptor: Detects active customer modifications and triggers an unskippable warning modal.
- * 5. Trade-Aware Checkpoint Highlighting: Dynamically emphasizes bullets matching the selected civil trade category.
- * 6. Dynamic Agency Loader: Populates contractor options from the vendors directory.
- * 7. Resilient UUID & Fallback Handling: Fully immune to PostgreSQL 42703 and 22P02 database errors.
+ * 2. Distinct Smart Prefixing: Generates unique prefixes per tower (e.g. TA, TB, TC) avoiding 409 duplicate key conflicts.
+ * 3. Discrete Zone Parser: Unpacks flats, shops, and individual floor amenities (Parking, Lifts, Ducts, Stairs, Passage).
+ * 4. Self-Healing Database Sync: Automatically prunes legacy compound strings and deduplicates zone entities.
+ * 5. Plan Change Alert Interceptor: Detects active customer modifications and triggers an unskippable warning modal.
+ * 6. Trade-Aware Checkpoint Highlighting: Dynamically emphasizes bullets matching the selected civil trade category.
+ * 7. Dynamic Agency Loader: Populates contractor options from the vendors directory.
+ * 8. Real-Time Central Notification Dispatch: Dispatches alerts to the universal notification engine.
+ * 9. Resilient UUID & Fallback Handling: Fully immune to PostgreSQL 42703, 23505, and 22P02 database errors.
  */
 
 import { supabase } from '../config.js';
+import { sendNotification } from '../common/shell.js';
 
 // Central Supabase Client initialization
 const client = supabase || window.supabaseClient;
@@ -121,6 +124,23 @@ function getAmenityCode(amenityName) {
     if (clean.includes('foyer') || clean.includes('lobby')) return 'LBY';
     const abbrev = clean.replace(/[^a-z0-9]/g, '').slice(0, 4).toUpperCase();
     return abbrev || 'AMN';
+}
+
+/**
+ * Smart Tower Prefix Resolver (e.g., "Tower A" -> "TA", "Tower B" -> "TB", "Clubhouse" -> "CLU")
+ */
+function getTowerPrefix(towerName) {
+    if (!towerName) return 'TOW';
+    const clean = towerName.replace(/[^a-zA-Z0-9\s]/g, '').toUpperCase().trim();
+    const tMatch = clean.match(/TOWER\s*([A-Z0-9]+)/);
+    if (tMatch) {
+        return `T${tMatch[1]}`;
+    }
+    const parts = clean.split(/\s+/);
+    if (parts.length > 1) {
+        return parts.map(p => p[0]).join('').slice(0, 4);
+    }
+    return clean.slice(0, 3) || 'TOW';
 }
 
 // ==============================================================================
@@ -496,8 +516,8 @@ function populateFloorsForTower(selectedTower, projectId) {
 }
 
 /**
- * Self-healing zone loader: fetches map zones, eliminates legacy clumped rows,
- * and synthesizes any missing flats, shops, or individual amenities on demand.
+ * Robust Zone Loader: synthesizes distinct zone IDs per tower (TA, TB, etc.),
+ * prevents 409 collisions across towers, and populates the zone selector.
  */
 async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
     if (!isValidUUID(projectId) || !selectedTower || !selectedFloor) {
@@ -514,6 +534,7 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
             (z.floor_name || z.zone_name || '').trim().toLowerCase() === selectedFloor.trim().toLowerCase()
         );
 
+        // Fetch existing map zones for this tower & floor
         const { data: mapZones, error } = await client
             .from('project_map_zones')
             .select('*')
@@ -526,7 +547,7 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
 
         let activeZones = mapZones || [];
 
-        // 1. Detect legacy compound/clumped basement rows (e.g. TOW-BM1-Z01 with commas or merged text)
+        // 1. Prune legacy clumped basement zones
         const legacyRows = activeZones.filter(z => 
             (z.room_identifier && z.room_identifier.includes(',')) ||
             (z.zone_id && z.zone_id.endsWith('-Z01') && z.room_identifier && z.room_identifier.includes('Parking'))
@@ -544,37 +565,64 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
             activeZones = activeZones.filter(z => !legacyIds.includes(z.id));
         }
 
-        // 2. Synthesize complete zone package from architecture blueprint
+        // 2. Synthesize zones from architecture blueprint
         if (matchingArch) {
             const synthesized = synthesizeZonesForFloor(projectId, matchingArch);
 
-            // Determine if any synthesized zone is missing from activeZones
-            const missingZones = synthesized.filter(syn => 
+            // Filter zones that are not yet in the active floor list
+            const candidateZones = synthesized.filter(syn => 
                 !activeZones.some(az => 
                     az.zone_id === syn.zone_id || 
                     normalizeString(az.room_identifier) === normalizeString(syn.room_identifier)
                 )
             );
 
-            if (missingZones.length > 0) {
+            if (candidateZones.length > 0) {
                 try {
-                    const { data: inserted, error: insErr } = await client
+                    // Check if any candidate zone IDs already exist anywhere in the project to eliminate 409 collisions
+                    const candidateIds = candidateZones.map(c => c.zone_id);
+                    const { data: existingRows } = await client
                         .from('project_map_zones')
-                        .insert(missingZones)
-                        .select();
+                        .select('id, zone_id, room_identifier, tower_name, floor_level')
+                        .eq('project_id', projectId)
+                        .in('zone_id', candidateIds);
 
-                    if (!insErr && inserted) {
-                        activeZones = activeZones.concat(inserted);
-                    } else {
-                        activeZones = activeZones.concat(missingZones);
+                    const existingZoneIdSet = new Set((existingRows || []).map(r => r.zone_id));
+                    const safeToInsert = candidateZones.filter(c => !existingZoneIdSet.has(c.zone_id));
+
+                    if (safeToInsert.length > 0) {
+                        const { data: inserted, error: insErr } = await client
+                            .from('project_map_zones')
+                            .insert(safeToInsert)
+                            .select();
+
+                        if (!insErr && inserted) {
+                            activeZones = activeZones.concat(inserted);
+                        } else {
+                            activeZones = activeZones.concat(safeToInsert);
+                        }
+                    }
+
+                    if (existingRows && existingRows.length > 0) {
+                        activeZones = activeZones.concat(existingRows);
                     }
                 } catch (persistErr) {
-                    activeZones = activeZones.concat(missingZones);
+                    console.warn('[Task Logger] Non-blocking zone sync notice:', persistErr);
+                    activeZones = activeZones.concat(candidateZones);
                 }
             }
         }
 
-        // 3. Render distinct, selectable zones in the dropdown
+        // 3. Deduplicate zones by zone_id
+        const uniqueMap = new Map();
+        activeZones.forEach(z => {
+            if (z.zone_id && !uniqueMap.has(z.zone_id)) {
+                uniqueMap.set(z.zone_id, z);
+            }
+        });
+        activeZones = Array.from(uniqueMap.values());
+
+        // 4. Render distinct selectable zones in dropdown
         if (activeZones.length > 0) {
             activeZones.sort((a, b) => {
                 const getWeight = (z) => {
@@ -613,12 +661,14 @@ async function populateZonesForFloor(projectId, selectedTower, selectedFloor) {
 }
 
 /**
- * Synthesizes flats, shops, and every individual amenity from the architecture record.
+ * Synthesizes flats, shops, and every individual amenity using distinct tower prefixes.
  */
 function synthesizeZonesForFloor(projectId, record) {
     const tower = record.tower_name || 'Tower A';
     const floor = record.floor_name || record.zone_name || 'Ground Floor';
-    const towerPrefix = tower.replace(/[^a-zA-Z0-9]/g, '').slice(0, 3).toUpperCase() || 'TOW';
+    
+    // Distinct prefix: "Tower A" -> "TA", "Tower B" -> "TB", "Clubhouse" -> "CLU"
+    const towerPrefix = getTowerPrefix(tower);
     const floorPrefix = getFloorAbbreviation(floor);
 
     const config = record.unit_configuration || {};
@@ -667,7 +717,7 @@ function synthesizeZonesForFloor(projectId, record) {
         });
     }
 
-    // 3. Custom Facility Rooms (e.g. Reception, Spa, Gym in Clubhouses)
+    // 3. Custom Facility Rooms (e.g. Reception, Spa, Gym)
     if (config.rooms && typeof config.rooms === 'object') {
         Object.entries(config.rooms).forEach(([roomName, sizeVal]) => {
             const cleanRoom = roomName.trim();
@@ -874,7 +924,7 @@ categorySelect.addEventListener('change', function() {
 });
 
 // ==============================================================================
-// 6. FORM SUBMISSION
+// 6. FORM SUBMISSION WITH REAL-TIME NOTIFICATION DISPATCH
 // ==============================================================================
 logTaskForm.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -948,6 +998,24 @@ logTaskForm.addEventListener('submit', async function(e) {
         }
 
         if (error) throw error;
+
+        // Central Notification Dispatch
+        try {
+            const notifyFn = typeof sendNotification === 'function' ? sendNotification : window.sendNotification;
+            if (notifyFn) {
+                const targetAgency = selectedAgency || 'Site Team';
+                await notifyFn({
+                    projectId: isValidUUID(selectedProjectId) ? selectedProjectId : null,
+                    recipientRole: selectedAgency || 'Site Engineer',
+                    title: `Task Assigned: ${selectedCategory}`,
+                    message: `New civil task assigned at ${currentTower} • ${currentFloor} [${selectedZoneId}] to ${targetAgency}. Priority: ${selectedPriority}. Target: ${selectedTargetDate || 'TBD'}.`,
+                    phase: 'Civil Tasks',
+                    linkUrl: `../tasks/active-tasks.html?zone_id=${encodeURIComponent(selectedZoneId)}`
+                });
+            }
+        } catch (notifErr) {
+            console.warn('[Task Logger] Notification dispatch skipped:', notifErr);
+        }
 
         feedbackBox.className = 'p-4 rounded-xl text-sm font-semibold mt-4 bg-emerald-50 text-emerald-800 border border-emerald-200 block shadow-sm flex items-center gap-2';
         feedbackBox.innerHTML = `

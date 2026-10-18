@@ -15,14 +15,14 @@
         .glass-card {
             background: rgba(255, 255, 255, 0.88);
             backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             box-shadow: 0 10px 30px 0 rgba(30, 58, 95, 0.06);
         }
         .glass-modal {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.96);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: 0 20px 45px 0 rgba(30, 58, 95, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 20px 45px 0 rgba(30, 58, 95, 0.22);
         }
         .prayosha-navy { color: #1E3A5F; }
         .bg-prayosha-navy { background-color: #1E3A5F; }
@@ -42,7 +42,7 @@
             border-color: #FFBF00;
             box-shadow: 0 0 0 3px rgba(255, 191, 0, 0.2);
         }
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
@@ -51,11 +51,24 @@
     <!-- Page Context & Primary Action Bar -->
     <section class="max-w-7xl mx-auto mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold prayosha-navy tracking-tight">Project Directory</h1>
-            <p class="text-gray-500 text-xs sm:text-sm font-medium">Multi-site portfolio, structural zones, and live progress tracking</p>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl sm:text-3xl font-bold prayosha-navy tracking-tight">Project Directory</h1>
+                <span id="activeProjectCountBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700">0 Sites</span>
+            </div>
+            <p class="text-gray-500 text-xs sm:text-sm font-medium mt-0.5">Multi-site portfolio, structural zones, financial burn, and site operations</p>
         </div>
 
-        <div class="flex items-center gap-3 w-full sm:w-auto">
+        <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <!-- Weather / Pour Advisory Indicator -->
+            <div id="weatherAdvisoryWidget" class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/80 border border-slate-200 shadow-xs text-xs">
+                <span id="weatherIcon" class="text-base">⛅</span>
+                <div>
+                    <div id="weatherCity" class="text-[10px] font-bold uppercase text-gray-400">Surat Site Weather</div>
+                    <div id="weatherCondition" class="font-semibold text-slate-700 leading-tight">30°C • Good for Concrete Pour</div>
+                </div>
+            </div>
+
+            <!-- Create Project Action (RBAC Controlled) -->
             <a href="create-project.html" id="createProjectBtn" class="w-full sm:w-auto justify-center px-5 py-2.5 rounded-xl font-semibold bg-prayosha-navy text-white text-sm shadow hover:bg-opacity-90 transition flex items-center gap-2">
                 <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
@@ -65,7 +78,60 @@
         </div>
     </section>
 
-    <!-- Active Workspace Quick-Launch Suite (Direct Module Shortcuts) -->
+    <!-- Executive Portfolio KPI Ribbon (Top Summary) -->
+    <section class="max-w-7xl mx-auto mb-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- 1. Total Portfolio Value -->
+            <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-emerald-500">
+                <div class="flex justify-between items-start">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Portfolio Value</span>
+                    <span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 text-sm">💰</span>
+                </div>
+                <div id="kpiPortfolioValue" class="text-xl sm:text-2xl font-bold text-slate-800 mt-2">₹0.00 Cr</div>
+                <div class="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                    <span>Estimated total site budgets</span>
+                </div>
+            </div>
+
+            <!-- 2. Active Development Footprint -->
+            <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-blue-500">
+                <div class="flex justify-between items-start">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Active Footprint</span>
+                    <span class="p-1.5 rounded-lg bg-blue-50 text-blue-600 text-sm">📐</span>
+                </div>
+                <div id="kpiTotalSqft" class="text-xl sm:text-2xl font-bold text-slate-800 mt-2">0 Sq.Ft</div>
+                <div class="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                    <span>Under construction & planning</span>
+                </div>
+            </div>
+
+            <!-- 3. Active Sites Count -->
+            <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-amber-400">
+                <div class="flex justify-between items-start">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Sites In Progress</span>
+                    <span class="p-1.5 rounded-lg bg-amber-50 text-amber-600 text-sm">🏗️</span>
+                </div>
+                <div id="kpiActiveSitesCount" class="text-xl sm:text-2xl font-bold text-slate-800 mt-2">0 Sites</div>
+                <div class="text-[11px] text-amber-700 font-medium mt-1">
+                    <span id="kpiSitesBreakdown">0 Ongoing • 0 Planning</span>
+                </div>
+            </div>
+
+            <!-- 4. Schedule Health / Delayed Tasks -->
+            <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-rose-500">
+                <div class="flex justify-between items-start">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-gray-400">Attention Required</span>
+                    <span class="p-1.5 rounded-lg bg-rose-50 text-rose-600 text-sm">⚠️</span>
+                </div>
+                <div id="kpiScheduleAlerts" class="text-xl sm:text-2xl font-bold text-slate-800 mt-2">0 Delays</div>
+                <div class="text-[11px] text-gray-500 mt-1 flex items-center gap-1">
+                    <span id="kpiAlertsSubtitle">Tasks behind target schedule</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Active Workspace Quick-Launch Suite -->
     <section id="activeWorkspaceLaunchpad" class="max-w-7xl mx-auto mb-6">
         <div class="glass-card rounded-2xl p-4 sm:p-5 border-l-4 border-l-[#FFBF00]">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 mb-3 border-b border-gray-100">
@@ -96,7 +162,7 @@
                     </div>
                 </a>
 
-                <!-- 2. Inventory & Materials (Newly Created Module) -->
+                <!-- 2. Inventory & Materials -->
                 <a href="../inventory/stock-overview.html" class="p-3 bg-white/90 hover:bg-white rounded-xl border border-gray-200/80 hover:border-prayosha-navy shadow-xs transition group flex items-center gap-3">
                     <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shrink-0 group-hover:scale-105 transition">
                         📦
@@ -132,32 +198,60 @@
         </div>
     </section>
 
-    <!-- Toolbar: Search, Filters & Refresh -->
+    <!-- Toolbar: Search, Filters, Sorting & View Toggle -->
     <section class="max-w-7xl mx-auto mb-6">
-        <div class="glass-card rounded-2xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div class="glass-card rounded-2xl p-4 flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
             <!-- Search Bar -->
-            <div class="relative w-full md:w-96">
+            <div class="relative w-full lg:w-80">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                 </span>
-                <input type="text" id="searchInput" class="input-search text-sm" placeholder="Search by Project Name, Code, or Location...">
+                <input type="text" id="searchInput" class="input-search text-xs sm:text-sm" placeholder="Search by Project Name, Code, or Location...">
             </div>
 
-            <!-- Filters -->
-            <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
-                <select id="statusFilter" class="px-4 py-2.5 rounded-xl border border-gray-200 bg-white/90 text-xs font-semibold text-gray-700 focus:outline-none focus:border-amber-400">
-                    <option value="ALL">All Statuses</option>
+            <!-- Filters, Sorting & Actions Strip -->
+            <div class="flex flex-wrap items-center gap-2.5 justify-start lg:justify-end">
+                <!-- Status Filter -->
+                <select id="statusFilter" class="px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white/90 text-xs font-semibold text-gray-700 focus:outline-none focus:border-amber-400">
+                    <option value="ACTIVE_ALL">Active Projects (Non-Archived)</option>
+                    <option value="ALL">All Statuses (Including Archived)</option>
+                    <option value="On Going">On Going</option>
                     <option value="Planning">Planning</option>
                     <option value="Planning Completed, But Construction Not Started">Planning Completed, Not Started</option>
-                    <option value="On Going">On Going</option>
                     <option value="Completed">Completed</option>
                     <option value="On Hold">On Hold</option>
+                    <option value="Archived">Archived / Closed</option>
                 </select>
 
+                <!-- Sort Control -->
+                <select id="sortBy" class="px-3.5 py-2.5 rounded-xl border border-gray-200 bg-white/90 text-xs font-semibold text-gray-700 focus:outline-none focus:border-amber-400">
+                    <option value="newest">Recently Created</option>
+                    <option value="budget_desc">Budget: High to Low</option>
+                    <option value="budget_asc">Budget: Low to High</option>
+                    <option value="sqft_desc">Area: High to Low</option>
+                    <option value="progress_desc">Progress: High to Low</option>
+                    <option value="name_asc">Name: A to Z</option>
+                </select>
+
+                <!-- View Switcher (Grid vs Table) -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <button id="viewGridBtn" class="p-1.5 rounded-lg bg-white text-slate-800 shadow-xs transition" title="Card Grid View">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                        </svg>
+                    </button>
+                    <button id="viewTableBtn" class="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition" title="Executive Table View">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Refresh Button -->
                 <button id="refreshBtn" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg id="refreshSpinner" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                     Refresh
@@ -166,8 +260,9 @@
         </div>
     </section>
 
-    <!-- Main Dynamic Projects Grid -->
+    <!-- Main Dynamic Content Views -->
     <main class="max-w-7xl mx-auto">
+        <!-- 1. Grid View Container -->
         <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Loading Skeletons -->
             <div class="glass-card rounded-2xl p-6 animate-pulse flex flex-col gap-4">
@@ -193,6 +288,27 @@
             </div>
         </div>
 
+        <!-- 2. Executive Table View Container -->
+        <div id="projectsTableContainer" class="hidden glass-card rounded-2xl overflow-hidden border border-white/60 shadow-md">
+            <div class="overflow-x-auto custom-scroll">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-100/80 text-slate-600 uppercase text-[10px] tracking-wider border-b border-slate-200">
+                            <th class="py-3 px-4 font-bold">Site Project & Code</th>
+                            <th class="py-3 px-4 font-bold">Status & Schedule Health</th>
+                            <th class="py-3 px-4 font-bold">Total Footprint</th>
+                            <th class="py-3 px-4 font-bold">Estimated Budget</th>
+                            <th class="py-3 px-4 font-bold">Physical Execution</th>
+                            <th class="py-3 px-4 font-bold text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projectsTableBody" class="divide-y divide-slate-100 text-slate-700 font-medium">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Empty State Container -->
         <div id="emptyState" class="hidden glass-card rounded-2xl p-12 text-center max-w-xl mx-auto my-12">
             <div class="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
@@ -208,10 +324,9 @@
         </div>
     </main>
 
-    <!-- Project Architecture Inspector Modal -->
+    <!-- Architecture & Zone Inspector Modal -->
     <div id="architectureModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="glass-modal w-full max-w-4xl max-h-[85vh] rounded-3xl p-6 md:p-8 flex flex-col custom-scroll overflow-hidden">
-            <!-- Modal Header -->
             <div class="flex justify-between items-start pb-4 border-b border-gray-200 mb-6 shrink-0">
                 <div>
                     <div class="flex items-center gap-2">
@@ -227,10 +342,8 @@
                 </button>
             </div>
 
-            <!-- Modal Content (Scrollable Zone Tree) -->
             <div id="modalZonesContent" class="space-y-6 overflow-y-auto pr-2 custom-scroll flex-1"></div>
 
-            <!-- Modal Footer -->
             <div class="pt-6 border-t border-gray-200 mt-6 flex justify-end gap-3 shrink-0">
                 <button id="modalCloseActionBtn" class="px-6 py-2 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition">
                     Close
@@ -241,6 +354,84 @@
                     </svg>
                     Activate As Workspace Project
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Destructive Hard-Delete Challenge Guard Modal -->
+    <div id="hardDeleteModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-lg rounded-3xl p-6 sm:p-7 border border-rose-300 shadow-2xl">
+            <div class="flex items-center gap-3 text-rose-600 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center text-xl shrink-0 font-bold">
+                    🗑️
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-slate-900">Permanent Project Deletion</h3>
+                    <p class="text-xs text-rose-600 font-semibold">Destructive Action • Cannot be undone</p>
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-950 mb-4 space-y-2">
+                <p>You are about to permanently purge <strong id="deleteProjectTargetName" class="font-bold underline text-rose-900">Project</strong> and its architectural zones, tasks, and site linkages.</p>
+                <div id="deleteDependencySummary" class="text-[11px] text-gray-600 bg-white/80 p-2 rounded-lg border border-rose-100">
+                    Checking related records...
+                </div>
+            </div>
+
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-gray-700 mb-1.5">
+                    Type <span id="deleteRequiredPrompt" class="font-mono text-rose-600 select-all font-bold">DELETE CODE</span> to confirm:
+                </label>
+                <input type="text" id="deleteConfirmInput" class="w-full px-3.5 py-2.5 rounded-xl border border-rose-300 text-xs font-mono font-bold tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-rose-400 bg-white" placeholder="DELETE PRSG-001">
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button type="button" id="cancelHardDeleteBtn" class="px-5 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:bg-gray-100 transition">
+                    Cancel
+                </button>
+                <button type="button" id="confirmHardDeleteBtn" disabled class="px-6 py-2.5 rounded-xl text-xs font-bold bg-rose-600 text-white opacity-50 cursor-not-allowed hover:bg-rose-700 shadow-md transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    Wipe Project Permanently
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Site Share / Snapshot Modal -->
+    <div id="shareSummaryModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">📱</span>
+                    <div>
+                        <h4 class="text-base font-bold prayosha-navy">Site Status Snapshot</h4>
+                        <p class="text-xs text-gray-500">Quick dispatch to WhatsApp or executive clipboard</p>
+                    </div>
+                </div>
+                <button id="closeShareModalBtn" class="text-gray-400 hover:text-gray-700 p-1 rounded-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <textarea id="shareSummaryPreview" rows="7" readonly class="w-full p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-800 focus:outline-none custom-scroll select-all mb-4"></textarea>
+
+            <div class="flex justify-end gap-2.5">
+                <button id="copyShareSummaryBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
+                    </svg>
+                    Copy Text
+                </button>
+                <a id="dispatchWhatsAppBtn" target="_blank" rel="noopener noreferrer" class="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                        <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.694.074-2.121-.518-1.745-.724-2.883-2.502-2.97-2.618-.087-.116-.708-.941-.708-1.793 0-.852.448-1.27.608-1.444.159-.175.348-.219.463-.219.116 0 .232.001.333.006.107.005.25-.041.391.298.144.348.492 1.2.535 1.288.043.087.072.188.014.304-.058.116-.087.188-.173.289-.087.102-.183.228-.261.306-.087.087-.178.182-.077.355.101.174.45 1.742 1.487 2.378.349.214.63.342.846.41.35.111.668.095.918.058.28-.041.862-.352.983-.692.122-.341.122-.633.086-.693-.036-.06-.13-.102-.275-.174z"/>
+                    </svg>
+                    Send to WhatsApp
+                </a>
             </div>
         </div>
     </div>
@@ -258,13 +449,17 @@
         // Correct module key so Overview button in the bottom dock is highlighted
         initShell({ activeModule: 'dashboard' });
 
-        // Update the Active Workspace Pill dynamically from localStorage
+        // Update the Active Workspace Pill dynamically with null checks
         function syncWorkspacePill() {
             const pill = document.getElementById('activeWorkspacePill');
             if (pill) {
-                const name = localStorage.getItem('activeProjectName') || 'Select Site Project';
+                const name = localStorage.getItem('activeProjectName');
                 const code = localStorage.getItem('activeProjectCode');
-                pill.textContent = code ? `[${code}] ${name}` : name;
+                if (!name || name === 'null' || name === 'Select Site Project') {
+                    pill.textContent = 'Select Site Project';
+                } else {
+                    pill.textContent = (code && code !== 'null') ? `[${code}] ${name}` : name;
+                }
             }
         }
 

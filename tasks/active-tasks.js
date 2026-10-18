@@ -8,9 +8,11 @@
  * 3. Daily Photo Progress Timeline: Multi-photo chronological audit trail powered by Cloudflare R2 and Supabase.
  * 4. Deep-Link / QR Code Zone Filter: Auto-detects and isolates tasks for ?zone_id=... from Site Map.
  * 5. Real-Time Client Search & Filtering: Instant search across Zone ID, Agency, Priority, and Categories.
+ * 6. Central Real-Time Notification Dispatch: Alerts stakeholders on QC requests, task completions, and delays.
  */
 
 import { supabase, uploadToR2 } from '../config.js';
+import { sendNotification } from '../common/shell.js';
 
 // DOM Elements
 const taskContainer = document.getElementById('active-tasks-container');
@@ -441,7 +443,7 @@ function getStatusDropdownClass(status) {
 }
 
 /**
- * 5. Update Task Status in Supabase (with automatic started_date and completed_date stamping)
+ * 5. Update Task Status in Supabase with Real-Time Notification Dispatch
  */
 async function updateTaskStatus(taskId, newStatus, selectElement) {
     if (!taskId) return;
@@ -469,6 +471,56 @@ async function updateTaskStatus(taskId, newStatus, selectElement) {
 
         if (error) throw error;
 
+        // Retrieve cached task details for notification payload
+        const cached = allTasks.find(t => (t.id || t.Task_ID || t.task_id) === taskId);
+
+        // ==============================================================================
+        // REAL-TIME NOTIFICATION DISPATCH (QC, Completion, & Delays)
+        // ==============================================================================
+        try {
+            const notifyFn = typeof sendNotification === 'function' ? sendNotification : window.sendNotification;
+            if (notifyFn && cached) {
+                const tower = cached.tower_block || cached.tower_name || '';
+                const floor = cached.floor_level || cached.Floor_Level || '';
+                const zone = cached.zone_id || cached.Zone_ID || 'General';
+                const cat = cached.category || cached.Category || 'Civil Package';
+                const desc = cached.task_description || cached.Task_Description || cat;
+                const agency = cached.assigned_agency || cached.Assigned_Agency || 'Contractor';
+                const locStr = `${tower ? tower + ' • ' : ''}${floor ? floor + ' ' : ''}[${zone}]`;
+
+                if (newStatus === 'Ready for QC') {
+                    await notifyFn({
+                        projectId: cached.project_id || null,
+                        recipientRole: 'Chief Engineer',
+                        title: `QC Inspection Needed: ${cat}`,
+                        message: `Task "${desc}" at ${locStr} has been marked Ready for QC by ${agency}. Please inspect and certify.`,
+                        phase: 'Civil Tasks',
+                        linkUrl: `../tasks/active-tasks.html?zone_id=${encodeURIComponent(zone)}`
+                    });
+                } else if (newStatus === 'Completed') {
+                    await notifyFn({
+                        projectId: cached.project_id || null,
+                        recipientRole: 'Owner',
+                        title: `Task Completed: ${cat}`,
+                        message: `Task "${desc}" at ${locStr} executed by ${agency} has been completed and signed off.`,
+                        phase: 'Civil Tasks',
+                        linkUrl: `../tasks/active-tasks.html?zone_id=${encodeURIComponent(zone)}`
+                    });
+                } else if (newStatus === 'Delayed') {
+                    await notifyFn({
+                        projectId: cached.project_id || null,
+                        recipientRole: 'Project Manager',
+                        title: `Milestone Delayed: ${cat}`,
+                        message: `Task "${desc}" at ${locStr} (${agency}) is flagged as Delayed past target date. Immediate review recommended.`,
+                        phase: 'Civil Tasks',
+                        linkUrl: `../tasks/active-tasks.html?zone_id=${encodeURIComponent(zone)}`
+                    });
+                }
+            }
+        } catch (notifErr) {
+            console.warn('[Active Tasks] Notification dispatch skipped:', notifErr);
+        }
+
         showToast(`Task status updated to "${newStatus}"`, 'success');
 
         // If marked Completed, remove from Active Tasks view
@@ -477,7 +529,6 @@ async function updateTaskStatus(taskId, newStatus, selectElement) {
             renderFilteredTasks();
         } else {
             // Update cached status and restyle select
-            const cached = allTasks.find(t => (t.id || t.Task_ID || t.task_id) === taskId);
             if (cached) {
                 cached.status = newStatus;
                 if (updatePayload.started_date) cached.started_date = updatePayload.started_date;
@@ -585,7 +636,7 @@ function renderPhotoTimelineFeed(task) {
                     </div>
                     <a href="${photo.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-navy hover:text-brand-amber transition bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg">
                         <span>Full View</span>
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </a>
                 </div>
                 <div class="h-36 w-full rounded-lg overflow-hidden border border-slate-100 bg-slate-50 mb-2 relative group">
@@ -629,7 +680,7 @@ photoUploadForm.addEventListener('submit', async (e) => {
     `;
 
     try {
-        // Upload to Cloudflare R2 bucket with authentic SigV4 binary hashing
+        // Upload to Cloudflare R2 bucket
         const uploadedUrl = await uploadToR2(file, 'task-evidence');
 
         if (!uploadedUrl) {

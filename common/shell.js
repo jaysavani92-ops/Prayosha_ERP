@@ -1,19 +1,20 @@
 /**
- * Prayosha ERP - Universal Executive Shell & Full Tri-Lingual Localization System
+ * Prayosha ERP - Universal Executive Shell, Tri-Lingual Localization & Central Notification Engine
  * File: /common/shell.js
  * 
  * Features:
- * 1. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Plan Change, Drawings, Possession, Workforce, Pre-Dev, Admin, Site Map).
- * 2. Case-Insensitive Deep DOM Scanner: Automatically translates visible text, labels, and placeholders on any page.
- * 3. Bidirectional Caching: Remembers original English strings in a WeakMap for seamless EN <-> GU <-> HI toggles.
- * 4. Live MutationObserver: Automatically translates dynamically rendered cards, tables, and floor accordions.
- * 5. Full Mobile-First Shell: Top executive bar, bottom navigation dock with raised Action Hub, and smart scroll hide.
+ * 1. Central Notification Engine: Real-time listener, unread count badge, glassmorphic dropdown, mark-all-read & deep-linking.
+ * 2. Complete Action Hub Drawer: All suites intact (Tasks, Inventory, Purchase, Petty Cash, Plan Change, Drawings, Possession, Workforce, Pre-Dev, Admin, Site Map).
+ * 3. Case-Insensitive Deep DOM Scanner: Automatically translates visible text, labels, and placeholders on any page.
+ * 4. Bidirectional Caching: Remembers original English strings in a WeakMap for seamless EN <-> GU <-> HI toggles.
+ * 5. Live MutationObserver: Automatically translates dynamically rendered cards, tables, and floor accordions.
+ * 6. Full Mobile-First Shell: Top executive bar, bottom navigation dock with raised Action Hub, and smart scroll hide.
  */
 
 import * as Config from '../config.js';
 
 // Central Supabase Client from config.js
-const supabase = Config.supabase || Config.default?.supabase || window.supabaseClient;
+export const supabase = Config.supabase || Config.default?.supabase || window.supabaseClient;
 
 // ==============================================================================
 // 1. MASTER MULTI-LINGUAL CONSTRUCTION DICTIONARY (Case-Insensitive Index)
@@ -63,6 +64,15 @@ const RAW_DICTIONARY = {
     "cash ledger": { gu: "રોકડ લેજર", hi: "નકદ લેઝર" },
     "bank ledger": { gu: "બેંક લેજર", hi: "બેંક લેઝર" },
 
+    // --- Notification Center Translations ---
+    "notifications": { gu: "સૂચનાઓ", hi: "सूचनाएं" },
+    "site notifications": { gu: "સાઇટ સૂચનાઓ", hi: "साइट सूचनाएं" },
+    "mark all read": { gu: "બધી વંચાઈ ગઈ", hi: "सभी पढ़ी गईं" },
+    "mark all as read": { gu: "બધી વંચાઈ ગઈ તરીકે ચિહ્નિત કરો", hi: "सभी को पढ़ा हुआ चिह्नित करें" },
+    "no notifications": { gu: "કોઈ નવી સૂચના નથી", hi: "कोई नई सूचना नहीं है" },
+    "unread": { gu: "ન વંચાયેલ", hi: "अपठित" },
+    "all": { gu: "બધી", hi: "सभी" },
+
     // --- Plan Change Suite Translations ---
     "plan change & customization suite": { gu: "પ્લાન ફેરફાર અને ગ્રાહક વિશિષ્ટતા સૂટ", hi: "પ્લાન બદલાવ તેમજ ગ્રાહક અનુકૂલન સૂટ" },
     "plan change suite": { gu: "પ્લાન ફેરફાર સૂટ", hi: "પ્લાન બદલાવ સૂટ" },
@@ -107,9 +117,9 @@ const RAW_DICTIONARY = {
     "hard chabi (key) security lock": { gu: "કડક ચાવી સુરક્ષા લોક", hi: "कठोर चाबी सुरक्षा लॉक" },
     "keys locked": { gu: "ચાવીઓ લોક કરેલ છે", hi: "चाबियां लॉक हैं" },
     "keys delivered": { gu: "ચાવીઓ સોંપેલ છે", hi: "चाबियां सौंप दी गई हैं" },
-    "sold units": { gu: "વેચાયેલ યુનિટ્સ", hi: "बिके हुए यूनिट्स" },
-    "available (unsold)": { gu: "ઉપલબ્ધ (બાકી વેચાણ)", hi: "उपलब्ध (बिक्री हेतु शेष)" },
-    "keys handed over": { gu: "ચાવીઓ સોંપેલ", hi: "चाबियां सौंपी गईं" },
+    "sold units": { gu: "વેચાયેલ યુનિટ્સ", hi: "બિકે હુએ યુનિટ્સ" },
+    "available (unsold)": { gu: "ઉપલબ્ધ (બાકી વેચાણ)", hi: "ઉપલબ્ધ (બિક્રી હેતુ શેષ)" },
+    "keys handed over": { gu: "ચાવીઓ સોંપેલ", hi: "ચાબિયાં સોંપી ગઈં" },
 
     "pre-development": { gu: "પ્રી-ડેવલપમેન્ટ (આયોજન)", hi: "પ્રી-ડેવલપમેન્ટ (આયોજન)" },
     "liasoning & boq master": { gu: "લાયઝનિંગ અને BOQ માસ્ટર", hi: "લાયઝનિંગ તેમજ BOQ માસ્ટર" },
@@ -154,158 +164,7 @@ const RAW_DICTIONARY = {
     "planning": { gu: "આયોજન", hi: "યોજના" },
     "active": { gu: "સક્રિય", hi: "સક્રિય" },
     "completed": { gu: "પૂર્ણ", hi: "પૂર્ણ" },
-    "on hold": { gu: "મોકૂફ", hi: "રોકા ગયા" },
-
-    // --- Create Project Architecture View ---
-    "create project architecture": { gu: "નવી પ્રોજેક્ટ રચના બનાવો", hi: "નયા પ્રોજેક્ટ ઢાંચા બનાયેં" },
-    "define metadata, scope, financials, and multi-level floor & zone hierarchy": { gu: "પ્રોજેક્ટ વિગતો, સ્કોપ, બજેટ અને ફ્લોર/ઝોન માળખું વ્યાખ્યાયિત કરો", hi: "મેટાડેટા, દાયરા, વિત્તીય બજેટ ઓર ફ્લોર/ઝોન પદાનુક્રમ કો પરિભાષિત કરેં" },
-    "back to directory": { gu: "ડિરેક્ટરી પર પાછા જાઓ", hi: "નિર્દેશિકા પર વાપસ જાઓ" },
-    "new project setup": { gu: "નવો પ્રોજેક્ટ સેટઅપ", hi: "નયા પ્રોજેક્ટ સેટઅપ" },
-    "basic project details": { gu: "મૂળભૂત પ્રોજેક્ટ વિગતો", hi: "મૂલ પ્રોજેક્ટ વિવરણ" },
-    "project code": { gu: "પ્રોજેક્ટ કોડ", hi: "પ્રોજેક્ટ કોડ" },
-    "project name": { gu: "પ્રોજેક્ટનું નામ", hi: "પ્રોજેક્ટ કા નામ" },
-    "project type": { gu: "પ્રોજેક્ટ પ્રકાર", hi: "પ્રોજેક્ટ કા પ્રકાર" },
-    "contract type": { gu: "કરારનો પ્રકાર", hi: "અનુબંધ કા પ્રકાર" },
-    "current status": { gu: "વર્તમાન સ્થિતિ", hi: "વર્તમાન સ્થિતિ" },
-    "project description": { gu: "પ્રોજેક્ટ વર્ણન", hi: "પ્રોજેક્ટ વિવરણ" },
-    "rera number": { gu: "રેરા નંબર (RERA)", hi: "રેરા નંબર (RERA)" },
-    "project address": { gu: "પ્રોજેક્ટ સરનામું", hi: "પ્રોજેક્ટ કા પતા" },
-    "map link": { gu: "ગૂગલ મેપ લિંક", hi: "ગૂગલ મેપ લિંક" },
-    "scope, financials & media": { gu: "કાર્યક્ષેત્ર, નાણાકીય અને મીડિયા", hi: "દાયરા, વિત્તીય તેમજ મીડિયા" },
-
-    // --- Pending Tasks & Zone Tree ---
-    "pending tasks & zone tree": { gu: "બાકી કાર્યો અને ઝોન ટ્રી", hi: "લંબિત કાર્ય તેમજ ઝોન ટ્રી" },
-    "floor-wise hierarchical zone registry and pending civil packages": { gu: "માળ-વાર વંશવેલો ઝોન રજિસ્ટ્રી અને બાકી સિવિલ પેકેજો", hi: "મંજિલ-વાર શ્રેણીબદ્ધ ઝોન રજિસ્ટ્રી ઓર લંબિત સિવિલ પૈકેજ" },
-    "+ log new task": { gu: "+ નવું કાર્ય ઉમેરો", hi: "+ નયા કાર્ય જોડેં" },
-    "log new task": { gu: "નવું કાર્ય ઉમેરો", hi: "નયા કાર્ય જોડેં" },
-    "filtered project:": { gu: "પસંદ કરેલ પ્રોજેક્ટ:", hi: "ચયનિત પ્રોજેક્ટ:" },
-    "all towers / blocks": { gu: "તમામ ટાવર / બ્લોક્સ", hi: "સભી ટાવર / બ્લોક" },
-    "expand all": { gu: "બધા ખોલો (Expand All)", hi: "સભી ખોલેં (Expand All)" },
-    "collapse all": { gu: "બધા બંધ કરો (Collapse All)", hi: "સભી બંધ કરેં (Collapse All)" },
-    "basement 2": { gu: "બેઝમેન્ટ ૨", hi: "બેસમેન્ટ 2" },
-    "basement 1": { gu: "બેઝમેન્ટ ૧", hi: "બેસમેન્ટ 1" },
-    "ground floor": { gu: "ગ્રાઉન્ડ ફ્લોર", hi: "ગ્રાઉન્ડ ફ્લોર" },
-    "1st floor": { gu: "પહેલો માળ (1st Floor)", hi: "પહલી મંજિલ (1st Floor)" },
-    "2nd floor": { gu: "બીજો માળ (2nd Floor)", hi: "દૂસરી મંજિલ (2nd Floor)" },
-    "3rd floor": { gu: "ત્રીજો માળ (3rd Floor)", hi: "તીસરી મંજિલ (3rd Floor)" },
-    "4th floor": { gu: "ચોથો માળ (4th Floor)", hi: "ચૌથી મંજિલ (4th Floor)" },
-    "5th floor": { gu: "પાંચમો માળ (5th Floor)", hi: "પાંચવીં મંજિલ (5th Floor)" },
-    "floor level package": { gu: "માળ સ્તર પેકેજ", hi: "મંજિલ સ્તર પૈકેજ" },
-    "1 zone": { gu: "૧ ઝોન", hi: "1 ઝોન" },
-    "4 zones": { gu: "૪ ઝોન", hi: "4 ઝોન" },
-    "9 zones": { gu: "૯ ઝોન", hi: "9 ઝોન" },
-
-    // --- Log Task Page ---
-    "+ નવું કાર્ય ઉમેરો": { gu: "+ નવું કાર્ય ઉમેરો", hi: "+ નયા કાર્ય જોડેં" },
-    "assign civil work packages, priority levels, and milestone dates to project zones": { gu: "પ્રોજેક્ટ ઝોનમાં સિવિલ કાર્ય, પ્રાથમિકતા અને સમયમર્યાદા સોંપો", hi: "પ્રોજેક્ટ ઝોન મેં કાર્ય, પ્રાથમિકતા ઓર સમય સીમા સોંપેં" },
-    "view active tasks": { gu: "સક્રિય કાર્યો જુઓ", hi: "સક્રિય કાર્ય દેખેં" },
-    "project context": { gu: "પ્રોજેક્ટ સંદર્ભ", hi: "પ્રોજેક્ટ સંદર્ભ" },
-    "tower / block": { gu: "ટાવર / બ્લોક", hi: "ટાવર / બ્લોક" },
-    "floor level": { gu: "માળ (Floor Level)", hi: "મંજિલ (Floor Level)" },
-    "-- select floor --": { gu: "-- માળ પસંદ કરો --", hi: "-- મંજિલ ચુનેં --" },
-    "work category": { gu: "કામનો પ્રકાર", hi: "કાર્ય શ્રેણી" },
-    "-- select work category --": { gu: "-- કામનો પ્રકાર પસંદ કરો --", hi: "-- કાર્ય શ્રેણી ચુનેં --" },
-    "zone id / target area": { gu: "ઝોન આઈડી / લક્ષિત વિસ્તાર", hi: "ઝોન આઈડી / લક્ષિત ક્ષેત્ર" },
-    "-- select floor first --": { gu: "-- પહેલા માળ પસંદ કરો --", hi: "-- પહલે મંજિલ ચુનેં --" },
-    "assigned agency": { gu: "સોંપેલ એજન્સી / કોન્ટ્રાક્ટર", hi: "સૌંપી ગઈ એજન્સી / ઠેકેદાર" },
-    "-- select agency --": { gu: "-- એજન્સી પસંદ કરો --", hi: "-- એજન્સી ચુનેં --" },
-    "priority": { gu: "પ્રાથમિકતા", hi: "પ્રાથમિકતા" },
-    "low": { gu: "સામાન્ય (Low)", hi: "સામાન્ય (Low)" },
-    "medium": { gu: "મધ્યમ (Medium)", hi: "મધ્યમ (Medium)" },
-    "high": { gu: "ઉચ્ચ (High)", hi: "ઉચ્ચ (High)" },
-    "urgent": { gu: "તાકીદનું (Urgent)", hi: "અત્યાવશ્યક (Urgent)" },
-    "execution status": { gu: "કામની સ્થિતિ", hi: "કાર્ય સ્થિતિ" },
-    "not started": { gu: "શરૂ થયેલ નથી", hi: "શુરૂ નહીં હુઆ" },
-    "in progress": { gu: "ચાલુ કામગીરી", hi: "કાર્ય પ્રગતિ પર" },
-    "ready for qc": { gu: "QC તપાસ માટે તૈયાર", hi: "QC જાંચ હેતુ તૈયાર" },
-    "target date": { gu: "લક્ષ્ય તારીખ", hi: "લક્ષ્ય તિથિ" },
-    "task description / scope notes": { gu: "કામની વિગતો / નોંધ", hi: "કાર્ય વિવરણ / નોટ્સ" },
-    "clear fields": { gu: "વિગતો સાફ કરો", hi: "વિવરણ સાફ કરેં" },
-    "assign task to zone": { gu: "ઝોનમાં કાર્ય સોંપો", hi: "ઝોન મેં કાર્ય સોંપેં" },
-
-    // --- Workforce & Equipment Page ---
-    "muster & plant": { gu: "મસ્ટર અને પ્લાન્ટ", hi: "મસ્ટર તેમજ પ્લાન્ટ" },
-    "site operations / muster & plant": { gu: "સાઇટ કામગીરી / મસ્ટર અને પ્લાન્ટ", hi: "સાઇટ પરિચાલન / મસ્ટર તેમજ પ્લાન્ટ" },
-    "total workforce": { gu: "કુલ શ્રમિકો", hi: "કુલ શ્રમિક" },
-    "workers": { gu: "શ્રમિકો", hi: "શ્રમિક" },
-    "active site muster": { gu: "સક્રિય સાઇટ મસ્ટર", hi: "સક્રિય સાઇટ મસ્ટર" },
-    "contractor labours": { gu: "કોન્ટ્રાક્ટર મજૂરો", hi: "ઠેકેદાર શ્રમિક" },
-    "headcount": { gu: "કુલ સંખ્યા", hi: "કુલ સંખ્યા" },
-    "active agencies": { gu: "સક્રિય એજન્સીઓ", hi: "સક્રિય એજન્સિયાં" },
-    "in-house staff": { gu: "ઇન-હાઉસ સ્ટાફ", hi: "ઇન-હાઉસ સ્ટાફ" },
-    "direct site payroll": { gu: "ડાયરેક્ટ સાઇટ પેરોલ", hi: "પ્રત્યક્ષ સાઇટ પેરોલ" },
-    "machinery deployed": { gu: "સાધનો / મશીનરી તૈનાત", hi: "તૈનાત મશીનરી / ઉપકરણ" },
-    "machines active": { gu: "સક્રિય મશીનો", hi: "સક્રિય મશીનેં" },
-    "est. daily burn": { gu: "અંદાજિત દૈનિક ખર્ચ", hi: "અનુમાનિત દૈનિક ખર્ચ" },
-    "wages mode: off": { gu: "વેતન મોડ: બંધ", hi: "વેતન મોડ: બંધ" },
-    "log attendance": { gu: "હાજરી નોંધો", hi: "ઉપસ્થિતિ દર્જ કરેં" },
-    "daily logs": { gu: "દૈનિક લોગ", hi: "દૈનિક લોગ" },
-    "add wages": { gu: "વેતન ઉમેરો", hi: "વેતન જોડેં" },
-    "whatsapp summary": { gu: "વોટ્સએપ સારાંશ", hi: "વ્હોટ્સએપ સારાંશ" },
-    "select record type": { gu: "રેકોર્ડ પ્રકાર પસંદ કરો", hi: "રિકોર્ડ પ્રકાર ચુનેં" },
-    "1. labor log (agencies)": { gu: "૧. મજૂર લોગ (એજન્સીઓ)", hi: "1. શ્રમિક લોગ (એજન્સિયાં)" },
-    "2. equipment log (machinery)": { gu: "૨. સાધન લોગ (મશીનરી)", hi: "2. ઉપકરણ લોગ (મશીનરી)" },
-    "3. in-house labor log": { gu: "૩. ઇન-હાઉસ મજૂર લોગ", hi: "3. ઇન-હાઉસ શ્રમિક લોગ" },
-    "site weather & work conditions": { gu: "સાઇટનું હવામાન અને કામની સ્થિતિ", hi: "સાઇટ મૌસમ તેમજ કાર્ય સ્થિતિ" },
-    "sunny": { gu: "તડકો (Sunny)", hi: "ધૂપ (Sunny)" },
-    "extreme heat": { gu: "અતિશય ગરમી", hi: "અત્યધિક ગરમી" },
-    "rain / wet site": { gu: "વરસાદ / ભીની સાઇટ", hi: "બારિશ / ગીલી સાઇટ" },
-    "overcast": { gu: "વાદળછાયું વાતાવરણ", hi: "બાદલ છાએ હુએ" },
-    "strong winds": { gu: "તેજ પવન", hi: "તેજ હવાએં" },
-    "legal site productivity context for rera documentation and contractor claims.": { gu: "રેરા દસ્તાવેજીકરણ અને કોન્ટ્રાક્ટર દાવાઓ માટે કાયદેસર સાઇટ ઉત્પાદકતા સંદર્ભ.", hi: "રેરા દસ્તાવેઝીકરણ ઓર ઠેકેદાર કે દાવા કે લિએ કાનૂની સાઇટ ઉત્પાદકતા સંદર્ભ." },
-    "project": { gu: "પ્રોજેક્ટ", hi: "પ્રોજેક્ટ" },
-    "1 project assigned (auto-selected)": { gu: "૧ પ્રોજેક્ટ સોંપેલ (ઓટો-પસંદ)", hi: "1 પ્રોજેક્ટ આવંટિત (સ્વતઃ ચયનિત)" },
-    "date": { gu: "તારીખ", hi: "તિથિ" },
-    "recorded by (auto)": { gu: "નોંધણી કરનાર (ઓટો)", hi: "દર્જકર્તા (ઓટો)" },
-    "site engineer": { gu: "સાઇટ એન્જિનિયર", hi: "સાઇટ ઈજનેર" },
-    "agency attendance entries": { gu: "એજન્સી હાજરી નોંધણી", hi: "એજન્સી ઉપસ્થિતિ પ્રવિષ્ટિયાં" },
-    "copy all yesterday": { gu: "ગઈકાલની નકલ કરો", hi: "કલ કી પ્રતિલિપિ બનાયેં" },
-    "+ add agency row": { gu: "+ એજન્સી પંક્તિ ઉમેરો", hi: "+ એજન્સી પંક્તિ જોડેં" },
-    "contractor": { gu: "કોન્ટ્રાક્ટર", hi: "ઠેકેદાર" },
-    "senting (shuttering)": { gu: "સેન્ટિંગ (શટરિંગ)", hi: "સેન્ટિંગ (શટરિંગ)" },
-    "steel (fitters)": { gu: "સ્ટીલ (ફિટર્સ)", hi: "સ્ટીલ (ફિટર્સ)" },
-    "masonary (kadia)": { gu: "કડિયાકામ (ચણતર)", hi: "ચિનાઈ (કડિયા)" },
-    "plaster": { gu: "પ્લાસ્ટર", hi: "પ્લાસ્ટર" },
-    "casting (concrete)": { gu: "કાસ્ટિંગ (કોંક્રીટ)", hi: "કાસ્ટિંગ (કોંક્રીટ)" },
-
-    // --- Pre-Development Module ---
-    "pre-development master": { gu: "પ્રી-ડેવલપમેન્ટ માસ્ટર", hi: "પ્રી-ડેવલપમેન્ટ માસ્ટર" },
-    "statutory liasoning, comparative boq benchmarks, and site mobilization milestones": { gu: "સરકારી મંજૂરીઓ (લાયઝનિંગ), તુલનાત્મક BOQ અને સાઇટ તૈયારી માઇલસ્ટોન", hi: "સરકારી સ્વીકૃતિયાં (લાયઝનિંગ), તુલનાત્મક BOQ તેમજ સાઇટ તૈયારી માઇલસ્ટોન" },
-    "pre-construction operations": { gu: "પ્રી-કન્સ્ટ્રક્શન કામગીરી", hi: "પ્રી-કન્સ્ટ્રક્શન પરિચાલન" },
-    "audit logs": { gu: "ઓડિટ લોગ્સ", hi: "ઓડિટ લોગ્સ" },
-    "super engine": { gu: "સુપર એન્જિન", hi: "સુપર એન્જિન" },
-    "phase 1: liasoning": { gu: "તબક્કો ૧: લાયઝનિંગ", hi: "ચરણ 1: લાયઝનિંગ" },
-    "phase 2: development cost": { gu: "તબક્કો ૨: પ્રોજેક્ટ ખર્ચ (BOQ)", hi: "ચરણ 2: નિર્માણ લાગત (BOQ)" },
-    "phase 3: site readiness": { gu: "તબક્કો ૩: સાઇટ સજ્જતા", hi: "ચરણ 3: સાઇટ તૈયારી" },
-    "total boq budget": { gu: "કુલ BOQ બજેટ", hi: "કુલ BOQ બજેટ" },
-    "benchmark variance": { gu: "બેન્ચમાર્ક તફાવત", hi: "બેન્ચમાર્ક અંતર" },
-    "calculated across line items": { gu: "તમામ આઇટમ્સ પર ગણતરી કરેલ", hi: "સભી મદોં પર ગણના કી ગઈ" },
-    "baseline setup": { gu: "બેઝલાઇન સેટઅપ", hi: "બેઝલાઇન સેટઅપ" },
-    "save phase 1": { gu: "તબક્કો ૧ સાચવો", hi: "ચરણ 1 સુરક્ષિત કરેં" },
-    "save phase 2 (boq)": { gu: "તબક્કો ૨ સાચવો", hi: "ચરણ 2 સુરક્ષિત કરેં" },
-    "save phase 3": { gu: "તબક્કો ૩ સાચવો", hi: "ચરણ 3 સુરક્ષિત કરેં" },
-    "track all required town planning, government permissions, and statutory approvals. saving dispatches notifications to owner, construction head & pm.": { gu: "તમામ જરૂરી ટાઉન પ્લાનિંગ, સરકારી મંજૂરીઓ અને કાયદાકીય પરવાનગીઓ ટ્રેક કરો. સાચવતી વખતે ઓનર, કન્સ્ટ્રક્શન હેડ અને PM ને સૂચનાઓ મોકલવામાં આવે છે.", hi: "સભી આવશ્યક નગર નિયોજન, સરકારી અનુમતિયોં ઓર વૈધાનિક અનુમોદનોં કો ટ્રેક કરેં।" },
-    "approved (yes)": { gu: "મંજૂર (હા)", hi: "સ્વીકૃત (હાઁ)" },
-    "pending (no)": { gu: "બાકી (ના)", hi: "લંબિત (નહીં)" },
-    "ready (yes)": { gu: "તૈયાર (હા)", hi: "તૈયાર (હાઁ)" },
-    "clearance sub-category": { gu: "મંજૂરી પેટા-કેટેગરી", hi: "સ્વીકૃતિ ઉપ-શ્રેણી" },
-    "status": { gu: "સ્થિતિ", hi: "સ્થિતિ" },
-    "ref / inward no.": { gu: "સંદર્ભ / આવક નં.", hi: "સંદર્ભ / આવક સંખ્યા" },
-    "clearance date": { gu: "મંજૂરી તારીખ", hi: "સ્વીકૃતિ તિથિ" },
-    "document (r2)": { gu: "દસ્તાવેજ (R2)", hi: "દસ્તાવેઝ (R2)" },
-    "remark": { gu: "નોંધ / રીમાર્ક", hi: "ટિપ્પણી / રિમાર્ક" },
-    "action": { gu: "ક્રિયા", hi: "કાર્રવાઈ" },
-    "attach file": { gu: "ફાઇલ જોડો", hi: "ફાઇલ સંલગ્ન કરેં" },
-
-    // --- Placeholders ---
-    "search by project name, code, or location...": { gu: "પ્રોજેક્ટ નામ, કોડ અથવા સ્થાન દ્વારા શોધો...", hi: "પ્રોજેક્ટ નામ, કોડ યા સ્થાન સે ખોજેં..." },
-    "search zone id or catego": { gu: "ઝોન આઈડી અથવા કેટેગરી શોધો...", hi: "ઝોન આઈડી યા શ્રેણી ખોજેં..." },
-    "search zone id or category...": { gu: "ઝોન આઈડી અથવા કેટેગરી શોધો...", hi: "ઝોન આઈડી યા શ્રેણી ખોજેં..." },
-    "search zone id or room...": { gu: "ઝોન અથવા રૂમ શોધો...", hi: "ઝોન અથવા રૂમ શોધો..." },
-    "brief summary of the project...": { gu: "પ્રોજેક્ટનો સંક્ષિપ્ત સારાંશ...", hi: "પ્રોજેક્ટ કા સંક્ષિપ્ત વિવરણ..." },
-    "filter clearances...": { gu: "મંજૂરીઓ ફિલ્ટર કરો...", hi: "સ્વીકૃતિયાં ફિલ્ટર કરેં..." },
-    "inward / sanction no.": { gu: "આવક / મંજૂરી નં.", hi: "આવક / સ્વીકૃતિ સંખ્યા" },
-    "enter detailed work instructions, scope specifications, material details, or site guidelines...": { gu: "કામની વિગતો, સ્પેસિફિકેશન, મટિરિયલ અથવા સાઇટ માર્ગદર્શિકા દાખલ કરો...", hi: "વિસ્તૃત કાર્ય નિર્દેશ, વિનિર્દેશ, સામગ્રી વિવરણ યા સાઇટ દિશાનિર્દેશ દર્જ કરેં..." }
+    "on hold": { gu: "મોકૂફ", hi: "રોકા ગયા" }
 };
 
 // Internal cache for original node text values to allow clean toggling back to English
@@ -338,7 +197,7 @@ function getRootPrefix() {
 const ROOT_PATH = getRootPrefix();
 
 /**
- * Normalizes text strings (trims and converts to lowercase) for flexible dictionary lookup
+ * Normalizes text strings for flexible dictionary lookup
  */
 function normalizeKey(str) {
     if (!str) return '';
@@ -502,9 +361,304 @@ function startMutationTranslationObserver() {
     });
 }
 
+// ==============================================================================
+// 2. CENTRAL NOTIFICATION ENGINE & DISPATCH SERVICE
+// ==============================================================================
+let cachedNotifications = [];
+let currentFilter = 'ALL'; // 'ALL' | 'UNREAD'
+
 /**
- * Main Shell Controller (Injects Top Bar, Bottom Dock, Action Hub & Starts Translator)
+ * Exported Universal Dispatcher for all modules
  */
+export async function sendNotification({
+    projectId = null,
+    recipientRole = null,
+    recipientId = null,
+    title,
+    message,
+    phase = 'General',
+    linkUrl = null
+}) {
+    if (!supabase) return;
+    try {
+        const payload = {
+            project_id: projectId || localStorage.getItem('activeProjectId') || null,
+            recipient_role: recipientRole,
+            recipient_id: recipientId,
+            title: title.trim(),
+            message: message.trim(),
+            phase: phase,
+            link_url: linkUrl,
+            is_read: false
+        };
+
+        const { data, error } = await supabase.from('notifications').insert([payload]).select().single();
+        if (error) throw error;
+        return data;
+    } catch (err) {
+        console.warn('[Notification Dispatch Error]:', err);
+    }
+}
+
+/**
+ * Plays a pleasant site notification tone via Web Audio API
+ */
+function playNotificationChime() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 note
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5 note
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.28);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.3);
+    } catch (_) {}
+}
+
+/**
+ * Formats relative timestamp
+ */
+function formatTimeAgo(dateString) {
+    if (!dateString) return '';
+    const now = new Date();
+    const past = new Date(dateString);
+    const diffSec = Math.floor((now - past) / 1000);
+
+    if (diffSec < 60) return 'Just now';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay === 1) return 'Yesterday';
+    if (diffDay < 7) return `${diffDay}d ago`;
+    return past.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+}
+
+/**
+ * Returns intuitive icons per operational phase
+ */
+function getPhaseIcon(phase, title = '') {
+    const p = (phase || '').toLowerCase();
+    const t = (title || '').toLowerCase();
+
+    if (p.includes('task') || t.includes('task') || t.includes('civil')) return '🏗️';
+    if (p.includes('inventory') || p.includes('stock') || t.includes('stock')) return '📦';
+    if (p.includes('purchase') || p.includes('indent') || t.includes('po') || t.includes('invoice')) return '🧾';
+    if (p.includes('liasoning') || p.includes('pre-dev') || t.includes('approval') || t.includes('rera')) return '📋';
+    if (p.includes('workforce') || p.includes('labor') || t.includes('muster')) return '👷';
+    if (p.includes('drawing') || t.includes('cad') || t.includes('blueprint')) return '📐';
+    if (p.includes('cash') || p.includes('rokdu') || t.includes('petty cash')) return '💵';
+    if (p.includes('possession') || t.includes('handover') || t.includes('key')) return '🔑';
+    return '🔔';
+}
+
+/**
+ * Loads notifications from Supabase
+ */
+async function loadNotifications() {
+    if (!supabase) return;
+
+    const userRole = localStorage.getItem('userRole') || '';
+    const activeProjectId = localStorage.getItem('activeProjectId');
+
+    try {
+        let query = supabase
+            .from('notifications')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(35);
+
+        // If site project is selected, fetch this site's notifications or global ones
+        if (activeProjectId) {
+            query = query.or(`project_id.is.null,project_id.eq.${activeProjectId}`);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Filter role-based visibility if target_role is defined
+        cachedNotifications = (data || []).filter(item => {
+            if (!item.recipient_role) return true;
+            if (userRole === 'Owner' || userRole === 'General Manager') return true;
+            return item.recipient_role.toLowerCase() === userRole.toLowerCase();
+        });
+
+        renderNotificationBadgeAndList();
+
+    } catch (err) {
+        console.warn('[Notification Fetch Warning]:', err);
+    }
+}
+
+/**
+ * Renders the top badge and dropdown list
+ */
+function renderNotificationBadgeAndList() {
+    const badgeContainer = document.getElementById('shell-notify-badge');
+    const panelBadgeCount = document.getElementById('shell-unread-badge-count');
+    const listEl = document.getElementById('shell-notifications-list');
+
+    const unreadCount = cachedNotifications.filter(n => !n.is_read).length;
+
+    // 1. Update Navbar Bell Badge
+    if (badgeContainer) {
+        if (unreadCount > 0) {
+            badgeContainer.innerHTML = `
+                <span class="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white font-bold text-[10px] flex items-center justify-center border-2 border-[#1E3A5F] shadow-sm animate-pulse">
+                    ${unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+            `;
+        } else {
+            badgeContainer.innerHTML = '';
+        }
+    }
+
+    if (panelBadgeCount) {
+        panelBadgeCount.textContent = `${unreadCount} unread`;
+    }
+
+    // 2. Render List Items
+    if (!listEl) return;
+
+    let displayList = cachedNotifications;
+    if (currentFilter === 'UNREAD') {
+        displayList = cachedNotifications.filter(n => !n.is_read);
+    }
+
+    if (displayList.length === 0) {
+        listEl.innerHTML = `
+            <div class="py-10 text-center text-slate-400">
+                <span class="text-3xl block mb-2">🎉</span>
+                <p class="text-xs font-semibold text-slate-600" data-i18n="no notifications">No notifications</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">All site alerts and tasks are up to date</p>
+            </div>
+        `;
+        return;
+    }
+
+    listEl.innerHTML = displayList.map(item => {
+        const icon = getPhaseIcon(item.phase, item.title);
+        const timeStr = formatTimeAgo(item.created_at);
+        const isUnread = !item.is_read;
+
+        return `
+            <div class="notification-item p-3 rounded-xl transition cursor-pointer flex gap-3 items-start border ${
+                isUnread 
+                    ? 'bg-amber-50/70 border-amber-200/90 hover:bg-amber-100/70' 
+                    : 'bg-white border-slate-100 hover:bg-slate-50'
+            }" data-id="${item.id}" data-link="${item.link_url || ''}">
+                <div class="w-8 h-8 rounded-lg ${isUnread ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'} flex items-center justify-center text-sm shrink-0 shadow-2xs">
+                    ${icon}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1 mb-0.5">
+                        <h4 class="text-xs font-bold ${isUnread ? 'text-[#1E3A5F]' : 'text-slate-800'} truncate">
+                            ${item.title || 'Site Alert'}
+                        </h4>
+                        <span class="text-[9px] font-semibold text-slate-400 shrink-0">${timeStr}</span>
+                    </div>
+                    <p class="text-[11px] ${isUnread ? 'text-slate-700 font-medium' : 'text-slate-500'} line-clamp-2 leading-relaxed">
+                        ${item.message || ''}
+                    </p>
+                    ${item.phase ? `
+                        <div class="mt-1 flex items-center gap-1.5">
+                            <span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">
+                                ${item.phase}
+                            </span>
+                        </div>
+                    ` : ''}
+                </div>
+                ${isUnread ? '<span class="w-2 h-2 rounded-full bg-amber-500 shrink-0 mt-1.5 shadow-xs"></span>' : ''}
+            </div>
+        `;
+    }).join('');
+
+    // Attach click listeners to notification rows
+    listEl.querySelectorAll('.notification-item').forEach(el => {
+        el.addEventListener('click', async () => {
+            const id = el.getAttribute('data-id');
+            const link = el.getAttribute('data-link');
+
+            // Mark as read in Supabase
+            try {
+                await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+                const found = cachedNotifications.find(n => n.id === id);
+                if (found) found.is_read = true;
+                renderNotificationBadgeAndList();
+            } catch (err) {
+                console.warn('Could not mark notification as read:', err);
+            }
+
+            // Close notification popover
+            const popover = document.getElementById('prayosha-notification-panel');
+            if (popover) popover.classList.add('hidden');
+
+            // Navigate if link exists
+            if (link && link !== 'null' && link.trim() !== '') {
+                window.location.href = link;
+            }
+        });
+    });
+}
+
+/**
+ * Initializes Supabase Realtime Channel for Notifications
+ */
+function initRealtimeNotifications() {
+    if (!supabase || !supabase.channel) return;
+
+    try {
+        supabase
+            .channel('public:notifications-stream')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'notifications' },
+                payload => {
+                    const newNotif = payload.new;
+                    const userRole = localStorage.getItem('userRole') || '';
+                    const activeProjectId = localStorage.getItem('activeProjectId');
+
+                    // Filter check
+                    if (newNotif.project_id && activeProjectId && newNotif.project_id !== activeProjectId) {
+                        return;
+                    }
+                    if (newNotif.recipient_role && userRole !== 'Owner' && userRole !== 'General Manager') {
+                        if (newNotif.recipient_role.toLowerCase() !== userRole.toLowerCase()) return;
+                    }
+
+                    // Prepend new notification & play chime
+                    cachedNotifications.unshift(newNotif);
+                    playNotificationChime();
+                    renderNotificationBadgeAndList();
+                }
+            )
+            .on(
+                'postgres_changes',
+                { event: 'UPDATE', schema: 'public', table: 'notifications' },
+                payload => {
+                    const updated = payload.new;
+                    const idx = cachedNotifications.findIndex(n => n.id === updated.id);
+                    if (idx !== -1) {
+                        cachedNotifications[idx] = updated;
+                        renderNotificationBadgeAndList();
+                    }
+                }
+            )
+            .subscribe();
+    } catch (err) {
+        console.warn('[Realtime Notifications Warning]:', err);
+    }
+}
+
+// ==============================================================================
+// 3. MAIN SHELL CONTROLLER
+// ==============================================================================
 export async function initShell(options = {}) {
     let activeModule = options.activeModule || '';
     if (!activeModule) {
@@ -584,15 +738,19 @@ export async function initShell(options = {}) {
     // 1. Initial Translation Run
     applyTranslations(currentLang);
 
-    // 2. Start Live MutationObserver for dynamic tables, cards, and accordions
+    // 2. Start Live MutationObserver
     startMutationTranslationObserver();
 
-    // 3. Attach Shell Listeners
+    // 3. Attach Shell & Notification Center Listeners
     setupShellListeners();
+
+    // 4. Initialize Notification Center Data & Realtime Sync
+    await loadNotifications();
+    initRealtimeNotifications();
 }
 
 /**
- * Injects Top Bar, Bottom Bar, and Complete Action Hub Drawer
+ * Injects Top Bar, Bottom Bar, Notification Dropdown & Action Hub Drawer
  */
 function injectShellHTML(data) {
     document.body.classList.add('pt-16', 'pb-24');
@@ -647,7 +805,7 @@ function injectShellHTML(data) {
     shellContainer.innerHTML = `
         <!-- ================= TOP EXECUTIVE BAR ================= -->
         <header id="prayosha-topbar" class="fixed top-0 left-0 right-0 z-40 bg-[#1E3A5F] text-white shadow-md transition-transform duration-300 ease-in-out">
-            <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+            <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3 relative">
                 
                 <!-- Left: Logo & Project Switcher Dropdown -->
                 <div class="flex items-center gap-3 min-w-0">
@@ -669,7 +827,7 @@ function injectShellHTML(data) {
                     </div>
                 </div>
 
-                <!-- Right: Tri-Lingual Selector, Alerts, Profile & Logout -->
+                <!-- Right: Tri-Lingual Selector, Notifications Bell, Profile & Logout -->
                 <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
                     
                     <!-- Language Selector (EN / GU / HI) -->
@@ -684,11 +842,42 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- Notifications Indicator -->
-                    <button id="shell-notify-btn" type="button" title="Site Notifications" class="relative p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition cursor-pointer">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-                        <span class="absolute top-1 right-1 w-2 h-2 bg-[#FFBF00] rounded-full animate-pulse"></span>
-                    </button>
+                    <!-- Notifications Indicator Bell -->
+                    <div class="relative">
+                        <button id="shell-notify-btn" type="button" title="Site Notifications" class="relative p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition cursor-pointer">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                            <span id="shell-notify-badge"></span>
+                        </button>
+
+                        <!-- ================= GLASSMORPHIC NOTIFICATION CENTER POPOVER ================= -->
+                        <div id="prayosha-notification-panel" class="hidden absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl bg-white/95 backdrop-blur-md shadow-2xl border border-slate-200/90 text-slate-800 z-50 overflow-hidden">
+                            <!-- Popover Header -->
+                            <div class="p-3.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-xs uppercase tracking-wider text-[#1E3A5F]">Site Notifications</span>
+                                    <span id="shell-unread-badge-count" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">0 unread</span>
+                                </div>
+                                <button id="shell-mark-all-read-btn" class="text-[11px] text-blue-600 hover:text-blue-800 font-bold transition cursor-pointer">
+                                    Mark all read
+                                </button>
+                            </div>
+
+                            <!-- Filter Tabs -->
+                            <div class="flex border-b border-slate-100 text-[11px] font-bold bg-white">
+                                <button id="notif-tab-all" class="flex-1 py-2 text-center border-b-2 border-[#1E3A5F] text-[#1E3A5F]">
+                                    All
+                                </button>
+                                <button id="notif-tab-unread" class="flex-1 py-2 text-center text-slate-400 hover:text-slate-700">
+                                    Unread
+                                </button>
+                            </div>
+
+                            <!-- Scrollable Notifications List -->
+                            <div id="shell-notifications-list" class="p-2.5 max-h-80 overflow-y-auto space-y-2 custom-scroll bg-slate-50/30">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- User Profile & Logout -->
                     <div class="flex items-center gap-1.5">
@@ -840,7 +1029,7 @@ function injectShellHTML(data) {
                         </div>
                     </div>
 
-                    <!-- 5. POSSESSION & HANDOVER SUITE (SALES & KEY RELEASE GATE) -->
+                    <!-- 5. POSSESSION & HANDOVER SUITE -->
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <span data-i18n="possession & handover suite" class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Possession & Handover Suite</span>
@@ -1060,7 +1249,62 @@ function setupShellListeners() {
     if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
     if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
 
-    // 3. Language Selector
+    // 3. Notification Center Popover Controls
+    const notifyBtn = document.getElementById('shell-notify-btn');
+    const notifyPanel = document.getElementById('prayosha-notification-panel');
+    const markAllReadBtn = document.getElementById('shell-mark-all-read-btn');
+    const tabAll = document.getElementById('notif-tab-all');
+    const tabUnread = document.getElementById('notif-tab-unread');
+
+    if (notifyBtn && notifyPanel) {
+        notifyBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            notifyPanel.classList.toggle('hidden');
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!notifyPanel.contains(e.target) && !notifyBtn.contains(e.target)) {
+                notifyPanel.classList.add('hidden');
+            }
+        });
+    }
+
+    // Tab Filters
+    if (tabAll && tabUnread) {
+        tabAll.addEventListener('click', () => {
+            currentFilter = 'ALL';
+            tabAll.className = 'flex-1 py-2 text-center border-b-2 border-[#1E3A5F] text-[#1E3A5F] font-bold';
+            tabUnread.className = 'flex-1 py-2 text-center text-slate-400 hover:text-slate-700 font-medium';
+            renderNotificationBadgeAndList();
+        });
+
+        tabUnread.addEventListener('click', () => {
+            currentFilter = 'UNREAD';
+            tabUnread.className = 'flex-1 py-2 text-center border-b-2 border-[#1E3A5F] text-[#1E3A5F] font-bold';
+            tabAll.className = 'flex-1 py-2 text-center text-slate-400 hover:text-slate-700 font-medium';
+            renderNotificationBadgeAndList();
+        });
+    }
+
+    // Mark All As Read
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', async () => {
+            if (!supabase) return;
+            try {
+                const unreadIds = cachedNotifications.filter(n => !n.is_read).map(n => n.id);
+                if (unreadIds.length === 0) return;
+
+                await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds);
+                cachedNotifications.forEach(n => n.is_read = true);
+                renderNotificationBadgeAndList();
+            } catch (err) {
+                console.warn('Could not mark all notifications as read:', err);
+            }
+        });
+    }
+
+    // 4. Language Selector
     const langSelect = document.getElementById('shell-lang-select');
     if (langSelect) {
         langSelect.addEventListener('change', (e) => {
@@ -1071,7 +1315,7 @@ function setupShellListeners() {
         });
     }
 
-    // 4. Logout Action
+    // 5. Logout Action
     const logoutBtn = document.getElementById('shell-logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
@@ -1099,7 +1343,7 @@ function setupShellListeners() {
         });
     }
 
-    // 5. Smart Auto-Hide on Scroll
+    // 6. Smart Auto-Hide on Scroll
     const topBar = document.getElementById('prayosha-topbar');
     const bottomDock = document.getElementById('prayosha-bottomdock');
 
@@ -1116,6 +1360,7 @@ function setupShellListeners() {
                     if (currentScrollY > 70 && scrollDiff > 0) {
                         if (topBar) topBar.classList.add('-translate-y-full');
                         if (bottomDock) bottomDock.classList.add('translate-y-full');
+                        if (notifyPanel) notifyPanel.classList.add('hidden');
                     } else if (scrollDiff < 0) {
                         if (topBar) topBar.classList.remove('-translate-y-full');
                         if (bottomDock) bottomDock.classList.remove('translate-y-full');
@@ -1135,4 +1380,5 @@ if (typeof window !== 'undefined') {
     window.initShell = initShell;
     window.applyTranslations = applyTranslations;
     window.t = t;
+    window.sendNotification = sendNotification;
 }
