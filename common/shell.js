@@ -9,12 +9,21 @@
  * 4. Bidirectional Caching: Remembers original English strings in a WeakMap for seamless EN <-> GU <-> HI toggles.
  * 5. Live MutationObserver: Automatically translates dynamically rendered cards, tables, and floor accordions.
  * 6. Full Mobile-First Shell: Top executive bar, bottom navigation dock with raised Action Hub, and smart scroll hide.
+ * 7. UUID-Safe Filter: Validates project UUIDs before querying PostgreSQL tables to eliminate 22P02 casting exceptions.
  */
 
 import * as Config from '../config.js';
 
 // Central Supabase Client from config.js
 export const supabase = Config.supabase || Config.default?.supabase || window.supabaseClient;
+
+/**
+ * Validates RFC 4122 UUID strings before sending to PostgreSQL UUID columns
+ */
+function isValidUUID(str) {
+    if (!str || typeof str !== 'string') return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str.trim());
+}
 
 // ==============================================================================
 // 1. MASTER MULTI-LINGUAL CONSTRUCTION DICTIONARY (Case-Insensitive Index)
@@ -381,12 +390,15 @@ export async function sendNotification({
 }) {
     if (!supabase) return;
     try {
+        const rawProjectId = projectId || localStorage.getItem('activeProjectId') || null;
+        const validProjectId = isValidUUID(rawProjectId) ? rawProjectId : null;
+
         const payload = {
-            project_id: projectId || localStorage.getItem('activeProjectId') || null,
+            project_id: validProjectId,
             recipient_role: recipientRole,
             recipient_id: recipientId,
-            title: title.trim(),
-            message: message.trim(),
+            title: title ? title.trim() : '',
+            message: message ? message.trim() : '',
             phase: phase,
             link_url: linkUrl,
             is_read: false
@@ -432,7 +444,7 @@ function formatTimeAgo(dateString) {
     if (diffSec < 60) return 'Just now';
     const diffMin = Math.floor(diffSec / 60);
     if (diffMin < 60) return `${diffMin}m ago`;
-    const diffHr = Math.floor(diffMin / 60);
+    const diffHr = Math.floor(diffHr / 60);
     if (diffHr < 24) return `${diffHr}h ago`;
     const diffDay = Math.floor(diffHr / 24);
     if (diffDay === 1) return 'Yesterday';
@@ -474,8 +486,8 @@ async function loadNotifications() {
             .order('created_at', { ascending: false })
             .limit(35);
 
-        // If site project is selected, fetch this site's notifications or global ones
-        if (activeProjectId) {
+        // Safely filter by project only if activeProjectId is a valid UUID
+        if (isValidUUID(activeProjectId)) {
             query = query.or(`project_id.is.null,project_id.eq.${activeProjectId}`);
         }
 
@@ -625,7 +637,7 @@ function initRealtimeNotifications() {
                     const activeProjectId = localStorage.getItem('activeProjectId');
 
                     // Filter check
-                    if (newNotif.project_id && activeProjectId && newNotif.project_id !== activeProjectId) {
+                    if (newNotif.project_id && activeProjectId && isValidUUID(activeProjectId) && newNotif.project_id !== activeProjectId) {
                         return;
                     }
                     if (newNotif.recipient_role && userRole !== 'Owner' && userRole !== 'General Manager') {
@@ -707,12 +719,13 @@ export async function initShell(options = {}) {
     let activeProjectCode = localStorage.getItem('activeProjectCode');
 
     if (availableProjects.length > 0) {
-        const found = availableProjects.find(p => p.id === activeProjectId || p.project_code === activeProjectId);
+        const found = availableProjects.find(p => p.id === activeProjectId || (p.project_code && p.project_code === activeProjectId));
         if (found) {
             activeProjectId = found.id;
             activeProjectName = found.project_name;
             activeProjectCode = found.project_code;
-        } else if (!activeProjectId) {
+        } else {
+            // Self-healing fallback: If stored project is invalid (e.g. "All Projects"), bind to primary project
             activeProjectId = availableProjects[0].id;
             activeProjectName = availableProjects[0].project_name;
             activeProjectCode = availableProjects[0].project_code;
