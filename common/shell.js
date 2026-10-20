@@ -10,6 +10,7 @@
  * 5. Live MutationObserver: Automatically translates dynamically rendered cards, tables, and floor accordions.
  * 6. Full Mobile-First Shell: Top executive bar, bottom navigation dock with raised Action Hub, and smart scroll hide.
  * 7. UUID-Safe Filter: Validates project UUIDs before querying PostgreSQL tables to eliminate 22P02 casting exceptions.
+ * 8. TDZ-Safe Relative Timestamp Formatter: Computes time intervals directly from absolute seconds.
  */
 
 import * as Config from '../config.js';
@@ -433,7 +434,7 @@ function playNotificationChime() {
 }
 
 /**
- * Formats relative timestamp
+ * Formats relative timestamp using absolute second differentials to avoid TDZ errors
  */
 function formatTimeAgo(dateString) {
     if (!dateString) return '';
@@ -444,11 +445,11 @@ function formatTimeAgo(dateString) {
     if (diffSec < 60) return 'Just now';
     const diffMin = Math.floor(diffSec / 60);
     if (diffMin < 60) return `${diffMin}m ago`;
-    const diffHr = Math.floor(diffHr / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
-    const diffDay = Math.floor(diffHr / 24);
-    if (diffDay === 1) return 'Yesterday';
-    if (diffDay < 7) return `${diffDay}d ago`;
+    const diffHours = Math.floor(diffSec / 3600);
+    if (diffHours < 24) return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffSec / 86400);
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
     return past.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 }
 
