@@ -1,0 +1,9 @@
+# flutter gen-l10n configuration (runs automatically on `flutter pub get` / build).
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-dir: lib/l10n/gen
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
+# Fails loudly in CI if a key exists in app_en.arb but is missing elsewhere.
+untranslated-messages-file: build/untranslated_messages.json

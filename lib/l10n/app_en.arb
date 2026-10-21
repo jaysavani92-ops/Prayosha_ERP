@@ -1,0 +1,120 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Prayosha",
+  "@appTitle": { "description": "Brand name shown in the app bar, login screen and browser tab." },
+  "appSubtitle": "Construction Management Portal",
+  "@appSubtitle": { "description": "Tagline under the brand name." },
+
+  "commonLoading": "Loading…",
+  "commonRetry": "Try again",
+  "commonCancel": "Cancel",
+  "commonClose": "Close",
+
+  "splashMessage": "Preparing your workspace…",
+
+  "loginTitle": "Welcome back",
+  "loginSubtitle": "Sign in to continue to your site workspace.",
+  "loginUsernameLabel": "Username",
+  "loginUsernameHint": "Enter username",
+  "loginPasswordLabel": "Password",
+  "loginPasswordHint": "Enter password",
+  "loginShowPassword": "Show password",
+  "loginHidePassword": "Hide password",
+  "loginSubmit": "Secure Login",
+  "loginSubmitting": "Signing in…",
+  "loginForgotPassword": "Forgot password?",
+  "loginForgotPasswordTitle": "Forgot your password?",
+  "loginForgotPasswordMessage": "For site security, passwords are reset only by the Prayosha administrator. Contact the admin desk to reset your access.",
+
+  "validationRequired": "This field is required.",
+  "validationUsernameFormat": "Use 3–32 characters: letters, numbers, dot, dash or underscore.",
+
+  "errorInvalidCredentials": "Invalid username or password.",
+  "errorAccountLocked": "Too many failed attempts. Please try again later.",
+  "errorAccountDisabled": "This account is disabled. Contact your administrator.",
+  "errorSessionExpired": "Your session has expired. Please sign in again.",
+  "errorNetwork": "Cannot reach the server. Check your internet connection.",
+  "errorTimeout": "The server took too long to respond. Please try again.",
+  "errorRateLimited": "Too many requests. Please wait a moment and try again.",
+  "errorServiceBusy": "The service is busy. Please try again shortly.",
+  "errorForbidden": "You do not have permission to do this.",
+  "errorNotFound": "The requested item was not found.",
+  "errorUnknown": "Something went wrong. Please try again.",
+
+  "navDashboard": "Dashboard",
+  "navSettings": "Settings",
+  "navMainMenu": "Main navigation",
+  "@navMainMenu": { "description": "Accessibility label for the navigation bar/rail." },
+
+  "dashboardGreeting": "Hello, {name}",
+  "@dashboardGreeting": {
+    "description": "Greeting on the dashboard.",
+    "placeholders": { "name": { "type": "String", "example": "Ramesh Patel" } }
+  },
+  "dashboardRole": "Role: {role}",
+  "@dashboardRole": {
+    "placeholders": { "role": { "type": "String", "example": "Site engineer" } }
+  },
+  "dashboardLastSignIn": "Last sign-in: {date}",
+  "@dashboardLastSignIn": {
+    "description": "Date is already formatted for the current locale.",
+    "placeholders": { "date": { "type": "String", "example": "21 Oct 2026, 10:45" } }
+  },
+  "dashboardFirstSignIn": "This is your first sign-in.",
+
+  "recentUploadsTitle": "Recent uploads",
+  "recentUploadsEmptyTitle": "No uploads yet",
+  "recentUploadsEmptyMessage": "Photos and documents you upload from site will appear here.",
+  "recentUploadsLoadError": "Could not load your uploads.",
+  "uploadDetails": "{size} · {date}",
+  "@uploadDetails": {
+    "description": "File size and upload date, both already formatted for the locale.",
+    "placeholders": {
+      "size": { "type": "String", "example": "1.2 MB" },
+      "date": { "type": "String", "example": "21 Oct 2026" }
+    }
+  },
+  "fileSizeKb": "{value} KB",
+  "@fileSizeKb": { "placeholders": { "value": { "type": "String", "example": "512" } } },
+  "fileSizeMb": "{value} MB",
+  "@fileSizeMb": { "placeholders": { "value": { "type": "String", "example": "1.2" } } },
+
+  "roleOwner": "Owner",
+  "roleGeneralManager": "General manager",
+  "roleConstructionHead": "Construction head",
+  "roleProjectManager": "Project manager",
+  "roleSiteEngineer": "Site engineer",
+  "roleSupervisor": "Supervisor",
+  "roleStoreKeeper": "Store keeper",
+  "roleAccountant": "Accountant",
+
+  "purposeProjectPhoto": "Project photo",
+  "purposeFloorPlan": "Floor plan",
+  "purposeDrawing": "Drawing",
+  "purposeCaseAttachment": "Case attachment",
+  "purposeInventoryInvoice": "Inventory invoice",
+  "purposeTaskEvidence": "Task evidence",
+  "purposeSnagPhoto": "Snag photo",
+  "purposePettyCashReceipt": "Petty cash receipt",
+
+  "settingsTitle": "Settings",
+  "settingsLanguage": "Language",
+  "settingsLanguageHint": "Changes apply immediately and are remembered on this device.",
+  "settingsAppearance": "Appearance",
+  "themeSystem": "System default",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "settingsAccount": "Account",
+  "languageSelectorTooltip": "Change language",
+  "languageChanged": "Language changed to {language}.",
+  "@languageChanged": {
+    "description": "Notification after switching language; {language} is the language's own name.",
+    "placeholders": { "language": { "type": "String", "example": "ગુજરાતી" } }
+  },
+
+  "signOut": "Sign out",
+  "signOutConfirmTitle": "Sign out?",
+  "signOutConfirmMessage": "You will need to sign in again to continue.",
+  "signedOutMessage": "You have been signed out."
+}
