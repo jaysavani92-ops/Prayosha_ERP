@@ -1,0 +1,119 @@
+# Alert rules. Thresholds are starting points; tune them after observing a
+# few weeks of real traffic (docs/performance-testing.md).
+groups:
+  - name: availability
+    rules:
+      - alert: ApiDown
+        expr: up{job="api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations: { summary: 'API instance {{ $labels.instance }} is not scrapeable' }
+
+      - alert: ApiHighErrorRate
+        expr: |
+          sum(rate(http_request_duration_seconds_count{job="api",status_code=~"5.."}[5m]))
+            / clamp_min(sum(rate(http_request_duration_seconds_count{job="api"}[5m])), 1) > 0.02
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: 'More than 2% of API requests are failing with 5xx' }
+
+      - alert: ApiHighLatencyP95
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="api",route!~"/health.*"}[5m]))) > 0.5
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: 'API p95 latency above 500ms for 10 minutes' }
+
+  - name: database
+    rules:
+      - alert: HostDiskSpaceLow
+        expr: |
+          node_filesystem_avail_bytes{mountpoint=~"/|/srv.*",fstype!~"tmpfs|overlay"}
+            / node_filesystem_size_bytes{mountpoint=~"/|/srv.*",fstype!~"tmpfs|overlay"} < 0.20
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: 'Less than 20% disk free on {{ $labels.mountpoint }}' }
+
+      - alert: HostDiskSpaceCritical
+        expr: |
+          node_filesystem_avail_bytes{mountpoint=~"/|/srv.*",fstype!~"tmpfs|overlay"}
+            / node_filesystem_size_bytes{mountpoint=~"/|/srv.*",fstype!~"tmpfs|overlay"} < 0.10
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          { summary: 'Less than 10% disk free: MongoDB will stop accepting writes when the disk fills' }
+
+      - alert: DiskWillFillIn24h
+        expr: predict_linear(node_filesystem_avail_bytes{mountpoint=~"/|/srv.*",fstype!~"tmpfs|overlay"}[6h], 24 * 3600) < 0
+        for: 30m
+        labels: { severity: warning }
+        annotations: { summary: 'Disk on {{ $labels.mountpoint }} projected to fill within 24h' }
+
+      - alert: MongoDown
+        expr: mongodb_up == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations: { summary: 'MongoDB is unreachable' }
+
+      - alert: MongoConnectionsHigh
+        expr: mongodb_ss_connections{conn_type="current"} / (mongodb_ss_connections{conn_type="current"} + mongodb_ss_connections{conn_type="available"}) > 0.8
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: 'MongoDB connection usage above 80%' }
+
+      - alert: MongoPoolCheckoutFailures
+        expr: increase(mongodb_pool_checkout_failures_total[5m]) > 0
+        labels: { severity: warning }
+        annotations:
+          { summary: 'Application could not obtain MongoDB connections (pool exhausted or DB down)' }
+
+      # Only meaningful once a replica set is in place (Option B).
+      - alert: MongoReplicationLag
+        expr: mongodb_mongod_replset_member_replication_lag > 30
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: 'Replica {{ $labels.member_idx }} is more than 30s behind' }
+
+      - alert: BackupMissing
+        expr: time() - prayosha_backup_last_success_timestamp_seconds > 26 * 3600
+        for: 15m
+        labels: { severity: critical }
+        annotations: { summary: 'No successful MongoDB backup in the last 26 hours' }
+
+  - name: queues
+    rules:
+      - alert: QueueBacklogGrowing
+        expr: sum by (queue) (queue_jobs{state=~"waiting|delayed"}) > 1000
+        for: 15m
+        labels: { severity: warning }
+        annotations: { summary: 'Queue {{ $labels.queue }} backlog above 1000 jobs' }
+
+      - alert: JobsFailingPermanently
+        expr: increase(jobs_processed_total{outcome="failed"}[30m]) > 0
+        labels: { severity: warning }
+        annotations: { summary: 'Jobs exhausted their retries; inspect the failed set' }
+
+      - alert: WorkerDown
+        expr: up{job="worker"} == 0
+        for: 5m
+        labels: { severity: critical }
+        annotations: { summary: 'Worker is not running: deletions and cleanup are not being processed' }
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / clamp_min(redis_memory_max_bytes, 1) > 0.8
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: 'Redis memory above 80% of maxmemory (noeviction: writes fail at 100%)' }
+
+  - name: security
+    rules:
+      - alert: RefreshTokenReuse
+        expr: increase(auth_events_total{event="refresh_token_reuse"}[15m]) > 0
+        labels: { severity: warning }
+        annotations: { summary: 'Refresh token reuse detected (possible token theft)' }
+
+      - alert: LoginFailureSpike
+        expr: sum(rate(auth_events_total{event=~"login_failed|account_locked"}[5m])) > 1
+        for: 10m
+        labels: { severity: warning }
+        annotations: { summary: 'Sustained failed logins (possible credential stuffing)' }

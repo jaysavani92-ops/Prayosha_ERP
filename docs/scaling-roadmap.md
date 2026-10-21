@@ -1,0 +1,32 @@
+# Scaling roadmap
+
+Audience: whoever decides when and how to spend on infrastructure.
+
+Rule: **measure, find the bottleneck, then change one thing.** Each step below lists the signal that justifies it. None of the steps requires rewriting the application: API and worker instances are stateless (sessions in MongoDB, rate limits and cache in Redis, files in S3).
+
+| Step                                  | Do this when…                                                                                                         | Change                                                                                                                                          | Availability gained                                                                   |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 0. Baseline                           | before go-live                                                                                                        | Load-test on production-like hardware (`docs/performance-testing.md`); set alert thresholds from the results                                    | —                                                                                     |
+| 1. Fix queries                        | p95 rises on a specific route; `explain()` shows high `docsExamined/nReturned`                                        | Add/adjust indexes, projections, pagination; never "add Redis" to hide a slow query                                                             | —                                                                                     |
+| 2. More API replicas, same host       | API CPU > 70 % sustained while MongoDB has headroom                                                                   | `API_REPLICAS=3..4`; keep `replicas × MONGODB_MAX_POOL_SIZE` well under MongoDB's connection limit                                              | Survives one API process crash (already true at 2)                                    |
+| 3. Bigger VPS                         | memory pressure, WiredTiger cache evictions, disk latency                                                             | Vertical resize; give MongoDB more cache (`MONGO_WT_CACHE_GB`)                                                                                  | —                                                                                     |
+| 4. Option A2: database on its own VPS | MongoDB and API compete for CPU/RAM/IO; or before data volume grows past what a restore can bring back within the RTO | Move MongoDB (+ backups) to a dedicated VPS on a private network; TLS between app and DB; firewall 27017 to app hosts                           | Isolation, not HA                                                                     |
+| 5. Option B: replica set              | downtime of hours or data loss of a day is no longer acceptable                                                       | 3 data-bearing members on separate machines/zones (see `docs/database-design.md` upgrade path)                                                  | Automatic failover (~10–30 s election), majority-durable writes, PITR-capable backups |
+| 6. Multiple app hosts                 | single app host is the remaining SPOF, or CPU saturates at max replicas                                               | 2+ app VPSs behind a provider load balancer (or two Caddy hosts with DNS failover); Redis moves to its own host or a managed service            | Survives an app host loss                                                             |
+| 7. Redis HA                           | Redis outage impact becomes unacceptable (it is degraded-mode today)                                                  | Redis Sentinel (3 nodes) or a managed Redis/Valkey                                                                                              | Queue and rate limits survive a Redis node loss                                       |
+| 8. CDN for files                      | download bandwidth/latency from S3 matters (e.g. drawings viewed on site)                                             | CloudFront with Origin Access Control and signed URLs                                                                                           | —                                                                                     |
+| 9. Read scaling                       | read-heavy reports load the primary                                                                                   | Route reporting reads to secondaries (`readPreference=secondaryPreferred` on a separate client), or precompute report collections in the worker | —                                                                                     |
+| 10. Sharding                          | a single replica set cannot hold the working set or write load after steps 1–9                                        | Shard by a high-cardinality key (likely `projectId`) — a large project; avoid until measured                                                    | —                                                                                     |
+
+## Capacity arithmetic to keep in mind
+
+- MongoDB connections = (API replicas + worker replicas) × `MONGODB_MAX_POOL_SIZE` (+ ops tools). Default 3 × 20 = 60, far below MongoDB's limit, but each connection costs ~1 MB on the server.
+- Login throughput per API replica ≈ `PASSWORD_HASH_CONCURRENCY` ÷ hash time. Measure the hash time on the production CPU with `node -e "import('argon2').then(async a=>{const t=Date.now();await a.hash('x',{type:2,memoryCost:19456,timeCost:2,parallelism:1});console.log(Date.now()-t,'ms')})"` inside the API container.
+- Redis memory: BullMQ keeps completed jobs 1 h and failed jobs 14 days (see `src/jobs/queues/definitions.ts`); size `REDIS_MAXMEMORY` with the backlog you expect during a worker outage.
+
+## Things not to do
+
+- Do not add Kubernetes to run a handful of containers.
+- Do not run three MongoDB containers on one VPS and call it HA.
+- Do not cache entire responses to compensate for missing indexes.
+- Do not scale workers to speed up S3 deletions; they are not latency-critical.

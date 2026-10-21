@@ -1,0 +1,53 @@
+# OPTIONAL monitoring add-on for the Option A VPS:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.monitoring.yml --env-file .env.production up -d
+# Nothing here publishes a port. Reach Prometheus through an SSH tunnel:
+#   ssh -L 9090:127.0.0.1:9090 deploy@vps   (then the prometheus port binding below)
+# Route alerts with Alertmanager or Grafana alerting (not included; budget choice).
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.retention.size=2GB
+    volumes:
+      - ./docker/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - /etc/prayosha/metrics_token:/etc/prometheus/metrics_token:ro
+      - prometheus-data:/prometheus
+    ports:
+      - '127.0.0.1:9090:9090'
+    networks: [edge, backend]
+
+  node-exporter:
+    image: prom/node-exporter:v1.9.1
+    restart: unless-stopped
+    command:
+      - --path.rootfs=/host
+      - --collector.textfile.directory=/textfile
+    volumes:
+      - /:/host:ro,rslave
+      - /var/lib/node_exporter/textfile:/textfile:ro
+    pid: host
+    networks: [backend]
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.44
+    restart: unless-stopped
+    command: ['--collect-all', '--compatible-mode']
+    environment:
+      MONGODB_URI: mongodb://prayosha_backup:${MONGO_BACKUP_PASSWORD}@mongo:27017/admin
+    networks: [backend]
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.74.0
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks: [backend]
+
+volumes:
+  prometheus-data:

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+# Local secrets / generated material
+docker/mongo/keyfile
+backups/
+# k6 summaries are committed deliberately as baselines (docs/performance-testing.md).
+.claude/settings.local.json

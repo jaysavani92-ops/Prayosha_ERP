@@ -1,0 +1,39 @@
+# Optional monitoring stack (docker-compose.monitoring.yml). Scrapes the API,
+# worker, host, MongoDB and Redis exporters over the internal network.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: api
+    metrics_path: /internal/metrics
+    authorization:
+      credentials_file: /etc/prometheus/metrics_token
+    dns_sd_configs:
+      - names: [api]
+        type: A
+        port: 3000
+
+  - job_name: worker
+    metrics_path: /internal/metrics
+    authorization:
+      credentials_file: /etc/prometheus/metrics_token
+    dns_sd_configs:
+      - names: [worker]
+        type: A
+        port: 3001
+
+  - job_name: node
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: mongodb
+    static_configs:
+      - targets: ['mongodb-exporter:9216']
+
+  - job_name: redis
+    static_configs:
+      - targets: ['redis-exporter:9121']

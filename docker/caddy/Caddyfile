@@ -1,0 +1,49 @@
+{
+	email {$ACME_EMAIL}
+	# Caddy does not trust client-supplied X-Forwarded-* headers by default, so
+	# the API (TRUST_PROXY=1) always sees the real client IP from Caddy.
+	servers {
+		timeouts {
+			read_body 30s
+			read_header 10s
+			idle 2m
+		}
+	}
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# Internal endpoints are never reachable from the internet.
+	@internal path /internal/* /docs /docs/*
+	respond @internal 404
+
+	request_body {
+		max_size 2MB
+	}
+
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	reverse_proxy {
+		# Discover every `api` replica via Docker DNS.
+		dynamic a api 3000 {
+			refresh 5s
+		}
+		lb_policy least_conn
+		lb_try_duration 5s
+		# Draining replicas fail readiness and are taken out of rotation.
+		health_uri /health/ready
+		health_interval 5s
+		health_timeout 2s
+		# Overwrite any client-supplied request id.
+		header_up X-Request-Id {http.request.uuid}
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
