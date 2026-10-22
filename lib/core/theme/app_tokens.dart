@@ -24,12 +24,21 @@ abstract final class AppSpacing {
 abstract final class AppRadius {
   static const double sm = 6;
   static const double md = 10;
+
+  /// Text fields and buttons, so a field and the button under it match.
+  static const double control = 14;
   static const double lg = 16;
+
+  /// Surfaces that float over photography (the sign-in card).
+  static const double xl = 24;
   static const double pill = 999;
 
   static const BorderRadius smAll = BorderRadius.all(Radius.circular(sm));
   static const BorderRadius mdAll = BorderRadius.all(Radius.circular(md));
+  static const BorderRadius controlAll = BorderRadius.all(Radius.circular(control));
   static const BorderRadius lgAll = BorderRadius.all(Radius.circular(lg));
+  static const BorderRadius xlAll = BorderRadius.all(Radius.circular(xl));
+  static const BorderRadius pillAll = BorderRadius.all(Radius.circular(pill));
 }
 
 abstract final class AppShadows {
@@ -37,9 +46,74 @@ abstract final class AppShadows {
   static const List<BoxShadow> md = [BoxShadow(color: Color(0x1A000000), blurRadius: 12, offset: Offset(0, 4))];
 }
 
+/// Liquid glass (surfaces floating over photography, see `GlassSurface`).
+abstract final class AppGlass {
+  /// Backdrop blur. Strong enough that the photo reads as colour and light,
+  /// never as detail competing with the text.
+  static const double blurSigma = 8;
+
+  /// Backdrop saturation boost, so the glass carries the photo's warmth
+  /// instead of looking grey.
+  static const double saturation = 1;
+
+  /// Width of the specular rim.
+  static const double rimWidth = 1;
+
+  /// Colour of reflected light (rim and sheen): white in both themes.
+  static const Color highlight = Color.fromARGB(255, 255, 255, 255);
+
+  /// Tint opacity, top-left to bottom-right, per theme brightness: low, so
+  /// the glass reads as clear. Text inside still keeps 4.5:1 over the
+  /// darkest scrimmed photo because secondary text darkens on glass
+  /// ([secondaryTextOpacity]); the widget tests check it against plain navy.
+  static const (double, double) lightTint = (0.20, 0.12);
+  static const (double, double) darkTint = (0.20, 0.12);
+
+  /// Backdrop luminance compression, applied to the blurred photo under the
+  /// tint (how system glass materials stay legible with a clear tint). Each
+  /// channel becomes `scale * c + lift * 255`:
+  ///  - light: black becomes 59 % grey, so navy text keeps about 4.8:1 even
+  ///    over the darkest photo at the clearest corner of the tint;
+  ///  - dark: white becomes 30 % grey, so light text and the light-navy
+  ///    accent keep at least 4.5:1 over the brightest sky.
+  /// Shapes and colour still show through; only the range narrows.
+  static const (double scale, double lift) lightBackdrop = (0.41, 0.59);
+  static const (double scale, double lift) darkBackdrop = (0.3, 0);
+
+  /// Soft shadow outside the sheet only (never under it, where it would
+  /// show through), so the card stands out from the photo.
+  static const Color shadow = Color(0x4D000000);
+  static const double shadowBlur = 32;
+  static const double shadowOffsetY = 12;
+
+  /// Secondary text (subtitles, field labels, hints, icons) on glass: the
+  /// primary text colour at this opacity, instead of the usual muted grey,
+  /// which is too light on a clear tint.
+  static const double secondaryTextOpacity = 0.8;
+
+  /// Soft glow just inside the rim, which gives the sheet its thickness.
+  static const double edgeGlowWidth = 2;
+
+  /// Text field fill inside glass: nearly opaque, so fields read as crisp,
+  /// clean inlays on the clear sheet (a thin fill over glass looks muddy).
+  static const double lightFieldFill = 0.3;
+  static const double darkFieldFill = 0.1;
+}
+
+/// Text field geometry (see `AppFieldBorder` and `AppTheme`).
+abstract final class AppField {
+  static const double borderWidth = 1;
+  static const double focusBorderWidth = 1;
+
+  /// Inner padding: a single-line field is about 60 dp tall, with room for
+  /// the label at its top edge once it floats.
+  static const EdgeInsets padding = EdgeInsets.fromLTRB(16, 10, 16, 10);
+}
+
 abstract final class AppDurations {
   static const fast = Duration(milliseconds: 150);
   static const medium = Duration(milliseconds: 250);
+  static const slow = Duration(milliseconds: 400);
 }
 
 /// Window width classes (Material 3 window size classes). Layouts branch on

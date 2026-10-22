@@ -5,6 +5,7 @@ import 'package:prayosha_erp/core/assets/app_assets.dart';
 import 'package:prayosha_erp/core/l10n/app_language.dart';
 import 'package:prayosha_erp/core/network/api_failure.dart';
 import 'package:prayosha_erp/core/theme/app_colors.dart';
+import 'package:prayosha_erp/core/theme/app_field_border.dart';
 import 'package:prayosha_erp/core/theme/app_theme.dart';
 import 'package:prayosha_erp/core/theme/app_tokens.dart';
 import 'package:prayosha_erp/core/widgets/app_button.dart';
@@ -21,6 +22,42 @@ import '../helpers/pump_app.dart';
 
 void main() {
   final en = AppLocalizationsEn();
+
+  group('text fields', () {
+    test('an optional halo fades in at full thickness', () {
+      const rest = AppFieldBorder(borderRadius: AppRadius.controlAll);
+      const withHalo = AppFieldBorder(
+        borderRadius: AppRadius.controlAll,
+        halo: BorderSide(color: Color(0xFFFFBF00), width: 4),
+      );
+      final halfway = withHalo.lerpFrom(rest, 0.5)! as AppFieldBorder;
+      expect(halfway.halo.width, 4);
+      expect(halfway.halo.color.a, closeTo(0.5, 0.01));
+      expect(rest.isOutline, isFalse, reason: 'labels sit inside the field, not in a gap in the border');
+    });
+
+    testWidgets('label rests inside the empty field and floats on focus, with a primary edge', (tester) async {
+      await pumpLocalized(
+        tester,
+        const Scaffold(
+          body: Center(
+            child: AppTextField(key: ValueKey('field'), label: 'Site name'),
+          ),
+        ),
+      );
+      expect(find.text('Site name'), findsOneWidget);
+      InputDecorator decorator() => tester.widget<InputDecorator>(find.byType(InputDecorator));
+      expect(decorator().decoration.floatingLabelBehavior ?? FloatingLabelBehavior.auto, FloatingLabelBehavior.auto);
+      expect(decorator().isFocused, isFalse);
+
+      await tester.tap(find.byKey(const ValueKey('field')));
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(InputDecorator));
+      final border = Theme.of(context).inputDecorationTheme.focusedBorder! as AppFieldBorder;
+      expect(border.borderSide.color, context.colors.primary);
+      expect(decorator().isFocused, isTrue);
+    });
+  });
 
   group('themes', () {
     test('use the locale font with the other scripts as fallbacks', () {

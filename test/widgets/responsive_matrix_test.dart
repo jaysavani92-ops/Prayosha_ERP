@@ -62,6 +62,16 @@ void main() {
     // Login (signed out).
     final container = await pumpFullApp(tester, authService: auth, uploadsRepository: uploads);
     expect(find.byType(LoginView), findsOneWidget);
+    // Top bar, card and footer stack without overlapping, and the card stays
+    // on screen horizontally and no wider than a form.
+    final topBar = tester.getRect(find.byKey(const ValueKey('login-top-bar')));
+    final card = tester.getRect(find.byKey(const ValueKey('login-card')));
+    final footer = tester.getRect(find.byKey(const ValueKey('login-footer')));
+    expect(topBar.bottom, lessThanOrEqualTo(card.top));
+    expect(card.bottom, lessThanOrEqualTo(footer.top));
+    expect(card.left, greaterThanOrEqualTo(0));
+    expect(card.right, lessThanOrEqualTo(size.width));
+    expect(card.width, lessThanOrEqualTo(AppSpacing.formMaxWidth));
     await tester.enterText(find.byKey(const ValueKey('login-username')), 'ramesh');
     await tester.enterText(find.byKey(const ValueKey('login-password')), 'correct-password');
     await tester.ensureVisible(find.byKey(const ValueKey('login-submit')));

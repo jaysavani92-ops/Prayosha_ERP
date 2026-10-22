@@ -44,6 +44,7 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     required this.info,
     required this.onInfo,
     required this.mutedText,
+    required this.brandNavy,
   });
 
   final Color success;
@@ -56,6 +57,11 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
   /// Secondary text that must still meet 4.5:1 contrast on surfaces.
   final Color mutedText;
 
+  /// Deep brand navy that does not follow the theme: the scrim over brand
+  /// photography (the photo is the same in both themes) and the logo tile
+  /// behind the amber mark (amber needs a dark ground in both themes).
+  final Color brandNavy;
+
   static const light = AppSemanticColors(
     success: AppPalette.green600,
     onSuccess: AppPalette.white,
@@ -64,6 +70,7 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     info: AppPalette.blue700,
     onInfo: AppPalette.white,
     mutedText: AppPalette.neutral600,
+    brandNavy: AppPalette.navyDark,
   );
 
   static const dark = AppSemanticColors(
@@ -74,6 +81,7 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     info: AppPalette.blue300,
     onInfo: AppPalette.neutral950,
     mutedText: AppPalette.neutral400,
+    brandNavy: AppPalette.navyDark,
   );
 
   @override
@@ -85,6 +93,7 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     Color? info,
     Color? onInfo,
     Color? mutedText,
+    Color? brandNavy,
   }) {
     return AppSemanticColors(
       success: success ?? this.success,
@@ -94,6 +103,7 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       info: info ?? this.info,
       onInfo: onInfo ?? this.onInfo,
       mutedText: mutedText ?? this.mutedText,
+      brandNavy: brandNavy ?? this.brandNavy,
     );
   }
 
@@ -108,6 +118,7 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
       info: Color.lerp(info, other.info, t)!,
       onInfo: Color.lerp(onInfo, other.onInfo, t)!,
       mutedText: Color.lerp(mutedText, other.mutedText, t)!,
+      brandNavy: Color.lerp(brandNavy, other.brandNavy, t)!,
     );
   }
 }

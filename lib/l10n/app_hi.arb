@@ -11,12 +11,8 @@
 
   "splashMessage": "आपका कार्यक्षेत्र तैयार हो रहा है…",
 
-  "loginTitle": "फिर से स्वागत है",
-  "loginSubtitle": "अपने साइट कार्यक्षेत्र पर जारी रखने के लिए साइन इन करें।",
   "loginUsernameLabel": "यूज़रनेम",
-  "loginUsernameHint": "यूज़रनेम दर्ज करें",
   "loginPasswordLabel": "पासवर्ड",
-  "loginPasswordHint": "पासवर्ड दर्ज करें",
   "loginShowPassword": "पासवर्ड दिखाएँ",
   "loginHidePassword": "पासवर्ड छिपाएँ",
   "loginSubmit": "सुरक्षित लॉगिन",
@@ -24,6 +20,7 @@
   "loginForgotPassword": "पासवर्ड भूल गए?",
   "loginForgotPasswordTitle": "पासवर्ड भूल गए?",
   "loginForgotPasswordMessage": "साइट सुरक्षा के लिए, पासवर्ड केवल प्रयोशा व्यवस्थापक (एडमिन) द्वारा ही रीसेट किया जाता है। अपनी पहुँच रीसेट करने के लिए एडमिन डेस्क से संपर्क करें।",
+  "loginFooter": "© {year} प्रयोशा ग्रुप. गुजरात, भारत।",
 
   "validationRequired": "यह फ़ील्ड आवश्यक है।",
   "validationUsernameFormat": "3–32 वर्ण उपयोग करें: अक्षर, अंक, डॉट, डैश या अंडरस्कोर।",

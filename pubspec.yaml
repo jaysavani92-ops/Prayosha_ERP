@@ -47,6 +47,11 @@ flutter:
   # Generates lib/l10n/gen/ from the ARB files (see l10n.yaml).
   generate: true
 
+  # Every image is registered in lib/core/assets/app_assets.dart (AppImages);
+  # test/core/app_assets_test.dart fails if a registered path is missing.
+  assets:
+    - assets/images/login_background.jpg
+
   # Bundled fonts (SIL OFL 1.1, licences in assets/fonts/). Every family is
   # registered in lib/core/assets/app_assets.dart; glyph coverage of all ARB
   # strings is verified by test/core/font_coverage_test.dart.

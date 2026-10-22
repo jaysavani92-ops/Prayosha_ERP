@@ -41,7 +41,7 @@ lib/
     router/                 routes (AppRoutes), GoRouter + pure authRedirect()
     shell/app_shell.dart    responsive navigation (bar / rail / extended rail)
   core/
-    assets/                 AppFonts, AppIcons — the only place asset names live
+    assets/                 AppFonts, AppImages, AppIcons — the only place asset names live
     config/                 AppConfig (dart-define values)
     l10n/                   AppLanguage + LanguageController, AppFormatters, error/validation messages
     network/                createDio, AuthInterceptor, SessionBridge, ApiFailure, JSON helpers
@@ -49,7 +49,9 @@ lib/
     theme/                  AppPalette, color schemes, semantic colours, tokens, typography, themes
     validation/             Validators
     widgets/                AppButton, AppTextField, AppCard, dialogs/snackbars, AppTopBar,
-                            loading/empty/error states, LanguageSelector, ResponsiveBuilder
+                            loading/empty/error states, LanguageSelector, ResponsiveBuilder,
+                            OnPhoto (dark-theme chrome over photography),
+                            GlassSurface (liquid-glass card over photography)
   features/
     auth/                   models, services, repositories, viewmodels, views  (example MVVM feature)
     uploads/                recent uploads list (loading / empty / success / error)
@@ -66,9 +68,11 @@ Dependency direction: `features → core`; `app` wires both. Core never imports 
 
 ## Design system
 
-- **Colours.** `AppPalette` holds the raw values and is read only by theme files. Widgets use `context.colors` (the `ColorScheme`) and `context.semanticColors` (success, warning, info, muted text). Light and dark schemes are defined explicitly.
+- **Colours.** `AppPalette` holds the raw values and is read only by theme files. Widgets use `context.colors` (the `ColorScheme`) and `context.semanticColors` (success, warning, info, muted text, and `brandNavy`, which stays the same in both themes for scrims over photos and the logo tile). Light and dark schemes are defined explicitly.
 - **Typography.** `AppTypography.textTheme(locale)` picks the primary font for the UI language (Gujarati → Noto Sans Gujarati, Hindi → Noto Sans Devanagari, English → Noto Sans). The other two families are fallbacks for mixed text, such as Latin digits and language names. Indic scripts get 12% more line height.
+- **Images.** `assets/images/login_background.jpg` is the original frontend's sign-in photo, resized to 1601 × 2844 (512 KB). Chrome drawn over it (language switcher, footer) is wrapped in `OnPhoto`, which applies the dark theme so foregrounds stay light whatever the theme mode. The sign-in card is a `GlassSurface` (blurred, saturated backdrop under a clear tint, with an edge glow and specular rim; values in `AppGlass`). Its tint is low, so secondary text inside it uses the primary text colour at 78 % opacity rather than the muted grey; the contrast test checks this against plain navy, the worst case behind the glass.
 - **Tokens.** `AppSpacing` (4-point scale plus content widths), `AppRadius`, `AppShadows`, `AppDurations`, `AppTextScale`, and `AppBreakpoints`. The breakpoints are Material 3 window size classes: compact < 600, medium < 840, expanded < 1200, large < 1600, extraLarge ≥ 1600, plus height classes for short windows.
+- **Text fields.** Filled, 14 dp corners (`AppRadius.control`, shared with buttons), label inside the top edge, hairline edge at rest; focus turns the edge, label and icons primary, errors the same in the error colour. The shape is `AppFieldBorder` (core/theme), sizes are `AppField` tokens.
 - **Components.** Features compose `core/widgets`; they don't style Material widgets directly. Component styling (buttons, inputs, cards, dialogs, navigation, snackbars) lives in `AppTheme`.
 
 ## Localization
@@ -80,6 +84,7 @@ Dependency direction: `features → core`; `app` wires both. Core never imports 
 
 ## Auth and sessions (against the `backend` branch API)
 
+- The sign-in form asks for a **password**, not the old frontend's 4-digit PIN: the API requires passwords of at least 8 characters (`users.schema.ts` on the `backend` branch), so a PIN-only field would reject every real account. There is no self-service reset; "Forgot password?" explains that an administrator resets it (`PUT /api/v1/users/:id/password`).
 - `POST /api/v1/auth/login` returns a 15-minute access token, which is kept **in memory only**, plus a rotating refresh token.
 - **Web:** the refresh token is an httpOnly, SameSite=Strict cookie that the app never sees. Dio sends it with `withCredentials`.
 - **Android/iOS:** there is no cookie jar, so the token is read from `Set-Cookie`, stored in the Keychain/Keystore (flutter_secure_storage), and sent back as a `Cookie` header.

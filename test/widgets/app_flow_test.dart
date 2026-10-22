@@ -79,6 +79,26 @@ void main() {
       expect(find.text(hi.errorInvalidCredentials), findsOneWidget);
     });
 
+    testWidgets('Enter in the password field signs in', (tester) async {
+      setWindowSize(tester, const Size(1366, 768));
+      await pumpFullApp(tester, authService: auth, uploadsRepository: uploads);
+      await tester.enterText(find.byKey(const ValueKey('login-username')), 'ramesh');
+      await tester.enterText(find.byKey(const ValueKey('login-password')), 'correct-password');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text(en.dashboardGreeting(testUser.displayName)), findsOneWidget);
+    });
+
+    testWidgets('forgot password explains the administrator reset', (tester) async {
+      setWindowSize(tester, const Size(400, 800));
+      await pumpFullApp(tester, authService: auth, uploadsRepository: uploads);
+      await tester.ensureVisible(find.byKey(const ValueKey('login-forgot-password')));
+      await tester.tap(find.byKey(const ValueKey('login-forgot-password')));
+      await tester.pumpAndSettle();
+      expect(find.text(en.loginForgotPasswordTitle), findsOneWidget);
+      expect(find.text(en.loginForgotPasswordMessage), findsOneWidget);
+    });
+
     testWidgets('a deep link survives sign-in (web refresh / shared URL)', (tester) async {
       setWindowSize(tester, const Size(1280, 800));
       final container = await pumpFullApp(tester, authService: auth, uploadsRepository: uploads);
@@ -123,21 +143,39 @@ void main() {
   });
 
   group('language switching', () {
-    testWidgets('applies immediately, persists, and confirms in the new language', (tester) async {
+    testWidgets('sign-in: one tap applies and persists, without covering the form', (tester) async {
       setWindowSize(tester, const Size(400, 800));
       await pumpFullApp(tester, authService: auth, uploadsRepository: uploads);
-      expect(find.text(en.loginTitle), findsOneWidget);
+      expect(find.text(en.appSubtitle), findsOneWidget);
+      final topBar = tester.getSize(find.byKey(const ValueKey('login-top-bar')));
+      final cardTop = tester.getRect(find.byKey(const ValueKey('login-card'))).top;
 
-      await tester.tap(find.byKey(const ValueKey('language-selector')));
-      await tester.pumpAndSettle();
+      // The sign-in screen shows every language; one tap switches.
       await tester.tap(find.byKey(const ValueKey('language-gu')));
       await tester.pumpAndSettle();
 
-      expect(find.text(gu.loginTitle), findsOneWidget);
+      expect(find.text(gu.appSubtitle), findsOneWidget);
       expect(find.text(gu.loginSubmit), findsOneWidget);
-      expect(find.text(gu.languageChanged(AppLanguage.gujarati.nativeName)), findsOneWidget);
+      // The selected segment is the confirmation; a snackbar would cover the card.
+      expect(find.byType(SnackBar), findsNothing);
+      // Neither the top bar nor the card moves when the language changes.
+      expect(tester.getSize(find.byKey(const ValueKey('login-top-bar'))), topBar);
+      expect(tester.getRect(find.byKey(const ValueKey('login-card'))).top, cardTop);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString(PreferenceKeys.languageCode), 'gu');
+    });
+
+    testWidgets('settings: confirms the change in the new language', (tester) async {
+      setWindowSize(tester, const Size(400, 800));
+      final container = await pumpFullApp(tester, authService: auth, uploadsRepository: uploads);
+      await signIn(tester);
+      container.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.byKey(const ValueKey('language-hi')));
+      await tester.tap(find.byKey(const ValueKey('language-hi')));
+      await tester.pumpAndSettle();
+      expect(find.text(hi.languageChanged(AppLanguage.hindi.nativeName)), findsOneWidget);
     });
 
     testWidgets('remembers the language on the next launch', (tester) async {
@@ -148,7 +186,7 @@ void main() {
         uploadsRepository: uploads,
         preferences: {PreferenceKeys.languageCode: 'gu'},
       );
-      expect(find.text(gu.loginTitle), findsOneWidget);
+      expect(find.text(gu.appSubtitle), findsOneWidget);
       expect(Localizations.localeOf(tester.element(find.byType(LoginView))).languageCode, 'gu');
     });
   });

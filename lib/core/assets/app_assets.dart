@@ -33,6 +33,16 @@ abstract final class AppFonts {
   };
 }
 
+/// Bundled images.
+abstract final class AppImages {
+  /// Sign-in background: site engineer in a Prayosha hard hat overlooking a
+  /// tower under construction at sunset. Portrait (1601 × 2844), carried over
+  /// from the original web frontend's `IMAGE.jpg`.
+  static const loginBackground = 'assets/images/login_background.jpg';
+
+  static const all = [loginBackground];
+}
+
 /// Icons by meaning, so a feature never picks an arbitrary glyph inline.
 /// Material Icons ship with Flutter (`uses-material-design: true`).
 abstract final class AppIcons {
@@ -45,6 +55,7 @@ abstract final class AppIcons {
   static const signOut = Icons.logout;
   static const user = Icons.person_outline;
   static const lock = Icons.lock_outline;
+  static const signIn = Icons.login;
   static const visibilityOn = Icons.visibility_outlined;
   static const visibilityOff = Icons.visibility_off_outlined;
   static const error = Icons.error_outline;

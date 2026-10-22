@@ -21,6 +21,16 @@ abstract final class AppTypography {
   /// Indic scripts need extra vertical room for matras and conjuncts.
   static double _heightFactor(Locale locale) => locale.languageCode == 'en' ? 1.0 : 1.12;
 
+  /// Font and line height for text that is always in [script]'s language,
+  /// whatever the UI language: autonyms in the language selector. Built from
+  /// [base] (a style of the [uiLocale] theme) with no colour or size, so it
+  /// inherits those from its surroundings (a button's foreground, say).
+  static TextStyle forScript(TextStyle base, {required Locale uiLocale, required Locale script}) => TextStyle(
+    fontFamily: primaryFamily(script),
+    fontFamilyFallback: fallbackFamilies(script),
+    height: base.height == null ? null : base.height! / _heightFactor(uiLocale) * _heightFactor(script),
+  );
+
   static TextTheme textTheme(Locale locale, Color color) {
     final family = primaryFamily(locale);
     final fallback = fallbackFamilies(locale);

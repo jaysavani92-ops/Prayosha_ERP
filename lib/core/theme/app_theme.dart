@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'app_field_border.dart';
 import 'app_tokens.dart';
 import 'app_typography.dart';
 
@@ -13,12 +14,21 @@ abstract final class AppTheme {
 
   static ThemeData _build(ColorScheme scheme, AppSemanticColors semantic, Locale locale) {
     final textTheme = AppTypography.textTheme(locale, scheme.onSurface);
-    final inputBorder = OutlineInputBorder(
-      borderRadius: AppRadius.mdAll,
-      borderSide: BorderSide(color: scheme.outline),
-    );
+    // Fields: soft fill, hairline edge at rest; on focus the edge, label and
+    // icons turn primary; errors use the error colour instead.
+    BorderSide edge(Color color, [double width = AppField.borderWidth]) => BorderSide(color: color, width: width);
+    final fieldBorder = AppFieldBorder(borderRadius: AppRadius.controlAll, borderSide: edge(scheme.outlineVariant));
+    // InputDecorator draws floating labels at 75 % size, so a 16 dp style
+    // renders as a readable 12 dp label inside the field.
+    final fieldLabel = textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.w500);
+    Color fieldAccent(Set<WidgetState> states, Color rest) {
+      if (states.contains(WidgetState.error)) return scheme.error;
+      if (states.contains(WidgetState.focused)) return scheme.primary;
+      return rest;
+    }
+
     const buttonPadding = EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md);
-    const buttonShape = RoundedRectangleBorder(borderRadius: AppRadius.mdAll);
+    const buttonShape = RoundedRectangleBorder(borderRadius: AppRadius.controlAll);
     const minButtonSize = Size(64, 48); // >= 48dp touch target
 
     return ThemeData(
@@ -52,15 +62,27 @@ abstract final class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surface,
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
-        border: inputBorder,
-        enabledBorder: inputBorder,
-        focusedBorder: inputBorder.copyWith(borderSide: BorderSide(color: scheme.primary, width: 2)),
-        errorBorder: inputBorder.copyWith(borderSide: BorderSide(color: scheme.error)),
-        focusedErrorBorder: inputBorder.copyWith(borderSide: BorderSide(color: scheme.error, width: 2)),
-        labelStyle: textTheme.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
+        fillColor: scheme.surfaceContainerLow,
+        hoverColor: scheme.onSurface.withValues(alpha: 0.04),
+        contentPadding: AppField.padding,
+        // The label is always visible: inside the empty field at rest, then
+        // small at its top edge once focused or filled. No placeholder text
+        // repeating the label, so fields stay quiet.
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        border: fieldBorder,
+        enabledBorder: fieldBorder,
+        disabledBorder: fieldBorder.copyWith(borderSide: edge(scheme.outlineVariant.withValues(alpha: 0.5))),
+        focusedBorder: fieldBorder.copyWith(borderSide: edge(scheme.primary, AppField.focusBorderWidth)),
+        errorBorder: fieldBorder.copyWith(borderSide: edge(scheme.error)),
+        focusedErrorBorder: fieldBorder.copyWith(borderSide: edge(scheme.error, AppField.focusBorderWidth)),
+        labelStyle: fieldLabel.copyWith(color: scheme.onSurfaceVariant),
+        floatingLabelStyle: WidgetStateTextStyle.resolveWith(
+          (states) => fieldLabel.copyWith(color: fieldAccent(states, scheme.onSurfaceVariant)),
+        ),
         hintStyle: textTheme.bodyLarge?.copyWith(color: semantic.mutedText),
+        prefixIconColor: WidgetStateColor.resolveWith((states) => fieldAccent(states, scheme.onSurfaceVariant)),
+        suffixIconColor: WidgetStateColor.resolveWith((states) => fieldAccent(states, scheme.onSurfaceVariant)),
+        errorStyle: textTheme.bodySmall?.copyWith(color: scheme.error),
         errorMaxLines: 3,
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -68,6 +90,16 @@ abstract final class AppTheme {
           minimumSize: minButtonSize,
           padding: buttonPadding,
           shape: buttonShape,
+          textStyle: textTheme.labelLarge,
+          // Brand accent: amber icon on navy (6.6:1). The dark theme's light
+          // navy button is too pale for amber, so it keeps the default.
+          iconColor: scheme.brightness == Brightness.light ? scheme.secondary : null,
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          selectedBackgroundColor: scheme.secondary,
+          selectedForegroundColor: scheme.onSecondary,
           textStyle: textTheme.labelLarge,
         ),
       ),

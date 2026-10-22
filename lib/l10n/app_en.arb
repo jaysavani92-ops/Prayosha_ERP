@@ -13,12 +13,8 @@
 
   "splashMessage": "Preparing your workspace…",
 
-  "loginTitle": "Welcome back",
-  "loginSubtitle": "Sign in to continue to your site workspace.",
   "loginUsernameLabel": "Username",
-  "loginUsernameHint": "Enter username",
   "loginPasswordLabel": "Password",
-  "loginPasswordHint": "Enter password",
   "loginShowPassword": "Show password",
   "loginHidePassword": "Hide password",
   "loginSubmit": "Secure Login",
@@ -26,6 +22,11 @@
   "loginForgotPassword": "Forgot password?",
   "loginForgotPasswordTitle": "Forgot your password?",
   "loginForgotPasswordMessage": "For site security, passwords are reset only by the Prayosha administrator. Contact the admin desk to reset your access.",
+  "loginFooter": "© {year} Prayosha Group. Gujarat, India.",
+  "@loginFooter": {
+    "description": "Footer on the sign-in screen. {year} is the current year in digits.",
+    "placeholders": { "year": { "type": "String", "example": "2026" } }
+  },
 
   "validationRequired": "This field is required.",
   "validationUsernameFormat": "Use 3–32 characters: letters, numbers, dot, dash or underscore.",

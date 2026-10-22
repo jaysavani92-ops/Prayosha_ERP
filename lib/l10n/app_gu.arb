@@ -11,12 +11,8 @@
 
   "splashMessage": "તમારું કાર્યસ્થળ તૈયાર થઈ રહ્યું છે…",
 
-  "loginTitle": "ફરી સ્વાગત છે",
-  "loginSubtitle": "તમારા સાઇટ કાર્યસ્થળ પર આગળ વધવા માટે સાઇન ઇન કરો.",
   "loginUsernameLabel": "વપરાશકર્તા નામ",
-  "loginUsernameHint": "યુઝરનેમ દાખલ કરો",
   "loginPasswordLabel": "પાસવર્ડ",
-  "loginPasswordHint": "પાસવર્ડ દાખલ કરો",
   "loginShowPassword": "પાસવર્ડ બતાવો",
   "loginHidePassword": "પાસવર્ડ છુપાવો",
   "loginSubmit": "સુરક્ષિત લૉગિન",
@@ -24,6 +20,7 @@
   "loginForgotPassword": "પાસવર્ડ ભૂલી ગયા?",
   "loginForgotPasswordTitle": "પાસવર્ડ ભૂલી ગયા?",
   "loginForgotPasswordMessage": "સાઇટ સુરક્ષા માટે, પાસવર્ડ ફક્ત પ્રયોશા એડમિનિસ્ટ્રેટર દ્વારા જ રીસેટ કરવામાં આવે છે. તમારો પ્રવેશ રીસેટ કરવા માટે એડમિન ડેસ્કનો સંપર્ક કરો.",
+  "loginFooter": "© {year} પ્રયોશા ગ્રુપ. ગુજરાત, ભારત.",
 
   "validationRequired": "આ ફીલ્ડ ફરજિયાત છે.",
   "validationUsernameFormat": "3–32 અક્ષરો વાપરો: અક્ષરો, અંકો, ડોટ, ડૅશ અથવા અન્ડરસ્કોર.",
