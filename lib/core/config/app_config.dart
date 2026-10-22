@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 /// Build-time configuration, passed with `--dart-define`. Nothing secret
 /// belongs here: every value is compiled into the client and readable by users.
 ///
@@ -13,4 +16,19 @@ abstract final class AppConfig {
 
   static const connectTimeout = Duration(seconds: 10);
   static const receiveTimeout = Duration(seconds: 20);
+
+  /// Sample-data mode, for working on the app before the API exists. No
+  /// network calls are made: Secure Login opens the app straight away as a
+  /// sample user (no validation, any input), and screens show sample data.
+  ///
+  /// On by default in debug builds (`flutter run`, F5), so the app works
+  /// without a server; off in profile and release builds, which always use
+  /// the real API and real sign-in. Override either way:
+  ///
+  ///   flutter run --dart-define=DEMO_MODE=false   # debug against the API
+  static const demoMode = bool.fromEnvironment('DEMO_MODE', defaultValue: kDebugMode);
 }
+
+/// Whether the app runs on sample data ([AppConfig.demoMode]). A provider so
+/// tests can switch it on.
+final demoModeProvider = Provider<bool>((ref) => AppConfig.demoMode);

@@ -20,6 +20,7 @@
   "loginForgotPassword": "પાસવર્ડ ભૂલી ગયા?",
   "loginForgotPasswordTitle": "પાસવર્ડ ભૂલી ગયા?",
   "loginForgotPasswordMessage": "સાઇટ સુરક્ષા માટે, પાસવર્ડ ફક્ત પ્રયોશા એડમિનિસ્ટ્રેટર દ્વારા જ રીસેટ કરવામાં આવે છે. તમારો પ્રવેશ રીસેટ કરવા માટે એડમિન ડેસ્કનો સંપર્ક કરો.",
+  "loginDemoNotice": "નમૂના ડેટા મોડ: સુરક્ષિત લૉગિન તમારી વિગતો ચકાસ્યા વિના એપ ખોલે છે.",
   "loginFooter": "© {year} પ્રયોશા ગ્રુપ. ગુજરાત, ભારત.",
 
   "validationRequired": "આ ફીલ્ડ ફરજિયાત છે.",
@@ -37,7 +38,39 @@
   "errorNotFound": "માંગેલી વસ્તુ મળી નથી.",
   "errorUnknown": "કંઈક ખોટું થયું. કૃપા કરીને ફરી પ્રયાસ કરો.",
 
-  "navDashboard": "ડેશબોર્ડ",
+  "navOverview": "ઝાંખી",
+  "navTasks": "કાર્ય",
+  "navWorkforce": "શ્રમિક દળ",
+  "navPreDevelopment": "પ્રી-ડેવલપમેન્ટ",
+  "navPreDevelopmentShort": "પ્રી-ડેવ",
+  "navTabPosition": "{label}, ટૅબ {index} માંથી {count}",
+  "navHub": "હબ",
+  "navOpenHub": "હબ ખોલો",
+
+  "hubTitle": "પ્રયોશા હબ",
+  "hubSubtitle": "ઝડપી સેટિંગ્સ અને દરેક સાઇટ સ્યુટ, એક જ જગ્યાએ.",
+  "hubQuickActions": "ઝડપી ક્રિયાઓ",
+  "hubAllSettings": "બધી સેટિંગ્સ",
+  "hubComingSoon": "ટૂંક સમયમાં",
+  "hubComingSoonHint": "આ સ્યુટ ઉપલબ્ધ થતાં અહીંથી ખુલશે.",
+  "hubSuiteComingSoon": "{suite}, ટૂંક સમયમાં",
+
+  "suiteInventory": "ઇન્વેન્ટરી અને સામગ્રી",
+  "suitePurchase": "ખરીદી અને ઇન્ડેન્ટ",
+  "suitePettyCash": "પેટ્ટી કેશ",
+  "suiteDrawings": "ડ્રોઇંગ અને એજન્સી કેસ",
+  "suitePlanChange": "પ્લાન ફેરફાર",
+  "suitePossession": "કબ્જો અને સોંપણી",
+  "suiteSiteMap": "સાઇટ મેપ",
+  "suiteAdmin": "વહીવટ",
+
+  "tasksPendingTitle": "કાર્ય ટ્રેકિંગ ટૂંક સમયમાં આવી રહ્યું છે",
+  "tasksPendingMessage": "કાર્ય સેવા જોડાયા પછી સક્રિય, બાકી અને વિલંબિત સાઇટ કાર્યો અહીં દેખાશે.",
+  "workforcePendingTitle": "શ્રમિક ડાયરી ટૂંક સમયમાં આવી રહી છે",
+  "workforcePendingMessage": "શ્રમિક સેવા જોડાયા પછી દૈનિક મજૂર અને સાધન નોંધો અહીં દેખાશે.",
+  "preDevelopmentPendingTitle": "પ્રી-ડેવલપમેન્ટ ટૂંક સમયમાં આવી રહ્યું છે",
+  "preDevelopmentPendingMessage": "પ્રી-ડેવલપમેન્ટ સેવા જોડાયા પછી લાયઝનિંગ મંજૂરીઓ અને BOQ ટ્રેકિંગ અહીં દેખાશે.",
+
   "navSettings": "સેટિંગ્સ",
   "navMainMenu": "મુખ્ય નેવિગેશન",
 

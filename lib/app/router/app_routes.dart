@@ -2,7 +2,14 @@
 abstract final class AppRoutes {
   static const splash = '/splash';
   static const login = '/login';
+
+  /// Overview. The path stays `/dashboard` so existing links keep working.
   static const dashboard = '/dashboard';
+  static const tasks = '/tasks';
+  static const workforce = '/workforce';
+  static const preDevelopment = '/pre-development';
+
+  /// Not a navigation destination: opened from the Hub.
   static const settings = '/settings';
 
   static const home = dashboard;

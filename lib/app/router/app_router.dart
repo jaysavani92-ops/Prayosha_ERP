@@ -6,8 +6,11 @@ import '../../features/auth/models/user.dart';
 import '../../features/auth/viewmodels/auth_controller.dart';
 import '../../features/auth/views/login_view.dart';
 import '../../features/dashboard/dashboard_view.dart';
+import '../../features/pre_development/pre_development_view.dart';
 import '../../features/settings/settings_view.dart';
 import '../../features/splash/splash_view.dart';
+import '../../features/tasks/tasks_view.dart';
+import '../../features/workforce/workforce_view.dart';
 import '../shell/app_shell.dart';
 import 'app_routes.dart';
 
@@ -56,9 +59,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: AppRoutes.login, builder: (_, _) => const LoginView()),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => AppShell(navigationShell: shell),
+        // Order = AppShell destinations (Overview, Task, Work Force,
+        // Pre Development), then Settings, which is opened from the Hub.
         branches: [
           StatefulShellBranch(
             routes: [GoRoute(path: AppRoutes.dashboard, builder: (_, _) => const DashboardView())],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: AppRoutes.tasks, builder: (_, _) => const TasksView())],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: AppRoutes.workforce, builder: (_, _) => const WorkforceView())],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(path: AppRoutes.preDevelopment, builder: (_, _) => const PreDevelopmentView())],
           ),
           StatefulShellBranch(
             routes: [GoRoute(path: AppRoutes.settings, builder: (_, _) => const SettingsView())],

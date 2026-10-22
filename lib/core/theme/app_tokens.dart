@@ -110,6 +110,37 @@ abstract final class AppField {
   static const EdgeInsets padding = EdgeInsets.fromLTRB(16, 10, 16, 10);
 }
 
+/// App navigation (phone dock, rail / sidebar, Hub button).
+abstract final class AppNav {
+  /// Phone dock: a white rounded bar floating [dockMargin] from the edges.
+  static const double dockMargin = 12;
+  static const double dockRadius = 26;
+
+  /// Hub on the dock: a navy circle rising [hubRise] above the dock's top
+  /// edge, ringed in [hubRingWidth] of dock colour so it reads as one piece.
+  static const double hubDiameter = 52;
+  static const double hubRingWidth = 4;
+  static const double hubRise = 24;
+
+  /// Width kept for the Hub in the middle of the dock.
+  static const double hubSlotWidth = 70;
+
+  /// Round Hub button on the compact rail.
+  static const double railHubDiameter = 48;
+
+  /// Active tab: a short amber underline below the label.
+  static const double underlineWidth = 16;
+  static const double underlineHeight = 3;
+
+  static const double iconSize = 22;
+
+  /// Press feedback (scale while pressed) for the Hub.
+  static const double pressedScale = 0.94;
+
+  /// Sidebar width on large windows.
+  static const double sidebarWidth = 240;
+}
+
 abstract final class AppDurations {
   static const fast = Duration(milliseconds: 150);
   static const medium = Duration(milliseconds: 250);

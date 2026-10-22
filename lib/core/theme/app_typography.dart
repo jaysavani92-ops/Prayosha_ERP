@@ -12,11 +12,17 @@ abstract final class AppTypography {
   static String primaryFamily(Locale locale) => switch (locale.languageCode) {
     'gu' => AppFonts.gujarati,
     'hi' => AppFonts.devanagari,
-    _ => AppFonts.latin,
+    _ => AppFonts.english,
   };
 
-  static List<String> fallbackFamilies(Locale locale) =>
-      AppFonts.all.where((family) => family != primaryFamily(locale)).toList();
+  /// Gujarati and Hindi fall back to Noto Sans first for Latin, so mixed
+  /// text keeps one family's metrics; English falls back to the Indic fonts
+  /// (for language names) after Noto Sans.
+  static List<String> fallbackFamilies(Locale locale) => switch (locale.languageCode) {
+    'gu' => [AppFonts.latin, AppFonts.devanagari, AppFonts.english],
+    'hi' => [AppFonts.latin, AppFonts.gujarati, AppFonts.english],
+    _ => [AppFonts.latin, AppFonts.gujarati, AppFonts.devanagari],
+  };
 
   /// Indic scripts need extra vertical room for matras and conjuncts.
   static double _heightFactor(Locale locale) => locale.languageCode == 'en' ? 1.0 : 1.12;
@@ -29,6 +35,8 @@ abstract final class AppTypography {
     fontFamily: primaryFamily(script),
     fontFamilyFallback: fallbackFamilies(script),
     height: base.height == null ? null : base.height! / _heightFactor(uiLocale) * _heightFactor(script),
+    // Tracking would otherwise follow the UI language's font.
+    letterSpacing: 0,
   );
 
   static TextTheme textTheme(Locale locale, Color color) {
@@ -43,7 +51,9 @@ abstract final class AppTypography {
         fontSize: size,
         fontWeight: weight,
         height: height * h,
-        letterSpacing: letterSpacing,
+        // Material's default tracking suits Noto Sans; Plus Jakarta Sans is
+        // already open, so English text gets a fifth of it.
+        letterSpacing: family == AppFonts.english ? letterSpacing * 0.2 : letterSpacing,
         color: color,
       );
     }

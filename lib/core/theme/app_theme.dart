@@ -136,11 +136,29 @@ abstract final class AppTheme {
         indicatorColor: scheme.secondaryContainer,
         labelTextStyle: WidgetStatePropertyAll(textTheme.labelMedium),
       ),
+      // Navigation: the active destination sits on a pale-navy pill with a
+      // filled navy icon and a bold label (phone dock, rail and sidebar).
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: scheme.surface,
-        indicatorColor: scheme.secondaryContainer,
-        selectedLabelTextStyle: textTheme.labelLarge,
+        indicatorColor: scheme.primaryContainer,
+        indicatorShape: const StadiumBorder(),
+        selectedIconTheme: IconThemeData(color: scheme.onPrimaryContainer, size: AppNav.iconSize),
+        unselectedIconTheme: IconThemeData(color: scheme.onSurfaceVariant, size: AppNav.iconSize),
+        selectedLabelTextStyle: textTheme.labelLarge?.copyWith(color: scheme.primary, fontWeight: FontWeight.w700),
         unselectedLabelTextStyle: textTheme.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
+      ),
+      bottomAppBarTheme: BottomAppBarThemeData(
+        color: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        elevation: 8,
+        shadowColor: scheme.shadow,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surface,
+        surfaceTintColor: Colors.transparent,
+        showDragHandle: true,
+        dragHandleColor: scheme.outlineVariant,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl))),
       ),
       dividerTheme: DividerThemeData(color: scheme.outlineVariant, thickness: 1, space: 1),
       listTileTheme: ListTileThemeData(

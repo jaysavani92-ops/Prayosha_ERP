@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:prayosha_erp/app/router/app_router.dart';
 import 'package:prayosha_erp/core/l10n/app_language.dart';
 import 'package:prayosha_erp/core/network/api_failure.dart';
 import 'package:prayosha_erp/core/storage/preferences.dart';
+import 'package:prayosha_erp/core/theme/app_tokens.dart';
 import 'package:prayosha_erp/features/auth/models/auth_tokens.dart';
 import 'package:prayosha_erp/features/auth/views/login_view.dart';
 import 'package:prayosha_erp/l10n/gen/app_localizations_en.dart';
@@ -198,25 +200,154 @@ void main() {
       await signIn(tester);
     }
 
-    testWidgets('phone: bottom navigation bar', (tester) async {
+    testWidgets('phone: dock with four destinations and the Hub', (tester) async {
       await openDashboard(tester, const Size(400, 800));
-      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byKey(const ValueKey('app-bottom-nav')), findsOneWidget);
       expect(find.byType(NavigationRail), findsNothing);
 
-      await tester.tap(find.text(en.navSettings));
+      // Each destination opens its page.
+      for (final (key, path, title) in [
+        ('tasks', '/tasks', en.navTasks),
+        ('workforce', '/workforce', en.navWorkforce),
+        ('pre-development', '/pre-development', en.navPreDevelopment),
+        ('overview', '/dashboard', en.navOverview),
+      ]) {
+        await tester.tap(find.byKey(ValueKey('nav-$key')));
+        await tester.pumpAndSettle();
+        expect(GoRouter.of(tester.element(find.byType(AppBar))).state.uri.path, path);
+        expect(find.descendant(of: find.byType(AppBar), matching: find.text(title)), findsOneWidget);
+      }
+
+      // The Hub opens as a bottom sheet and reaches Settings.
+      await tester.tap(find.byKey(const ValueKey('hub-button')));
       await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.text(en.hubTitle), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('hub-settings')));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
       expect(GoRouter.of(tester.element(find.text(en.settingsLanguage))).state.uri.path, '/settings');
     });
 
-    testWidgets('tablet: compact navigation rail', (tester) async {
-      await openDashboard(tester, const Size(800, 1000));
-      expect(find.byType(NavigationBar), findsNothing);
-      expect(tester.widget<NavigationRail>(find.byType(NavigationRail)).extended, isFalse);
+    testWidgets(
+      'phone dock: tabs announce their position, the amber underline follows the selected tab, and changes give haptic feedback',
+      (tester) async {
+        final handle = tester.ensureSemantics();
+        final haptics = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments as String);
+          return null;
+        });
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null),
+        );
+        await openDashboard(tester, const Size(400, 800));
+
+        final task = find.bySemanticsLabel(en.navTabPosition(en.navTasks, 2, 4));
+        expect(task, findsOneWidget);
+        expect(tester.getSemantics(task), isSemantics(isSelected: false, isButton: true));
+
+        // The amber underline marks the selected tab and moves with it.
+        double underline(String key) => tester.getSize(find.byKey(ValueKey('nav-underline-$key'))).width;
+        expect(underline('overview'), AppNav.underlineWidth);
+        expect(underline('tasks'), 0);
+
+        await tester.tap(find.byKey(const ValueKey('nav-tasks')));
+        await tester.pumpAndSettle();
+        expect(underline('tasks'), AppNav.underlineWidth);
+        expect(underline('overview'), 0);
+        expect(tester.getSemantics(task), isSemantics(isSelected: true));
+        expect(haptics, ['HapticFeedbackType.selectionClick']);
+
+        // Re-tapping the current tab gives no extra tick.
+        await tester.tap(find.byKey(const ValueKey('nav-tasks')));
+        await tester.pumpAndSettle();
+        expect(haptics, hasLength(1));
+
+        await tester.tap(find.byKey(const ValueKey('hub-button')));
+        await tester.pumpAndSettle();
+        expect(haptics.last, 'HapticFeedbackType.lightImpact');
+        handle.dispose();
+      },
+    );
+
+    testWidgets('phone dock: pages scroll clear of it (bottom inset covers the dock)', (tester) async {
+      await openDashboard(tester, const Size(400, 800));
+      final dockTop = tester.getRect(find.byKey(const ValueKey('app-bottom-nav'))).top;
+      final pageInset = MediaQuery.paddingOf(tester.element(find.text(en.recentUploadsEmptyTitle))).bottom;
+      expect(800 - pageInset, lessThanOrEqualTo(dockTop));
     });
 
-    testWidgets('desktop: extended navigation rail', (tester) async {
-      await openDashboard(tester, const Size(1400, 900));
-      expect(tester.widget<NavigationRail>(find.byType(NavigationRail)).extended, isTrue);
+    testWidgets('destinations that have no API yet say so, without invented data', (tester) async {
+      await openDashboard(tester, const Size(400, 800));
+      await tester.tap(find.byKey(const ValueKey('nav-tasks')));
+      await tester.pumpAndSettle();
+      expect(find.text(en.tasksPendingTitle), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('nav-workforce')));
+      await tester.pumpAndSettle();
+      expect(find.text(en.workforcePendingTitle), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('nav-pre-development')));
+      await tester.pumpAndSettle();
+      expect(find.text(en.preDevelopmentPendingTitle), findsOneWidget);
+    });
+
+    testWidgets('Hub: coming-soon suites are announced as such and are not buttons', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openDashboard(tester, const Size(400, 800));
+      await tester.tap(find.byKey(const ValueKey('hub-button')));
+      await tester.pumpAndSettle();
+      final tile = find.bySemanticsLabel(en.hubSuiteComingSoon(en.suitePettyCash));
+      expect(tile, findsOneWidget);
+      final data = tester.getSemantics(tile).getSemanticsData();
+      expect(data.hasAction(SemanticsAction.tap), isFalse);
+      handle.dispose();
+    });
+
+    testWidgets('Hub: signing out asks for confirmation and returns to login', (tester) async {
+      await openDashboard(tester, const Size(400, 800));
+      await tester.tap(find.byKey(const ValueKey('hub-button')));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.byKey(const ValueKey('hub-sign-out')));
+      await tester.tap(find.byKey(const ValueKey('hub-sign-out')));
+      await tester.pumpAndSettle();
+      expect(find.text(en.signOutConfirmTitle), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, en.signOut));
+      await tester.pumpAndSettle();
+      expect(find.byType(LoginView), findsOneWidget);
+    });
+
+    testWidgets('tablet: compact rail with a round Hub; the Hub opens as a panel', (tester) async {
+      await openDashboard(tester, const Size(800, 1000));
+      expect(find.byKey(const ValueKey('app-bottom-nav')), findsNothing);
+      expect(tester.widget<NavigationRail>(find.byType(NavigationRail)).extended, isFalse);
+
+      await tester.tap(find.byKey(const ValueKey('hub-button')));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+      await tester.tap(find.byTooltip(en.commonClose));
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsNothing);
+    });
+
+    testWidgets('desktop: sidebar; Settings highlights no destination', (tester) async {
+      final container = await (() async {
+        setWindowSize(tester, const Size(1400, 900));
+        final c = await pumpFullApp(tester, authService: auth, uploadsRepository: uploads);
+        await signIn(tester);
+        return c;
+      })();
+      final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+      expect(rail.extended, isTrue);
+      expect(rail.selectedIndex, 0);
+
+      await tester.tap(find.byKey(const ValueKey('nav-workforce')));
+      await tester.pumpAndSettle();
+      expect(tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex, 2);
+
+      container.read(routerProvider).go('/settings');
+      await tester.pumpAndSettle();
+      expect(tester.widget<NavigationRail>(find.byType(NavigationRail)).selectedIndex, isNull);
     });
   });
 

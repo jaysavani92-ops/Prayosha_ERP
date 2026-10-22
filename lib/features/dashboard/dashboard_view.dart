@@ -21,10 +21,10 @@ class DashboardView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider).value;
     return Scaffold(
-      appBar: AppTopBar(title: context.l10n.navDashboard),
+      appBar: AppTopBar(title: context.l10n.navOverview),
       body: ResponsiveBuilder(
         builder: (context, size) => SingleChildScrollView(
-          padding: pagePadding(size),
+          padding: pageScrollPadding(context, size),
           child: ContentWidth(
             child: size.isAtLeast(WindowSize.expanded)
                 ? Row(

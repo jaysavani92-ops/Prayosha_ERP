@@ -22,6 +22,8 @@
   "loginForgotPassword": "Forgot password?",
   "loginForgotPasswordTitle": "Forgot your password?",
   "loginForgotPasswordMessage": "For site security, passwords are reset only by the Prayosha administrator. Contact the admin desk to reset your access.",
+  "loginDemoNotice": "Sample data mode: Secure Login opens the app without checking your details.",
+  "@loginDemoNotice": { "description": "Shown on the sign-in card only in sample-data mode (DEMO_MODE builds)." },
   "loginFooter": "© {year} Prayosha Group. Gujarat, India.",
   "@loginFooter": {
     "description": "Footer on the sign-in screen. {year} is the current year in digits.",
@@ -43,7 +45,53 @@
   "errorNotFound": "The requested item was not found.",
   "errorUnknown": "Something went wrong. Please try again.",
 
-  "navDashboard": "Dashboard",
+  "navOverview": "Overview",
+  "navTasks": "Task",
+  "navWorkforce": "Work Force",
+  "navPreDevelopment": "Pre Development",
+  "navPreDevelopmentShort": "Pre-Dev",
+  "@navPreDevelopmentShort": { "description": "Pre Development, shortened for the phone navigation bar." },
+  "navTabPosition": "{label}, tab {index} of {count}",
+  "@navTabPosition": {
+    "description": "Screen-reader label of a phone navigation tab.",
+    "placeholders": {
+      "label": { "type": "String", "example": "Task" },
+      "index": { "type": "int", "example": "2" },
+      "count": { "type": "int", "example": "4" }
+    }
+  },
+  "navHub": "Hub",
+  "navOpenHub": "Open Hub",
+  "@navOpenHub": { "description": "Accessibility label and tooltip of the floating Hub button." },
+
+  "hubTitle": "Prayosha Hub",
+  "hubSubtitle": "Quick settings, and every site suite in one place.",
+  "hubQuickActions": "Quick actions",
+  "hubAllSettings": "All settings",
+  "hubComingSoon": "Coming soon",
+  "hubComingSoonHint": "These suites open here as they become available.",
+  "hubSuiteComingSoon": "{suite}, coming soon",
+  "@hubSuiteComingSoon": {
+    "description": "Accessibility label of a suite tile that is not available yet.",
+    "placeholders": { "suite": { "type": "String", "example": "Petty cash" } }
+  },
+
+  "suiteInventory": "Inventory & materials",
+  "suitePurchase": "Purchase & indents",
+  "suitePettyCash": "Petty cash",
+  "suiteDrawings": "Drawings & agency cases",
+  "suitePlanChange": "Plan changes",
+  "suitePossession": "Possession & handover",
+  "suiteSiteMap": "Site map",
+  "suiteAdmin": "Administration",
+
+  "tasksPendingTitle": "Task tracking is on the way",
+  "tasksPendingMessage": "Active, pending and delayed site tasks will appear here once the task service is connected.",
+  "workforcePendingTitle": "The workforce diary is on the way",
+  "workforcePendingMessage": "Daily labour and equipment records will appear here once the workforce service is connected.",
+  "preDevelopmentPendingTitle": "Pre-development is on the way",
+  "preDevelopmentPendingMessage": "Liaisoning approvals and BOQ tracking will appear here once the pre-development service is connected.",
+
   "navSettings": "Settings",
   "navMainMenu": "Main navigation",
   "@navMainMenu": { "description": "Accessibility label for the navigation bar/rail." },

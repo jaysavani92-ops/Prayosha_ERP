@@ -65,7 +65,7 @@ void main() {
       expect(gujarati.textTheme.bodyMedium!.fontFamily, AppFonts.gujarati);
       expect(gujarati.textTheme.bodyMedium!.fontFamilyFallback, containsAll([AppFonts.latin, AppFonts.devanagari]));
       expect(AppTheme.dark(const Locale('hi')).textTheme.titleLarge!.fontFamily, AppFonts.devanagari);
-      expect(AppTheme.light(const Locale('en')).textTheme.bodyMedium!.fontFamily, AppFonts.latin);
+      expect(AppTheme.light(const Locale('en')).textTheme.bodyMedium!.fontFamily, AppFonts.english);
     });
 
     test('light and dark expose the semantic colour extension and brand colours', () {

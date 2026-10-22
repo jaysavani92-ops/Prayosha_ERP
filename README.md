@@ -13,7 +13,15 @@ One Flutter codebase for the Prayosha construction management app. It talks to t
 
 ## Run it
 
-The API must be running (backend branch: `npm run dev`, port 3000), and its `CORS_ORIGINS` must include the web origin you use.
+**No API yet?** Debug builds use sample data by default: no network calls, and Secure Login opens the app with one tap (no validation). Just run it:
+
+```bash
+flutter run                            # or F5 in VS Code: "Prayosha (sample data)"
+```
+
+Profile and release builds never use sample data unless built with `--dart-define=DEMO_MODE=true`; never do that for production.
+
+**With the API:** add `--dart-define=DEMO_MODE=false` (VS Code: "Prayosha (local API)"). The API must be running (backend branch: `npm run dev`, port 3000), and its `CORS_ORIGINS` must include the web origin you use.
 
 ```bash
 flutter pub get                       # also generates lib/l10n/gen/
@@ -22,7 +30,7 @@ flutter run -d ios                    # iOS simulator or device
 flutter run -d android --dart-define=API_BASE_URL=http://10.0.2.2:3000   # Android emulator
 ```
 
-`API_BASE_URL` (default `http://localhost:3000`) is the only build-time setting. Pass a production URL with `--dart-define=API_BASE_URL=https://api.example.com`. Nothing secret goes into the app: every `--dart-define` value can be read by anyone who has the binary.
+`API_BASE_URL` (default `http://localhost:3000`) and `DEMO_MODE` (default: on in debug builds, off otherwise) are the build-time settings. Pass a production URL with `--dart-define=API_BASE_URL=https://api.example.com`. Nothing secret goes into the app: every `--dart-define` value can be read by anyone who has the binary.
 
 Use `localhost`, not `127.0.0.1`, for local web development. The API's refresh cookie is `SameSite=Strict`, and browsers treat the two hosts as different sites, so the session would not survive a page refresh.
 

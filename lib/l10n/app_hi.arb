@@ -20,6 +20,7 @@
   "loginForgotPassword": "पासवर्ड भूल गए?",
   "loginForgotPasswordTitle": "पासवर्ड भूल गए?",
   "loginForgotPasswordMessage": "साइट सुरक्षा के लिए, पासवर्ड केवल प्रयोशा व्यवस्थापक (एडमिन) द्वारा ही रीसेट किया जाता है। अपनी पहुँच रीसेट करने के लिए एडमिन डेस्क से संपर्क करें।",
+  "loginDemoNotice": "नमूना डेटा मोड: सुरक्षित लॉगिन आपकी जानकारी जाँचे बिना ऐप खोलता है।",
   "loginFooter": "© {year} प्रयोशा ग्रुप. गुजरात, भारत।",
 
   "validationRequired": "यह फ़ील्ड आवश्यक है।",
@@ -37,7 +38,39 @@
   "errorNotFound": "अनुरोधित वस्तु नहीं मिली।",
   "errorUnknown": "कुछ गलत हो गया। कृपया फिर से प्रयास करें।",
 
-  "navDashboard": "डैशबोर्ड",
+  "navOverview": "अवलोकन",
+  "navTasks": "कार्य",
+  "navWorkforce": "श्रमिक दल",
+  "navPreDevelopment": "प्री-डेवलपमेंट",
+  "navPreDevelopmentShort": "प्री-डेव",
+  "navTabPosition": "{label}, टैब {index} / {count}",
+  "navHub": "हब",
+  "navOpenHub": "हब खोलें",
+
+  "hubTitle": "प्रयोशा हब",
+  "hubSubtitle": "त्वरित सेटिंग्स और हर साइट सुइट, एक ही जगह।",
+  "hubQuickActions": "त्वरित क्रियाएँ",
+  "hubAllSettings": "सभी सेटिंग्स",
+  "hubComingSoon": "जल्द आ रहा है",
+  "hubComingSoonHint": "ये सुइट उपलब्ध होते ही यहीं से खुलेंगे।",
+  "hubSuiteComingSoon": "{suite}, जल्द आ रहा है",
+
+  "suiteInventory": "इन्वेंट्री और सामग्री",
+  "suitePurchase": "खरीद और इंडेंट",
+  "suitePettyCash": "पेटी कैश",
+  "suiteDrawings": "ड्रॉइंग और एजेंसी केस",
+  "suitePlanChange": "प्लान बदलाव",
+  "suitePossession": "कब्ज़ा और सुपुर्दगी",
+  "suiteSiteMap": "साइट मैप",
+  "suiteAdmin": "प्रशासन",
+
+  "tasksPendingTitle": "कार्य ट्रैकिंग जल्द आ रही है",
+  "tasksPendingMessage": "कार्य सेवा जुड़ने के बाद सक्रिय, लंबित और विलंबित साइट कार्य यहाँ दिखेंगे।",
+  "workforcePendingTitle": "श्रमिक डायरी जल्द आ रही है",
+  "workforcePendingMessage": "श्रमिक सेवा जुड़ने के बाद दैनिक श्रमिक और उपकरण रिकॉर्ड यहाँ दिखेंगे।",
+  "preDevelopmentPendingTitle": "प्री-डेवलपमेंट जल्द आ रहा है",
+  "preDevelopmentPendingMessage": "प्री-डेवलपमेंट सेवा जुड़ने के बाद लायज़निंग स्वीकृतियाँ और BOQ ट्रैकिंग यहाँ दिखेंगी।",
+
   "navSettings": "सेटिंग्स",
   "navMainMenu": "मुख्य नेविगेशन",
 

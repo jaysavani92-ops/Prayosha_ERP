@@ -39,7 +39,8 @@ lib/
     app.dart                MaterialApp.router (theme, locale, router)
     bootstrap.dart          SharedPreferences, provider overrides, ProviderScope
     router/                 routes (AppRoutes), GoRouter + pure authRedirect()
-    shell/app_shell.dart    responsive navigation (bar / rail / extended rail)
+    shell/app_shell.dart    responsive navigation (phone dock / rail / sidebar) with the Hub
+    shell/hub_panel.dart    Hub: quick actions + coming-soon suites (sheet on phones, panel elsewhere)
   core/
     assets/                 AppFonts, AppImages, AppIcons — the only place asset names live
     config/                 AppConfig (dart-define values)
@@ -55,7 +56,7 @@ lib/
   features/
     auth/                   models, services, repositories, viewmodels, views  (example MVVM feature)
     uploads/                recent uploads list (loading / empty / success / error)
-    dashboard/  settings/  splash/
+    dashboard/ (Overview)  tasks/  workforce/  pre_development/  settings/  splash/
   l10n/                     app_en.arb, app_gu.arb, app_hi.arb  (gen/ is generated, git-ignored)
 test/
   core/                     font coverage, localization, formatters, network, validators
@@ -69,7 +70,7 @@ Dependency direction: `features → core`; `app` wires both. Core never imports 
 ## Design system
 
 - **Colours.** `AppPalette` holds the raw values and is read only by theme files. Widgets use `context.colors` (the `ColorScheme`) and `context.semanticColors` (success, warning, info, muted text, and `brandNavy`, which stays the same in both themes for scrims over photos and the logo tile). Light and dark schemes are defined explicitly.
-- **Typography.** `AppTypography.textTheme(locale)` picks the primary font for the UI language (Gujarati → Noto Sans Gujarati, Hindi → Noto Sans Devanagari, English → Noto Sans). The other two families are fallbacks for mixed text, such as Latin digits and language names. Indic scripts get 12% more line height.
+- **Typography.** `AppTypography.textTheme(locale)` picks the primary font for the UI language (English → Plus Jakarta Sans, Gujarati → Noto Sans Gujarati, Hindi → Noto Sans Devanagari). Noto Sans is the Latin fallback inside Gujarati/Hindi text, and the Indic families cover language names in English. English gets a fifth of Material's default letter spacing (Jakarta is already open); Indic scripts get 12% more line height. Language names always use their own script's font (`AppTypography.forScript`).
 - **Images.** `assets/images/login_background.jpg` is the original frontend's sign-in photo, resized to 1601 × 2844 (512 KB). Chrome drawn over it (language switcher, footer) is wrapped in `OnPhoto`, which applies the dark theme so foregrounds stay light whatever the theme mode. The sign-in card is a `GlassSurface` (blurred, saturated backdrop under a clear tint, with an edge glow and specular rim; values in `AppGlass`). Its tint is low, so secondary text inside it uses the primary text colour at 78 % opacity rather than the muted grey; the contrast test checks this against plain navy, the worst case behind the glass.
 - **Tokens.** `AppSpacing` (4-point scale plus content widths), `AppRadius`, `AppShadows`, `AppDurations`, `AppTextScale`, and `AppBreakpoints`. The breakpoints are Material 3 window size classes: compact < 600, medium < 840, expanded < 1200, large < 1600, extraLarge ≥ 1600, plus height classes for short windows.
 - **Text fields.** Filled, 14 dp corners (`AppRadius.control`, shared with buttons), label inside the top edge, hairline edge at rest; focus turns the edge, label and icons primary, errors the same in the error colour. The shape is `AppFieldBorder` (core/theme), sizes are `AppField` tokens.
@@ -91,12 +92,17 @@ Dependency direction: `features → core`; `app` wires both. Core never imports 
 - **Startup and browser refresh:** `AuthController.build()` restores the session through `/auth/refresh` and `/auth/me` while the splash screen shows. The router sends signed-out users to `/login?from=<path>` and returns them to that path after sign-in; it only allows relative paths, so it can't become an open redirect.
 - **Expired access token:** `AuthInterceptor` refreshes once on a 401, shares a single in-flight refresh between concurrent requests (the API rotates tokens), and retries. A rejected refresh signs the user out; a transient failure keeps the session.
 
+## Sample-data mode (no API yet)
+
+Debug builds (`flutter run`, F5) run on sample data by default (`AppConfig.demoMode`): `bootstrap.dart` swaps in `DemoAuthService` and `DemoUploadsRepository`, no network calls are made, and `LoginViewModel` skips validation, so Secure Login signs in as a sample user and the router opens Overview in the shell. The sign-in card says so. Profile and release builds use the real API and real sign-in unless built with `--dart-define=DEMO_MODE=true` (never for production); `--dart-define=DEMO_MODE=false` runs a debug build against the API. Tests state the mode explicitly (`demoModeProvider`, `pumpFullApp(demoMode:)`).
+
 ## Responsive and accessible
 
 Every screen must work on every device. The rules and workflow are in the **`responsive-design` skill** (`.claude/skills/responsive-design/SKILL.md`). In short:
 
 - Layouts branch only on window size classes (`WindowSize`, `WindowHeight`), never on platform or device. Inside pages, `ResponsiveBuilder` measures the space actually available, so split screens and foldables work. `responsiveValue()` is mobile-first, and `AdaptiveGrid`, `ContentWidth`, `pagePadding()` and `gutter()` cover common patterns.
-- `AppShell` presents one set of destinations as a `NavigationBar` (compact), a `NavigationRail` (medium, and short landscape windows) or an extended rail (expanded and up). The rail scrolls on short windows and stays clear of landscape notches.
+- `AppShell` presents four destinations (Overview `/dashboard`, Task `/tasks`, Work Force `/workforce`, Pre Development `/pre-development`) and the navy **Hub**: a white floating dock on compact windows (two tabs each side of a navy Hub with an amber icon rising from its centre; the active tab gets a filled navy icon, a bold label and an amber underline). Pages run behind the dock (`extendBody`) and add its height to their scroll insets with `pageScrollPadding`; tab changes give a light haptic tick, a rail with a round navy Hub on medium (and short landscape) windows, and a sidebar with the brand and a full-width Hub button on expanded and up. The rail scrolls on short windows and stays clear of landscape notches. `/settings` is a shell branch without a destination; the Hub opens it.
+- Task, Work Force and Pre Development show an `AppPlaceholderPage`: the backend has no API for them yet (only auth, users, uploads, health). The Hub lists the old web app's other suites as "Coming soon", not tappable; turn each into a link when its feature ships.
 - Text follows the system size, clamped at 200% (WCAG 1.4.4) in `app.dart`.
 - Keyboard: logical focus order (Tab from username to password, then Enter submits), focus groups for the rail and content, autofocus on the first field, and dialogs that focus the safe action. Interactive elements are at least 48 dp. Errors and loading states are live regions, page titles are semantic headers, and decorative icons are excluded from semantics.
 - **Device matrix test** (`test/widgets/responsive_matrix_test.dart`): every screen on 10 sizes (320×568 phone → 2560×1440 monitor, including landscape and foldable) at 1× and 2× text; any overflow fails. New screens must be added to it.

@@ -56,6 +56,15 @@ flutter:
   # registered in lib/core/assets/app_assets.dart; glyph coverage of all ARB
   # strings is verified by test/core/font_coverage_test.dart.
   fonts:
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
     - family: NotoSans
       fonts:
         - asset: assets/fonts/NotoSans-Regular.ttf

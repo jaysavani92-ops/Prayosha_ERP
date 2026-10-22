@@ -82,15 +82,25 @@ void main() {
     final width = AppBreakpoints.of(size.width);
     final height = AppBreakpoints.heightOf(size.height);
     if (width == WindowSize.compact) {
-      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byKey(const ValueKey('app-bottom-nav')), findsOneWidget);
       expect(find.byType(NavigationRail), findsNothing);
     } else {
       final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
       expect(rail.extended, width.isAtLeast(WindowSize.expanded) && height != WindowHeight.compact);
     }
 
-    // Dashboard, then Settings.
+    // Overview, every other destination, the Hub (sheet or panel), Settings.
     expect(find.textContaining('Ramesh Patel'), findsOneWidget);
+    for (final path in ['/tasks', '/workforce', '/pre-development']) {
+      container.read(routerProvider).go(path);
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.byKey(const ValueKey('hub-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hub-panel')), findsOneWidget);
+    await tester.tapAt(const Offset(4, 4)); // dismiss by tapping the scrim
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hub-panel')), findsNothing);
     container.read(routerProvider).go('/settings');
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('sign-out')), findsOneWidget);

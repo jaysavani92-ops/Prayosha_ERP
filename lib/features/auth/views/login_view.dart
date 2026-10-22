@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/assets/app_assets.dart';
+import '../../../core/config/app_config.dart';
 import '../../../core/l10n/app_language.dart';
 import '../../../core/l10n/error_messages.dart';
 import '../../../core/l10n/validation_messages.dart';
@@ -189,6 +190,7 @@ class _LoginForm extends ConsumerWidget {
         children: [
           const _Brand(),
           const SizedBox(height: AppSpacing.xl),
+          if (ref.watch(demoModeProvider)) ...[const _DemoNotice(), const SizedBox(height: AppSpacing.lg)],
           if (state.failure != null || sessionExpired) ...[
             AppInlineError(
               message: state.failure != null ? localizedFailure(l10n, state.failure!) : l10n.errorSessionExpired,
@@ -252,6 +254,42 @@ class _LoginForm extends ConsumerWidget {
             expand: true,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Sample-data mode only: says plainly that sign-in is not checked.
+class _DemoNotice extends StatelessWidget {
+  const _DemoNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Semantics(
+      container: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: AppRadius.mdAll,
+          border: Border.all(color: context.semanticColors.info.withValues(alpha: 0.4)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ExcludeSemantics(child: Icon(AppIcons.info, size: 20, color: context.semanticColors.info)),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  context.l10n.loginDemoNotice,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(color: colors.onSurface),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

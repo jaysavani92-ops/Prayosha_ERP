@@ -57,6 +57,12 @@ class ContentWidth extends StatelessWidget {
 EdgeInsets pagePadding(WindowSize size) =>
     EdgeInsets.all(responsiveValue(size, compact: AppSpacing.lg, medium: AppSpacing.xl, expanded: AppSpacing.xxl));
 
+/// [pagePadding] plus the space taken by bars drawn over the page, such as
+/// the phone's floating navigation dock (the shell extends pages behind it),
+/// so the end of a scrolling page is never hidden underneath.
+EdgeInsets pageScrollPadding(BuildContext context, WindowSize size) =>
+    pagePadding(size) + EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom);
+
 /// Gap between columns/cards for a size class.
 double gutter(WindowSize size) => responsiveValue(size, compact: AppSpacing.lg, expanded: AppSpacing.xl);
 

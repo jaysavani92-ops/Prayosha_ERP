@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/network/api_failure.dart';
 import '../../../core/validation/validators.dart';
 import 'auth_controller.dart';
@@ -37,12 +38,18 @@ class LoginViewModel extends Notifier<LoginState> {
   @override
   LoginState build() => const LoginState();
 
+  /// In sample-data mode ([demoModeProvider]) there is nothing to check
+  /// against, so validation is skipped and any input signs in.
   Future<void> submit({required String username, required String password}) async {
     if (state.isSubmitting) return;
-    final usernameError = Validators.username(username);
-    final passwordError = Validators.required(password);
-    state = LoginState(usernameError: usernameError, passwordError: passwordError);
-    if (usernameError != null || passwordError != null) return;
+    if (!ref.read(demoModeProvider)) {
+      final usernameError = Validators.username(username);
+      final passwordError = Validators.required(password);
+      state = LoginState(usernameError: usernameError, passwordError: passwordError);
+      if (usernameError != null || passwordError != null) return;
+    } else {
+      state = const LoginState();
+    }
 
     state = state.copyWith(isSubmitting: true);
     try {

@@ -19,17 +19,22 @@ import '../theme/app_tokens.dart';
 ///
 /// Light and dark themes both work: the tint is the theme's surface colour.
 class GlassSurface extends StatelessWidget {
-  const GlassSurface({super.key, required this.child, this.borderRadius = AppRadius.xlAll});
+  const GlassSurface({super.key, required this.child, this.borderRadius = AppRadius.xlAll, this.tint});
 
   final Widget child;
   final BorderRadius borderRadius;
+
+  /// Tint opacity (top-left, bottom-right), overriding the theme's
+  /// [AppGlass.lightTint] / [AppGlass.darkTint]: e.g. a denser, brighter
+  /// frost for navigation chrome over a light page.
+  final (double, double)? tint;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = context.colors;
     final light = colors.brightness == Brightness.light;
-    final (tintStart, tintEnd) = light ? AppGlass.lightTint : AppGlass.darkTint;
+    final (tintStart, tintEnd) = tint ?? (light ? AppGlass.lightTint : AppGlass.darkTint);
     final secondary = colors.onSurface.withValues(alpha: AppGlass.secondaryTextOpacity);
     final input = theme.inputDecorationTheme;
 

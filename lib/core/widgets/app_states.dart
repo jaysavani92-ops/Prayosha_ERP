@@ -4,6 +4,7 @@ import '../assets/app_assets.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_tokens.dart';
 import 'app_button.dart';
+import 'app_top_bar.dart';
 
 /// Loading indicator announced to screen readers.
 class AppLoadingIndicator extends StatelessWidget {
@@ -143,6 +144,51 @@ class AppInlineError extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A whole page for a destination whose feature is not available yet: the
+/// usual top bar and an empty state, scrollable so it never overflows on
+/// short windows or at large text sizes.
+class AppPlaceholderPage extends StatelessWidget {
+  const AppPlaceholderPage({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.heading,
+    required this.message,
+  });
+
+  final String title;
+  final IconData icon;
+  final String heading;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppTopBar(title: title),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Clear of any bar drawn over the page (the phone dock), and centred
+          // in the space that remains visible.
+          final inset = MediaQuery.paddingOf(context).bottom;
+          return SingleChildScrollView(
+            padding: EdgeInsets.only(bottom: inset),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: (constraints.maxHeight - inset).clamp(0, double.infinity)),
+              // Centred in the page while it fits; scrolls when it does not.
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: AppSpacing.narrowContentMaxWidth),
+                  child: AppEmptyState(icon: icon, title: heading, message: message),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

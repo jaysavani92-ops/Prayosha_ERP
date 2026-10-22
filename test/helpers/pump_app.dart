@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prayosha_erp/app/app.dart';
 import 'package:prayosha_erp/app/bootstrap.dart';
+import 'package:prayosha_erp/core/config/app_config.dart';
 import 'package:prayosha_erp/core/l10n/app_language.dart';
 import 'package:prayosha_erp/core/storage/preferences.dart';
 import 'package:prayosha_erp/core/storage/session_storage.dart';
@@ -34,12 +35,15 @@ Future<ProviderContainer> pumpFullApp(
   UploadsRepository? uploadsRepository,
   SessionStorage? sessionStorage,
   Map<String, Object> preferences = const {},
+  bool demoMode = false,
 }) async {
   final prefs = await testPreferences(preferences);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        ...appOverrides(prefs),
+        demoModeProvider.overrideWithValue(demoMode),
+        // Tests supply their own fakes, so the app's sample services stay out.
+        ...appOverrides(prefs, demoMode: false),
         authServiceProvider.overrideWithValue(authService),
         sessionStorageProvider.overrideWithValue(sessionStorage ?? InMemorySessionStorage()),
         if (uploadsRepository != null) uploadsRepositoryProvider.overrideWithValue(uploadsRepository),

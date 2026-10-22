@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:prayosha_erp/app/router/app_router.dart';
+import 'package:prayosha_erp/core/config/app_config.dart';
 import 'package:prayosha_erp/core/network/api_failure.dart';
 import 'package:prayosha_erp/core/storage/session_storage.dart';
 import 'package:prayosha_erp/core/validation/validators.dart';
@@ -24,6 +25,7 @@ void main() {
       service = MockAuthService();
       container = ProviderContainer.test(
         overrides: [
+          demoModeProvider.overrideWithValue(false),
           authServiceProvider.overrideWithValue(service),
           sessionStorageProvider.overrideWithValue(InMemorySessionStorage()),
         ],
