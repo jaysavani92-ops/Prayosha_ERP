@@ -29,7 +29,7 @@ abstract final class AppTheme {
 
     const buttonPadding = EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md);
     const buttonShape = RoundedRectangleBorder(borderRadius: AppRadius.controlAll);
-    const minButtonSize = Size(64, 48); // >= 48dp touch target
+    const minButtonSize = Size(64, AppSizes.minTouchTarget); // >= 48dp touch target
 
     return ThemeData(
       useMaterial3: true,
@@ -114,7 +114,7 @@ abstract final class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          minimumSize: const Size(48, 48),
+          minimumSize: const Size.square(AppSizes.minTouchTarget),
           shape: buttonShape,
           textStyle: textTheme.labelLarge,
         ),
@@ -167,6 +167,43 @@ abstract final class AppTheme {
         subtitleTextStyle: textTheme.bodySmall?.copyWith(color: semantic.mutedText),
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(color: scheme.primary),
+      // Menus (filters, pickers, the ⋮ actions): a floating surface with a
+      // hairline border and soft shadow, rounded items, and no tint.
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(scheme.surface),
+          surfaceTintColor: WidgetStatePropertyAll(scheme.surface),
+          elevation: const WidgetStatePropertyAll(AppSpacing.sm),
+          shadowColor: WidgetStatePropertyAll(scheme.shadow.withValues(alpha: 0.35)),
+          padding: const WidgetStatePropertyAll(EdgeInsets.all(AppSpacing.xs + AppSpacing.xxs)),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: AppRadius.lgAll,
+              side: BorderSide(color: scheme.outlineVariant),
+            ),
+          ),
+        ),
+      ),
+      menuButtonTheme: MenuButtonThemeData(
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(0, AppSizes.minTouchTarget)),
+          padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: AppSpacing.md)),
+          shape: const WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: AppRadius.mdAll)),
+          textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
+          overlayColor: WidgetStatePropertyAll(scheme.primary.withValues(alpha: 0.06)),
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: scheme.surface,
+        surfaceTintColor: scheme.surface,
+        elevation: AppSpacing.sm,
+        shadowColor: scheme.shadow.withValues(alpha: 0.35),
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.lgAll,
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
+        textStyle: textTheme.labelLarge,
+      ),
     );
   }
 }

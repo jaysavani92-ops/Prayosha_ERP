@@ -30,6 +30,12 @@ class AppFormatters {
     return format.format(value);
   }
 
+  /// Short form for headline numbers, e.g. "16.2L" / "16.2 લાખ" / "98K".
+  String compact(num value) => (NumberFormat.compact(locale: _tag)..maximumFractionDigits = 1).format(value);
+
+  /// A 0–1 fraction as a whole percentage in the locale's style, e.g. "62%".
+  String percent(double fraction) => NumberFormat.percentPattern(_tag).format(fraction);
+
   /// Indian rupees with locale grouping, e.g. "₹12,34,567.50".
   String currency(num amount) => NumberFormat.currency(locale: _tag, symbol: '₹', decimalDigits: 2).format(amount);
 }

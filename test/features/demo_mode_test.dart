@@ -85,21 +85,13 @@ void main() {
       uploadsRepository: DemoUploadsRepository(),
       demoMode: true,
     );
-    expect(find.text(en.loginDemoNotice), findsOneWidget);
 
     await tester.ensureVisible(find.byKey(const ValueKey('login-submit')));
     await tester.tap(find.byKey(const ValueKey('login-submit')));
     await tester.pumpAndSettle();
     // Lands on Overview inside the shell, with the bottom navigation dock.
-    expect(find.text(en.dashboardGreeting(DemoAuthService.demoUser.displayName)), findsOneWidget);
+    expect(find.text(en.projectsTitle), findsOneWidget);
     expect(find.byKey(const ValueKey('app-bottom-nav')), findsOneWidget);
     expect(find.byKey(const ValueKey('hub-button')), findsOneWidget);
-    expect(find.text('block-c_floor-12_wall-crack.jpg'), findsOneWidget);
-  });
-
-  testWidgets('normal builds show no sample-data notice', (tester) async {
-    setWindowSize(tester, const Size(400, 800));
-    await pumpFullApp(tester, authService: MockAuthService());
-    expect(find.text(en.loginDemoNotice), findsNothing);
   });
 }

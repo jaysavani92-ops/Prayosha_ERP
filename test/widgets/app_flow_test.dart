@@ -54,8 +54,7 @@ void main() {
       expect(find.byType(LoginView), findsOneWidget);
 
       await signIn(tester);
-      expect(find.text(en.dashboardGreeting(testUser.displayName)), findsOneWidget);
-      expect(find.text(en.recentUploadsEmptyTitle), findsOneWidget);
+      expect(find.text(en.projectsTitle), findsOneWidget);
     });
 
     testWidgets('validation and API errors are shown in the current language', (tester) async {
@@ -88,7 +87,7 @@ void main() {
       await tester.enterText(find.byKey(const ValueKey('login-password')), 'correct-password');
       await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pumpAndSettle();
-      expect(find.text(en.dashboardGreeting(testUser.displayName)), findsOneWidget);
+      expect(find.text(en.projectsTitle), findsOneWidget);
     });
 
     testWidgets('forgot password explains the administrator reset', (tester) async {
@@ -123,7 +122,7 @@ void main() {
       final storage = InMemorySessionStorage(token: 'stored');
       await pumpFullApp(tester, authService: auth, uploadsRepository: uploads, sessionStorage: storage);
       expect(find.byType(LoginView), findsNothing);
-      expect(find.text(en.dashboardGreeting(testUser.displayName)), findsOneWidget);
+      expect(find.text(en.projectsTitle), findsOneWidget);
       expect(storage.token, 'rotated');
     });
 
@@ -274,7 +273,7 @@ void main() {
     testWidgets('phone dock: pages scroll clear of it (bottom inset covers the dock)', (tester) async {
       await openDashboard(tester, const Size(400, 800));
       final dockTop = tester.getRect(find.byKey(const ValueKey('app-bottom-nav'))).top;
-      final pageInset = MediaQuery.paddingOf(tester.element(find.text(en.recentUploadsEmptyTitle))).bottom;
+      final pageInset = MediaQuery.paddingOf(tester.element(find.byKey(const ValueKey('project-grid')))).bottom;
       expect(800 - pageInset, lessThanOrEqualTo(dockTop));
     });
 

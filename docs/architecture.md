@@ -50,13 +50,19 @@ lib/
     theme/                  AppPalette, color schemes, semantic colours, tokens, typography, themes
     validation/             Validators
     widgets/                AppButton, AppTextField, AppCard, dialogs/snackbars, AppTopBar,
+                            showAppAdaptivePanel (bottom sheet on phones, dialog elsewhere),
                             loading/empty/error states, LanguageSelector, ResponsiveBuilder,
                             OnPhoto (dark-theme chrome over photography),
                             GlassSurface (liquid-glass card over photography)
   features/
     auth/                   models, services, repositories, viewmodels, views  (example MVVM feature)
     uploads/                recent uploads list (loading / empty / success / error)
-    dashboard/ (Overview)  tasks/  workforce/  pre_development/  settings/  splash/
+    projects/               Project Directory, the home tab (/dashboard): header, KPI cards,
+                            active workspace, search and filter (incl. archive), project cards,
+                            zone inspector, WhatsApp preview, archive and restore.
+                            Runs on SampleProjectsRepository until the projects/zones API
+                            exists; swap projectsRepositoryProvider then.
+    tasks/  workforce/  pre_development/  settings/  splash/
   l10n/                     app_en.arb, app_gu.arb, app_hi.arb  (gen/ is generated, git-ignored)
 test/
   core/                     font coverage, localization, formatters, network, validators
@@ -72,7 +78,7 @@ Dependency direction: `features → core`; `app` wires both. Core never imports 
 - **Colours.** `AppPalette` holds the raw values and is read only by theme files. Widgets use `context.colors` (the `ColorScheme`) and `context.semanticColors` (success, warning, info, muted text, and `brandNavy`, which stays the same in both themes for scrims over photos and the logo tile). Light and dark schemes are defined explicitly.
 - **Typography.** `AppTypography.textTheme(locale)` picks the primary font for the UI language (English → Plus Jakarta Sans, Gujarati → Noto Sans Gujarati, Hindi → Noto Sans Devanagari). Noto Sans is the Latin fallback inside Gujarati/Hindi text, and the Indic families cover language names in English. English gets a fifth of Material's default letter spacing (Jakarta is already open); Indic scripts get 12% more line height. Language names always use their own script's font (`AppTypography.forScript`).
 - **Images.** `assets/images/login_background.jpg` is the original frontend's sign-in photo, resized to 1601 × 2844 (512 KB). Chrome drawn over it (language switcher, footer) is wrapped in `OnPhoto`, which applies the dark theme so foregrounds stay light whatever the theme mode. The sign-in card is a `GlassSurface` (blurred, saturated backdrop under a clear tint, with an edge glow and specular rim; values in `AppGlass`). Its tint is low, so secondary text inside it uses the primary text colour at 78 % opacity rather than the muted grey; the contrast test checks this against plain navy, the worst case behind the glass.
-- **Tokens.** `AppSpacing` (4-point scale plus content widths), `AppRadius`, `AppShadows`, `AppDurations`, `AppTextScale`, and `AppBreakpoints`. The breakpoints are Material 3 window size classes: compact < 600, medium < 840, expanded < 1200, large < 1600, extraLarge ≥ 1600, plus height classes for short windows.
+- **Tokens.** `AppSpacing` (4-point scale plus content widths), `AppSizes` (icons, touch targets, avatars), `AppRadius`, `AppShadows`, `AppDurations`, `AppTextScale`, and `AppBreakpoints`. The breakpoints are Material 3 window size classes: compact < 600, medium < 840, expanded < 1200, large < 1600, extraLarge ≥ 1600, plus height classes for short windows.
 - **Text fields.** Filled, 14 dp corners (`AppRadius.control`, shared with buttons), label inside the top edge, hairline edge at rest; focus turns the edge, label and icons primary, errors the same in the error colour. The shape is `AppFieldBorder` (core/theme), sizes are `AppField` tokens.
 - **Components.** Features compose `core/widgets`; they don't style Material widgets directly. Component styling (buttons, inputs, cards, dialogs, navigation, snackbars) lives in `AppTheme`.
 
@@ -105,7 +111,7 @@ Every screen must work on every device. The rules and workflow are in the **`res
 - Task, Work Force and Pre Development show an `AppPlaceholderPage`: the backend has no API for them yet (only auth, users, uploads, health). The Hub lists the old web app's other suites as "Coming soon", not tappable; turn each into a link when its feature ships.
 - Text follows the system size, clamped at 200% (WCAG 1.4.4) in `app.dart`.
 - Keyboard: logical focus order (Tab from username to password, then Enter submits), focus groups for the rail and content, autofocus on the first field, and dialogs that focus the safe action. Interactive elements are at least 48 dp. Errors and loading states are live regions, page titles are semantic headers, and decorative icons are excluded from semantics.
-- **Device matrix test** (`test/widgets/responsive_matrix_test.dart`): every screen on 10 sizes (320×568 phone → 2560×1440 monitor, including landscape and foldable) at 1× and 2× text; any overflow fails. New screens must be added to it.
+- **Device matrix test** (`test/widgets/responsive_matrix_test.dart`): every screen and dialog on 13 sizes (320×568 phone → 2560×1440 monitor, including landscape, foldable and a short browser window), in English at 1× and 2× text and Gujarati/Hindi at 2×, rendered with the real bundled fonts; any overflow fails. New screens must be added to it.
 
 ## Adding a feature
 

@@ -172,11 +172,6 @@ class _Dock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final label = _DockLabel.styleOf(context, selected: false);
-    // Rounded up: text layout snaps line heights to whole pixels.
-    final labelHeight = (MediaQuery.textScalerOf(context).scale(label.fontSize!) * label.height!).ceilToDouble();
-    final barHeight =
-        _top + AppNav.iconSize + AppSpacing.xs + labelHeight + AppSpacing.xs + AppNav.underlineHeight + AppSpacing.sm;
     final half = destinations.length ~/ 2;
 
     Widget item(int i) => Expanded(
@@ -196,35 +191,31 @@ class _Dock extends StatelessWidget {
       child: SafeArea(
         top: false,
         minimum: const EdgeInsets.fromLTRB(AppNav.dockMargin, 0, AppNav.dockMargin, AppNav.dockMargin),
-        child: SizedBox(
-          height: barHeight + AppNav.hubRise,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: barHeight,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    borderRadius: const BorderRadius.all(Radius.circular(AppNav.dockRadius)),
-                    border: Border.all(color: colors.outlineVariant),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.12),
-                        blurRadius: 28,
-                        offset: const Offset(0, 12),
-                      ),
-                      BoxShadow(
-                        color: colors.shadow.withValues(alpha: 0.06),
-                        blurRadius: 3,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
-                  ),
+        // The bar takes the height of its tallest item, measured with the real
+        // font (Gujarati and Devanagari glyphs are taller than fontSize ×
+        // height suggests); the Hub rises into the space kept above it.
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: AppNav.hubRise),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.surface,
+                  borderRadius: const BorderRadius.all(Radius.circular(AppNav.dockRadius)),
+                  border: Border.all(color: colors.outlineVariant),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.12),
+                      blurRadius: 28,
+                      offset: const Offset(0, 12),
+                    ),
+                    BoxShadow(color: colors.shadow.withValues(alpha: 0.06), blurRadius: 3, offset: const Offset(0, 1)),
+                  ],
+                ),
+                child: IntrinsicHeight(
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       for (var i = 0; i < half; i++) item(i),
                       SizedBox(
@@ -236,16 +227,16 @@ class _Dock extends StatelessWidget {
                   ),
                 ),
               ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: _HubButton(onPressed: onHub, diameter: AppNav.hubDiameter, ringColor: colors.surface),
-                ),
+            ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: _HubButton(onPressed: onHub, diameter: AppNav.hubDiameter, ringColor: colors.surface),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -263,10 +254,12 @@ class _HubSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: ExcludeSemantics(
+    // Excluded as a whole (tap included): screen readers reach the Hub
+    // through the labelled button, not a second, unlabelled target.
+    return ExcludeSemantics(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
         child: Padding(
           padding: EdgeInsets.only(top: top + AppNav.iconSize + AppSpacing.xs),
           child: Align(
@@ -353,7 +346,6 @@ class _DockLabel extends StatelessWidget {
   static TextStyle styleOf(BuildContext context, {required bool selected}) {
     final colors = context.colors;
     return Theme.of(context).textTheme.labelSmall!.copyWith(
-      fontSize: 11,
       letterSpacing: 0,
       color: selected ? colors.primary : colors.onSurfaceVariant,
       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
@@ -413,7 +405,7 @@ class _HubButtonState extends State<_HubButton> {
 
     final Widget content = extended
         ? ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 48),
+            constraints: const BoxConstraints(minHeight: AppSizes.minTouchTarget),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.md),
               child: Row(

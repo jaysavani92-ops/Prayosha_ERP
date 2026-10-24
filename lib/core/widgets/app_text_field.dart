@@ -23,6 +23,7 @@ class AppTextField extends StatefulWidget {
     this.enabled = true,
     this.autofocus = false,
     this.focusNode,
+    this.suffix,
   });
 
   final String label;
@@ -43,6 +44,10 @@ class AppTextField extends StatefulWidget {
   final bool enabled;
   final bool autofocus;
   final FocusNode? focusNode;
+
+  /// Trailing action (e.g. clear search). Ignored for [obscure] fields,
+  /// which show the visibility toggle there.
+  final Widget? suffix;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -79,7 +84,7 @@ class _AppTextFieldState extends State<AppTextField> {
         hintText: widget.hint,
         errorText: widget.errorText,
         prefixIcon: widget.prefixIcon == null ? null : Icon(widget.prefixIcon),
-        suffixIcon: toggle,
+        suffixIcon: toggle ?? widget.suffix,
       ),
     );
   }

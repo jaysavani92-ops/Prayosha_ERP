@@ -108,7 +108,9 @@ class _StateLayout extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ExcludeSemantics(child: Icon(icon, size: 40, color: iconColor)),
+            ExcludeSemantics(
+              child: Icon(icon, size: AppSizes.iconXl, color: iconColor),
+            ),
             const SizedBox(height: AppSpacing.md),
             ...children,
           ],

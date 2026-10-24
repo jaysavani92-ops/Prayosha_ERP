@@ -4,6 +4,7 @@ import '../../core/assets/app_assets.dart';
 import '../../core/l10n/app_language.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_tokens.dart';
+import '../../core/widgets/app_adaptive_panel.dart';
 import '../../core/widgets/language_selector.dart';
 import '../../core/widgets/responsive.dart';
 import '../../core/widgets/theme_mode_selector.dart';
@@ -22,27 +23,9 @@ Future<void> showHub(BuildContext context, {required VoidCallback onOpenSettings
     onSignOut: () => closeThen(panelContext, onSignOut),
   );
 
-  if (!context.windowSize.isAtLeast(WindowSize.medium)) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
-      builder: (sheetContext) => panel(sheetContext, showClose: false),
-    );
-  }
-  return showDialog<void>(
-    context: context,
-    builder: (dialogContext) => Dialog(
-      clipBehavior: Clip.antiAlias,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: AppSpacing.narrowContentMaxWidth,
-          maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.85,
-        ),
-        child: panel(dialogContext, showClose: true),
-      ),
-    ),
+  return showAppAdaptivePanel<void>(
+    context,
+    builder: (panelContext, isSheet) => panel(panelContext, showClose: !isSheet),
   );
 }
 
@@ -229,7 +212,7 @@ class _ActionTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 56),
+          constraints: const BoxConstraints(minHeight: AppSizes.tileMinHeight),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             child: Row(
@@ -239,7 +222,7 @@ class _ActionTile extends StatelessWidget {
                     decoration: BoxDecoration(color: accentBackground, shape: BoxShape.circle),
                     child: Padding(
                       padding: const EdgeInsets.all(AppSpacing.sm),
-                      child: Icon(icon, size: 20, color: accent),
+                      child: Icon(icon, size: AppSizes.iconSm, color: accent),
                     ),
                   ),
                 ),
@@ -284,7 +267,7 @@ class _SuiteTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(suite.icon, size: 20, color: colors.onSurfaceVariant),
+              Icon(suite.icon, size: AppSizes.iconSm, color: colors.onSurfaceVariant),
               const SizedBox(height: AppSpacing.sm),
               Text(
                 name,

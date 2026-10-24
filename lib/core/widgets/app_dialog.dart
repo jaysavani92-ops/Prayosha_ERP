@@ -17,6 +17,8 @@ Future<bool> showAppConfirmDialog(
     builder: (context) {
       final colors = Theme.of(context).colorScheme;
       return AlertDialog(
+        // Long messages at 200 % text in a short window scroll, not overflow.
+        scrollable: true,
         title: Text(title),
         content: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: AppSpacing.formMaxWidth),
@@ -48,6 +50,7 @@ Future<void> showAppInfoDialog(
   return showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
+      scrollable: true,
       title: Text(title),
       content: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: AppSpacing.formMaxWidth),

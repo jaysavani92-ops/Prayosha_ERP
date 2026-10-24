@@ -36,7 +36,7 @@ class AppButton extends StatelessWidget {
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+              const SizedBox.square(dimension: AppSizes.spinner, child: CircularProgressIndicator(strokeWidth: 2)),
               const SizedBox(width: AppSpacing.sm),
               Flexible(child: Text(loadingLabel ?? label, overflow: TextOverflow.ellipsis)),
             ],

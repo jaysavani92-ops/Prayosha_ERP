@@ -59,9 +59,9 @@ abstract final class AppImages {
 /// Material Icons ship with Flutter (`uses-material-design: true`).
 abstract final class AppIcons {
   // Navigation: outlined at rest, filled (rounded) when selected.
-  /// Overview is the app's home screen.
-  static const overview = Icons.home_outlined;
-  static const overviewSelected = Icons.home_rounded;
+  /// The home screen is the Project Directory: a skyline of sites.
+  static const overview = Icons.location_city_outlined;
+  static const overviewSelected = Icons.location_city_rounded;
 
   /// Site tasks are work orders: a clipboard with a tick.
   static const tasks = Icons.assignment_turned_in_outlined;
@@ -106,4 +106,38 @@ abstract final class AppIcons {
   static const check = Icons.check;
   static const help = Icons.help_outline;
   static const info = Icons.info_outline;
+
+  // Project Directory.
+  static const add = Icons.add;
+  static const search = Icons.search;
+  static const filter = Icons.tune;
+
+  // Project filters (each list a project can be in).
+  static const filterActive = Icons.location_city_outlined;
+  static const filterInProgress = Icons.engineering_outlined;
+  static const filterPlanning = Icons.architecture;
+  static const filterOnHold = Icons.pause_circle_outline;
+  static const filterCompleted = Icons.task_alt;
+  static const clear = Icons.close;
+  static const moreActions = Icons.more_vert;
+  static const expand = Icons.expand_more;
+  static const location = Icons.place_outlined;
+  static const area = Icons.square_foot;
+  static const attention = Icons.warning_amber_rounded;
+  static const inspect = Icons.account_tree_outlined;
+
+  /// WhatsApp has no Material glyph (and its logo is a trademark): a chat bubble.
+  static const share = Icons.forum_outlined;
+  static const copy = Icons.copy_outlined;
+  static const archive = Icons.archive_outlined;
+  static const restore = Icons.unarchive_outlined;
+  static const portfolio = Icons.account_balance_wallet_outlined;
+  static const sites = Icons.engineering_outlined;
+  static const workspaceActive = Icons.push_pin_outlined;
+  static const tower = Icons.apartment_outlined;
+  static const floor = Icons.layers_outlined;
+  static const flat = Icons.door_front_door_outlined;
+  static const shop = Icons.storefront_outlined;
+  static const office = Icons.business_center_outlined;
+  static const amenity = Icons.pool_outlined;
 }

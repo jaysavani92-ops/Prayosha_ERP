@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../assets/app_assets.dart';
 import '../l10n/app_language.dart';
+import '../theme/app_tokens.dart';
 import '../theme/app_typography.dart';
 import 'app_dialog.dart';
 
@@ -53,7 +54,9 @@ class LanguageSelector extends ConsumerWidget {
           for (final language in AppLanguage.values)
             MenuItemButton(
               key: ValueKey('language-${language.code}'),
-              leadingIcon: language == current ? const Icon(AppIcons.check) : const SizedBox.square(dimension: 24),
+              leadingIcon: language == current
+                  ? const Icon(AppIcons.check)
+                  : const SizedBox.square(dimension: AppSizes.iconMd),
               onPressed: () => _select(context, ref, language),
               child: Text(language.nativeName, locale: language.locale),
             ),

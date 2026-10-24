@@ -36,16 +36,18 @@ Height: `WindowHeight.compact` < 480 (phone landscape, split screen) gets no tal
 7. **Safe areas and insets.** Pages without an `AppBar` wrap their body in `SafeArea`. The shell keeps the rail and content clear of landscape notches. Forms sit in scroll views so the keyboard (`viewInsets`) never covers the focused field.
 8. **Touch, mouse, keyboard.** Interactive targets are at least 48×48 dp (the theme already sets button minimums). Every action works by keyboard, with a logical Tab order (`FocusTraversalGroup`, `textInputAction`) and visible focus. Don't rely on hover alone: anything shown on hover must also be reachable by tap and focus.
 9. **Navigation adapts, features don't.** One route and one ViewModel per screen. Responsive differences live only in views (layout); business logic, validation and routes are shared by every size class.
-10. **Dialogs and sheets.** Cap their width (`AppSpacing.formMaxWidth`). On `compact`, prefer full-width bottom sheets or pages for complex forms; on larger classes, centred dialogs.
+10. **Dialogs and sheets.** Use `showAppAdaptivePanel` (`lib/core/widgets/app_adaptive_panel.dart`): a full-width bottom sheet on `compact`, a centred dialog capped at `maxWidth` elsewhere, both on the root navigator so the phone dock never covers them. Panel content scrolls, and forms pad for `MediaQuery.viewInsetsOf` (keyboard). Simple confirmations use `showAppConfirmDialog`. Tables: on `compact`, render rows as stacked cards/list items instead of a sideways-scrolling table.
 11. **Foldables and split screen.** Your window may be half a screen. That's why rule 1 measures constraints. For two-pane layouts on `expanded`+, put a pane boundary over a hinge when `MediaQuery.displayFeaturesOf(context)` reports one, and never place interactive content under it.
-12. **Tokens only.** Spacing comes from `AppSpacing` / `pagePadding(size)` / `gutter(size)`, and widths from `AppSpacing.*MaxWidth`. No literal pixel values in feature views.
+12. **Tokens only.** Spacing comes from `AppSpacing` / `pagePadding(size)` / `gutter(size)`, widths from `AppSpacing.*MaxWidth`, and fixed component sizes (icons, avatars, spinners, touch targets, tile heights) from `AppSizes`. No literal pixel values in feature views or shared widgets.
+13. **Cap width by page type.** Text and forms: `ContentWidth(maxWidth: AppSpacing.narrowContentMaxWidth)` or `formMaxWidth`. Multi-column pages (dashboards, grids): `ContentWidth(maxWidth: AppSpacing.contentMaxWidthFor(size))`, which widens on `large`/`extraLarge` so big monitors aren't mostly empty margin.
+14. **Never compute a height from `fontSize × height`.** Real Gujarati/Devanagari glyphs are taller than the style says. Let bars and rows size to their content (`IntrinsicHeight`, `mainAxisSize: min`) instead of measuring text by hand.
 
 ## Workflow
 1. Sketch the screen for `compact` first (single column), then decide what changes at `medium` and at `expanded`+ (more columns, side-by-side panes, a wider grid). Most screens need only 1–2 variations.
 2. Build with `ResponsiveBuilder` + `responsiveValue` / `AdaptiveGrid` / `ContentWidth` + tokens.
 3. Run it at a few sizes: `flutter run -d chrome` and resize the window across 600 / 840 / 1200 / 1600. On a phone, check portrait, landscape and the largest system text size.
 4. **Add the screen to the device matrix:** visit it in `visitAllScreens` in `test/widgets/responsive_matrix_test.dart`, with realistic long content (long names, many items).
-5. `flutter test` must pass. The matrix runs 10 device sizes (320×568 → 2560×1440, including landscape and foldable) at 1× and 2× text; any overflow fails the test.
+5. `flutter test` must pass. The matrix runs 13 window sizes (320×568 → 2560×1440, including landscape, foldable and a short 1280×600 browser) in English at 1× and 2× text and in Gujarati and Hindi at 2×, with the app's **real fonts** loaded (`test/helpers/app_fonts.dart`), and opens the dialogs; any overflow, or a dialog that doesn't fit the window, fails the test.
 6. If the screen adds a new shell destination, check that the rail still fits a 393 px-tall landscape window (it scrolls via `_ScrollableRail`).
 
 ## Validation checklist

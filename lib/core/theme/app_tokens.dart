@@ -14,6 +14,19 @@ abstract final class AppSpacing {
   /// Maximum width for readable content columns on wide screens.
   static const double contentMaxWidth = 960;
 
+  /// Maximum width for multi-column pages (dashboards, grids) on large and
+  /// extra-large windows, where [contentMaxWidth] would leave most of the
+  /// screen empty. See [contentMaxWidthFor].
+  static const double wideContentMaxWidth = 1440;
+
+  /// Content cap for a multi-column page: [contentMaxWidth] up to `expanded`,
+  /// a little wider on `large`, and [wideContentMaxWidth] on `extraLarge`.
+  static double contentMaxWidthFor(WindowSize size) => switch (size) {
+    WindowSize.compact || WindowSize.medium || WindowSize.expanded => contentMaxWidth,
+    WindowSize.large => 1200,
+    WindowSize.extraLarge => wideContentMaxWidth,
+  };
+
   /// Maximum width for settings-style single-column pages.
   static const double narrowContentMaxWidth = 640;
 
@@ -41,9 +54,54 @@ abstract final class AppRadius {
   static const BorderRadius pillAll = BorderRadius.all(Radius.circular(pill));
 }
 
+/// Fixed component sizes: icons, avatars and touch targets are the only
+/// things that may have a fixed size (content sizes come from constraints).
+abstract final class AppSizes {
+  /// Icons inside pills and inline labels.
+  static const double iconXs = 16;
+
+  /// Icons inside dense rows and tiles.
+  static const double iconSm = 20;
+
+  /// Default Material icon size.
+  static const double iconMd = 24;
+
+  /// Brand mark on the sign-in card.
+  static const double iconLg = 32;
+
+  /// Illustration icon of empty and error states.
+  static const double iconXl = 40;
+
+  /// Inline progress spinner inside a button.
+  static const double spinner = 18;
+
+  /// Smallest interactive target (WCAG 2.5.8, Material).
+  static const double minTouchTarget = 48;
+
+  /// Minimum height of a tappable list tile with an icon.
+  static const double tileMinHeight = 56;
+
+  static const double avatarRadius = 24;
+
+  /// Progress bar inside a table cell (cells have no width to fill).
+  static const double tableBarWidth = 96;
+}
+
 abstract final class AppShadows {
   static const List<BoxShadow> sm = [BoxShadow(color: Color(0x14000000), blurRadius: 4, offset: Offset(0, 1))];
   static const List<BoxShadow> md = [BoxShadow(color: Color(0x1A000000), blurRadius: 12, offset: Offset(0, 4))];
+
+  /// Resting cards: a tight contact shadow plus a soft ambient one.
+  static const List<BoxShadow> card = [
+    BoxShadow(color: Color(0x0A0F172A), blurRadius: 2, offset: Offset(0, 1)),
+    BoxShadow(color: Color(0x0D0F172A), blurRadius: 16, offset: Offset(0, 6)),
+  ];
+
+  /// Hovered cards: lifted a little further from the page.
+  static const List<BoxShadow> cardHover = [
+    BoxShadow(color: Color(0x0F0F172A), blurRadius: 4, offset: Offset(0, 2)),
+    BoxShadow(color: Color(0x1A0F172A), blurRadius: 28, offset: Offset(0, 14)),
+  ];
 }
 
 /// Liquid glass (surfaces floating over photography, see `GlassSurface`).
