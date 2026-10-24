@@ -16,7 +16,7 @@ import 'zone_inspector.dart';
 
 /// A project in the card grid. A dark navy panel carries its elevation
 /// drawing, the site code, delayed tasks, status and the ⋮ menu; under it
-/// come the building type, name and place, budget (or area) and handover,
+/// come the building type, name and place, budget and handover,
 /// and progress. The active workspace project is outlined in amber. Tapping
 /// opens the zone inspector.
 class ProjectCard extends ConsumerWidget {
@@ -31,7 +31,6 @@ class ProjectCard extends ConsumerWidget {
     final colors = context.colors;
     final muted = context.semanticColors.mutedText;
     final formatters = ref.watch(appFormattersProvider);
-    final financials = ref.watch(projectPermissionsProvider).canSeeFinancials;
     final activeWorkspace = ref.watch(activeProjectProvider)?.id == project.id;
 
     return AppSurface(
@@ -100,9 +99,7 @@ class ProjectCard extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: financials
-                                ? _Fact(label: l10n.projectBudget, value: formatters.crores(l10n, project.budget))
-                                : _Fact(label: l10n.projectArea, value: formatters.area(l10n, project.areaSqFt)),
+                            child: _Fact(label: l10n.projectBudget, value: formatters.crores(l10n, project.budget)),
                           ),
                           const SizedBox(width: AppSpacing.md),
                           Expanded(

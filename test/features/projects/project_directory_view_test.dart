@@ -108,16 +108,14 @@ void main() {
     expect(heights[2], heights[3]);
   });
 
-  testWidgets('site engineers see no budgets and cannot create or archive', (tester) async {
+  testWidgets('site engineers see budgets but cannot create or archive', (tester) async {
     await openDirectory(tester, role: UserRole.siteEngineer);
     expect(find.byKey(const ValueKey('projects-create')), findsNothing);
-    // The KPI shows "Restricted"; its tooltip says who can see it.
+    // Every role sees the portfolio value and budgets.
     expect(
-      find.descendant(of: find.byKey(const ValueKey('kpi-strip')), matching: find.text(en.projectRestricted)),
+      find.descendant(of: find.byKey(const ValueKey('kpi-strip')), matching: find.text('₹399.05 Cr')),
       findsOneWidget,
     );
-    expect(find.text(en.financialsRestricted), findsOneWidget);
-    expect(find.textContaining('₹'), findsNothing);
     await tapKey(tester, 'project-actions-prj-014');
     expect(find.byKey(const ValueKey('project-action-share')), findsOneWidget);
     expect(find.byKey(const ValueKey('project-action-archive')), findsNothing);

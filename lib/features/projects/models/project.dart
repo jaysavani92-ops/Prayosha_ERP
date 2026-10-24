@@ -191,23 +191,16 @@ class ProjectDirectory {
 /// the server will enforce the same rules once the projects API exists.
 @immutable
 class ProjectPermissions {
-  const ProjectPermissions({required this.canManage, required this.canSeeFinancials, required this.canShareProgress});
+  const ProjectPermissions({required this.canManage, required this.canShareProgress});
 
   factory ProjectPermissions.of(UserRole? role) {
     const managers = {UserRole.owner, UserRole.generalManager, UserRole.constructionHead, UserRole.projectManager};
     final manager = managers.contains(role);
-    return ProjectPermissions(
-      canManage: manager,
-      canSeeFinancials: manager || role == UserRole.accountant,
-      canShareProgress: manager || role == UserRole.siteEngineer,
-    );
+    return ProjectPermissions(canManage: manager, canShareProgress: manager || role == UserRole.siteEngineer);
   }
 
   /// Create and archive projects.
   final bool canManage;
-
-  /// Budgets and portfolio value.
-  final bool canSeeFinancials;
 
   /// Send progress updates to the client WhatsApp group.
   final bool canShareProgress;

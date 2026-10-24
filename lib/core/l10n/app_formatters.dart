@@ -25,13 +25,12 @@ class AppFormatters {
   /// Date with the locale's time format.
   String dateTime(DateTime value) => DateFormat.yMMMd(_tag).add_jm().format(value.toLocal());
 
-  String number(num value, {int maxDecimals = 2}) {
-    final format = NumberFormat.decimalPattern(_tag)..maximumFractionDigits = maxDecimals;
+  String number(num value, {int maxDecimals = 2, int minDecimals = 0}) {
+    final format = NumberFormat.decimalPattern(_tag)
+      ..maximumFractionDigits = maxDecimals
+      ..minimumFractionDigits = minDecimals;
     return format.format(value);
   }
-
-  /// Short form for headline numbers, e.g. "16.2L" / "16.2 લાખ" / "98K".
-  String compact(num value) => (NumberFormat.compact(locale: _tag)..maximumFractionDigits = 1).format(value);
 
   /// A 0–1 fraction as a whole percentage in the locale's style, e.g. "62%".
   String percent(double fraction) => NumberFormat.percentPattern(_tag).format(fraction);

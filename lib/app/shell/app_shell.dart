@@ -172,6 +172,7 @@ class _Dock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
+    final background = Theme.of(context).scaffoldBackgroundColor;
     final half = destinations.length ~/ 2;
 
     Widget item(int i) => Expanded(
@@ -188,56 +189,87 @@ class _Dock extends StatelessWidget {
       label: context.l10n.navMainMenu,
       container: true,
       explicitChildNodes: true,
-      child: SafeArea(
-        top: false,
-        minimum: const EdgeInsets.fromLTRB(AppNav.dockMargin, 0, AppNav.dockMargin, AppNav.dockMargin),
-        // The bar takes the height of its tallest item, measured with the real
-        // font (Gujarati and Devanagari glyphs are taller than fontSize ×
-        // height suggests); the Hub rises into the space kept above it.
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: AppNav.hubRise),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: colors.surface,
-                  borderRadius: const BorderRadius.all(Radius.circular(AppNav.dockRadius)),
-                  border: Border.all(color: colors.outlineVariant),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.primary.withValues(alpha: 0.12),
-                      blurRadius: 28,
-                      offset: const Offset(0, 12),
-                    ),
-                    BoxShadow(color: colors.shadow.withValues(alpha: 0.06), blurRadius: 3, offset: const Offset(0, 1)),
-                  ],
+      child: Stack(
+        children: [
+          // Pages scroll behind the dock, but nothing shows below or beside
+          // the bar: from its top edge to the bottom of the screen (home
+          // indicator included) the page background covers them. Above it,
+          // beside the risen Hub, content fades out instead of being cut.
+          Positioned.fill(
+            top: AppNav.hubRise,
+            child: ColoredBox(color: background),
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: AppNav.hubRise,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [background.withValues(alpha: 0), background],
                 ),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < half; i++) item(i),
-                      SizedBox(
-                        width: AppNav.hubSlotWidth,
-                        child: _HubSlot(onTap: onHub, top: _top),
+              ),
+            ),
+          ),
+          SafeArea(
+            top: false,
+            minimum: const EdgeInsets.fromLTRB(AppNav.dockMargin, 0, AppNav.dockMargin, AppNav.dockMargin),
+            // The bar takes the height of its tallest item, measured with the real
+            // font (Gujarati and Devanagari glyphs are taller than fontSize ×
+            // height suggests); the Hub rises into the space kept above it.
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: AppNav.hubRise),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      borderRadius: const BorderRadius.all(Radius.circular(AppNav.dockRadius)),
+                      border: Border.all(color: colors.outlineVariant),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colors.primary.withValues(alpha: 0.12),
+                          blurRadius: 28,
+                          offset: const Offset(0, 12),
+                        ),
+                        BoxShadow(
+                          color: colors.shadow.withValues(alpha: 0.06),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < half; i++) item(i),
+                          SizedBox(
+                            width: AppNav.hubSlotWidth,
+                            child: _HubSlot(onTap: onHub, top: _top),
+                          ),
+                          for (var i = half; i < destinations.length; i++) item(i),
+                        ],
                       ),
-                      for (var i = half; i < destinations.length; i++) item(i),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: _HubButton(onPressed: onHub, diameter: AppNav.hubDiameter, ringColor: colors.surface),
+                  ),
+                ),
+              ],
             ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _HubButton(onPressed: onHub, diameter: AppNav.hubDiameter, ringColor: colors.surface),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

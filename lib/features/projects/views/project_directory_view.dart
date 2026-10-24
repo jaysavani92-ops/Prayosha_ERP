@@ -46,12 +46,7 @@ class ProjectDirectoryView extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     DirectoryHeader(size: size, directory: directory.value),
-                    if (all != null) ...[
-                      section,
-                      KpiCards(size: size, projects: all),
-                      section,
-                      WorkspaceSection(projects: all),
-                    ],
+                    if (all != null) ...[section, KpiCards(projects: all), section, WorkspaceSection(projects: all)],
                     section,
                     const DirectoryToolbar(),
                     section,

@@ -148,24 +148,22 @@ class _Pill extends StatelessWidget {
   }
 }
 
-/// Total portfolio value, active footprint, sites in progress and alerts,
+/// Total portfolio value, active footprint, sites in progress and alerts
+/// (wording and number format as in the web app),
 /// each on its own accent card: 2 × 2 on phones, one row of four on wide
 /// windows.
 class KpiCards extends ConsumerWidget {
-  const KpiCards({super.key, required this.size, required this.projects});
+  const KpiCards({super.key, required this.projects});
 
-  final WindowSize size;
   final List<Project> projects;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final formatters = ref.watch(appFormattersProvider);
-    final financials = ref.watch(projectPermissionsProvider).canSeeFinancials;
     final summary = PortfolioSummary.of(projects);
     final semantic = context.semanticColors;
     final alerts = summary.delayedTasks;
-    final compact = !size.isAtLeast(WindowSize.medium);
 
     return _EqualHeightGrid(
       key: const ValueKey('kpi-strip'),
@@ -175,16 +173,14 @@ class KpiCards extends ConsumerWidget {
           accent: semantic.success,
           icon: AppIcons.portfolio,
           label: l10n.kpiPortfolioValue,
-          value: financials ? formatters.crores(l10n, summary.portfolioValue) : l10n.projectRestricted,
-          detail: financials ? l10n.kpiPortfolioValueHint : l10n.financialsRestricted,
+          value: formatters.crores(l10n, summary.portfolioValue, fixedDecimals: true),
+          detail: l10n.kpiPortfolioValueHint,
         ),
         _KpiCard(
           accent: semantic.info,
           icon: AppIcons.area,
           label: l10n.kpiActiveFootprint,
-          value: compact
-              ? formatters.compactArea(l10n, summary.activeAreaSqFt)
-              : formatters.area(l10n, summary.activeAreaSqFt),
+          value: formatters.area(l10n, summary.activeAreaSqFt),
           detail: l10n.kpiActiveFootprintHint,
         ),
         _KpiCard(

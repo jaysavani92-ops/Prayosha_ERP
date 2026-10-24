@@ -83,11 +83,12 @@ class _DirectoryToolbarState extends ConsumerState<DirectoryToolbar> {
       ),
     );
     final projects = ref.watch(projectDirectoryViewModelProvider).value?.projects ?? const [];
-    Widget filter({required bool atEnd}) => _FilterButton(
+    Widget filter({required bool atEnd, double? barWidth}) => _FilterButton(
       value: query.filter,
       counts: {for (final f in ProjectFilter.values) f: applyProjectQuery(projects, ProjectQuery(filter: f)).length},
       onChanged: controller.setFilter,
       atEnd: atEnd,
+      barWidth: barWidth,
     );
 
     return AppSurface(
@@ -113,8 +114,9 @@ class _DirectoryToolbarState extends ConsumerState<DirectoryToolbar> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               search,
-              Divider(height: 1, color: colors.outlineVariant),
-              Align(alignment: AlignmentDirectional.centerStart, child: filter(atEnd: false)),
+              // Indented to the text edge, so both rows read as one group.
+              Divider(height: 1, indent: AppSizes.minTouchTarget, color: colors.outlineVariant),
+              filter(atEnd: false, barWidth: constraints.maxWidth),
             ],
           );
         },
@@ -128,7 +130,13 @@ class _DirectoryToolbarState extends ConsumerState<DirectoryToolbar> {
 /// chosen one is highlighted and ticked, and the archive sits apart below a
 /// divider.
 class _FilterButton extends StatelessWidget {
-  const _FilterButton({required this.value, required this.counts, required this.onChanged, required this.atEnd});
+  const _FilterButton({
+    required this.value,
+    required this.counts,
+    required this.onChanged,
+    required this.atEnd,
+    this.barWidth,
+  });
 
   final ProjectFilter value;
 
@@ -136,12 +144,21 @@ class _FilterButton extends StatelessWidget {
   final Map<ProjectFilter, int> counts;
   final ValueChanged<ProjectFilter> onChanged;
 
-  /// The button sits at the end of the bar (wide windows), so the menu lines
-  /// up with its end edge; otherwise with its start edge.
+  /// Wide windows: a compact button at the end of the bar, its menu lined
+  /// up with its end edge. Otherwise a full-width row under the search
+  /// (icon in the same 48 dp column as the search icon, label on the same
+  /// edge as the search text, count and chevron at the end), its menu lined
+  /// up with its start edge.
   final bool atEnd;
 
-  /// Menu width, so labels and counts line up whatever is chosen.
-  static const _menuWidth = 280.0;
+  /// Menu width, so labels and counts line up whatever is chosen; under a
+  /// full-width row the menu takes the bar's width instead.
+  static const _compactMenuWidth = 280.0;
+
+  /// Width of the bar, when the button is the full-width row.
+  final double? barWidth;
+
+  double get _menuWidth => atEnd ? _compactMenuWidth : (barWidth ?? _compactMenuWidth);
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +174,8 @@ class _FilterButton extends StatelessWidget {
         key: ValueKey('option-$option'),
         style: MenuItemButton.styleFrom(
           backgroundColor: selected ? colors.primaryContainer.withValues(alpha: 0.6) : null,
+          // Items set the menu's width (inside its padding).
+          minimumSize: Size(_menuWidth - 2 * (AppSpacing.xs + AppSpacing.xxs), AppSizes.minTouchTarget),
         ),
         leadingIcon: DecoratedBox(
           decoration: BoxDecoration(color: tint.withValues(alpha: 0.12), borderRadius: AppRadius.smAll),
@@ -168,20 +187,7 @@ class _FilterButton extends StatelessWidget {
         trailingIcon: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (count != null)
-              DecoratedBox(
-                decoration: BoxDecoration(color: colors.surfaceContainerHighest, borderRadius: AppRadius.pillAll),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
-                  child: Text(
-                    '$count',
-                    style: text.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-              ),
+            if (count != null) _CountPill(count: count),
             const SizedBox(width: AppSpacing.sm),
             // Space kept for the tick, so counts align on every row.
             SizedBox.square(
@@ -202,8 +208,8 @@ class _FilterButton extends StatelessWidget {
       // Opens under the button, lined up with the edge it sits on.
       style: MenuStyle(
         alignment: atEnd ? AlignmentDirectional.bottomEnd : AlignmentDirectional.bottomStart,
-        minimumSize: const WidgetStatePropertyAll(Size(_menuWidth, 0)),
-        maximumSize: const WidgetStatePropertyAll(Size(_menuWidth, double.infinity)),
+        minimumSize: WidgetStatePropertyAll(Size(_menuWidth, 0)),
+        maximumSize: WidgetStatePropertyAll(Size(_menuWidth, double.infinity)),
       ),
       alignmentOffset: Offset(atEnd ? -_menuWidth : 0, AppSpacing.xs),
       menuChildren: [
@@ -228,26 +234,76 @@ class _FilterButton extends StatelessWidget {
           onTap: () => menu.isOpen ? menu.close() : menu.open(),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: AppSizes.minTouchTarget),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(AppIcons.filter, size: AppSizes.iconSm, color: colors.primary),
-                  const SizedBox(width: AppSpacing.sm),
-                  Flexible(
-                    child: Text(
-                      value.label(l10n),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: text.labelLarge?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xxs),
-                  Icon(AppIcons.expand, size: AppSizes.iconSm, color: colors.onSurfaceVariant),
-                ],
-              ),
-            ),
+            child: atEnd ? _compact(context) : _row(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// "⚙ Active projects ▾" at the end of the bar.
+  Widget _compact(BuildContext context) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(AppIcons.filter, size: AppSizes.iconSm, color: colors.primary),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(child: _label(context)),
+          const SizedBox(width: AppSpacing.xxs),
+          Icon(AppIcons.expand, size: AppSizes.iconSm, color: colors.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
+
+  /// Full-width row under the search: icon column, label, count, chevron.
+  Widget _row(BuildContext context) {
+    final colors = context.colors;
+    final count = counts[value];
+    return Row(
+      children: [
+        SizedBox(
+          width: AppSizes.minTouchTarget,
+          child: Icon(AppIcons.filter, size: AppSizes.iconSm, color: colors.primary),
+        ),
+        // The search field insets its text by the same amount after its icon.
+        const SizedBox(width: AppSpacing.xs),
+        Expanded(child: _label(context)),
+        if (count != null) ...[_CountPill(count: count), const SizedBox(width: AppSpacing.sm)],
+        Icon(AppIcons.expand, size: AppSizes.iconSm, color: colors.onSurfaceVariant),
+        const SizedBox(width: AppSpacing.md),
+      ],
+    );
+  }
+
+  Widget _label(BuildContext context) => Text(
+    value.label(context.l10n),
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+  );
+}
+
+/// How many projects a filter holds, as a small neutral pill.
+class _CountPill extends StatelessWidget {
+  const _CountPill({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(color: context.colors.surfaceContainerHighest, borderRadius: AppRadius.pillAll),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xxs),
+        child: Text(
+          '$count',
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
       ),

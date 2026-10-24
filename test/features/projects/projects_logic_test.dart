@@ -113,13 +113,13 @@ void main() {
 
   test('ProjectPermissions follow the role', () {
     final manager = ProjectPermissions.of(UserRole.projectManager);
-    expect((manager.canManage, manager.canSeeFinancials, manager.canShareProgress), (true, true, true));
+    expect((manager.canManage, manager.canShareProgress), (true, true));
     final accountant = ProjectPermissions.of(UserRole.accountant);
-    expect((accountant.canManage, accountant.canSeeFinancials, accountant.canShareProgress), (false, true, false));
+    expect((accountant.canManage, accountant.canShareProgress), (false, false));
     final engineer = ProjectPermissions.of(UserRole.siteEngineer);
-    expect((engineer.canManage, engineer.canSeeFinancials, engineer.canShareProgress), (false, false, true));
+    expect((engineer.canManage, engineer.canShareProgress), (false, true));
     final storeKeeper = ProjectPermissions.of(UserRole.storeKeeper);
-    expect((storeKeeper.canManage, storeKeeper.canSeeFinancials, storeKeeper.canShareProgress), (false, false, false));
+    expect((storeKeeper.canManage, storeKeeper.canShareProgress), (false, false));
     expect(ProjectPermissions.of(null).canManage, isFalse);
   });
 

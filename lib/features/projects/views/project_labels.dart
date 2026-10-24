@@ -112,13 +112,12 @@ extension UnitStageLabel on UnitStage {
 
 /// Amounts and areas as the directory shows them.
 extension ProjectFormatting on AppFormatters {
-  /// Rupees in crores, e.g. "₹86.5 Cr" / "₹86.5 કરોડ".
-  String crores(AppLocalizations l10n, double rupees) => l10n.amountCrore(number(rupees / 10000000, maxDecimals: 2));
+  /// Rupees in crores, e.g. "₹86.5 Cr" / "₹86.5 કરોડ"; with [fixedDecimals]
+  /// always two decimals, e.g. "₹110.00 Cr" (headline totals).
+  String crores(AppLocalizations l10n, double rupees, {bool fixedDecimals = false}) =>
+      l10n.amountCrore(number(rupees / 10000000, maxDecimals: 2, minDecimals: fixedDecimals ? 2 : 0));
 
   String area(AppLocalizations l10n, int sqFt) => l10n.areaSqFt(number(sqFt, maxDecimals: 0));
-
-  /// Area in short form for headline numbers, e.g. "16.2L sq ft".
-  String compactArea(AppLocalizations l10n, int sqFt) => l10n.areaSqFt(compact(sqFt));
 }
 
 /// Coloured dot and label, e.g. lifecycle status or schedule health. The dot
